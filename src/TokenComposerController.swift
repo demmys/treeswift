@@ -1,28 +1,9 @@
-enum TokenKind {
-    case IntegerLiteral(Int)
-    case Operator
-}
-
-protocol TokenComposer {
+private protocol TokenComposer {
     func put(c: Character) -> Bool
     func compose() -> TokenKind?
 }
 
-class Operator : TokenComposer {
-    private enum State {
-        case Initial
-    }
-
-    init() {}
-
-    func put(c: Character) -> Bool {
-    }
-
-    func compose() -> TokenKind? {
-    }
-}
-
-class IntegerLiteral : TokenComposer {
+private class IntegerLiteral : TokenComposer {
     private enum State: Int {
         case Initial
         case BaseSpecifier
@@ -81,7 +62,7 @@ class IntegerLiteral : TokenComposer {
         case .Initial, .BaseSpecifier:
             return nil
         default:
-            return TokenKind.IntegerLiteral(value)
+            return .IntegerLiteral(value)
         }
     }
 
@@ -108,5 +89,41 @@ class IntegerLiteral : TokenComposer {
             return true
         }
         return false
+    }
+}
+
+class TokenComposersController {
+    private var composers: [TokenComposer]
+    private var fileName: String
+
+    init(_ fileName: String) {
+        self.fileName = fileName
+        composers = [
+            IntegerLiteral()
+        ]
+    }
+
+    func put(c: Character) {
+        composers = composers.filter({
+            $0.put(c)
+        })
+    }
+
+    func fixKind() -> TokenKind {
+        var tokenKinds = composers.map({
+            $0.compose()
+        }).filter({
+            $0 != nil
+        })
+        switch tokenKinds.count {
+        case 0:
+            return .Error(ErrorInfo(target: fileName,
+                                    reason: "Invalid token string"))
+        case 1:
+            return tokenKinds[0]!
+        default:
+            return .Error(ErrorInfo(target: fileName,
+                                    reason: "Ambiguous token string"))
+        }
     }
 }

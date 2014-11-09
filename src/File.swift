@@ -4,8 +4,10 @@ private typealias FilePointer = UnsafeMutablePointer<FILE>
 
 class File {
     private let fp: FilePointer
+    let name: String
 
     init?(name: String, mode: String) {
+        self.name = name
         fp = fopen(name, mode)
         if fp == FilePointer.null() {
             return nil
