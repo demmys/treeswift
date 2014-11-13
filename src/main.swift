@@ -2,6 +2,16 @@ func debugInformation(token: Token) -> String {
     return "(\(token.lineNo):\(token.charNo): \(token.source)"
 }
 
+func parse(file: File) {
+    if let parser = Parser(file) {
+        if parser.parse() {
+            println("Accepted.")
+        } else {
+            parser.errors.map({ $0.print(file.name) })
+        }
+    }
+}
+
 func lex(file: File) {
     if let stream = TokenStream(file) {
         var endOfFile = false
@@ -11,6 +21,8 @@ func lex(file: File) {
                 println("Space")
             case .LineFeed:
                 println("LineFeed")
+            case .Semicolon:
+                println("Semicolon")
             case .EndOfFile:
                 endOfFile = true
             case let .IntegerLiteral(x):
@@ -18,21 +30,21 @@ func lex(file: File) {
             case let .Operator(x):
                 println("Operator: \(x)")
             case let .Error(i):
-                i.print(t.lineNo, charNo: t.charNo, source: t.source)
+                i.print(file.name, lineNo: t.lineNo, charNo: t.charNo, source: t.source)
             }
         }
     } else {
-        ErrorInfo(target: file.name, reason: "The file is not a textfile").print()
+        ErrorInfo(reason: "The file is not a textfile").print(file.name)
     }
 }
 
 if Process.arguments.count < 2 {
-    ErrorInfo(target: Process.arguments[0], reason: "No input files").print()
+    ErrorInfo(reason: "No input files").print(Process.arguments[0])
 } else {
     let file = File(name: Process.arguments[1], mode: "r")
     if let f = file {
-        lex(f);
+        parse(f);
     } else {
-        ErrorInfo(target: Process.arguments[0], reason: "File not found").print()
+        ErrorInfo(reason: "File not found").print(Process.arguments[0])
     }
 }

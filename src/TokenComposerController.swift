@@ -74,8 +74,11 @@ private class IntegerLiteral : TokenComposer {
         value = value * base
         let s = String(c)
         if let x = s.toInt() {
-             value = value + x
-             return true
+            if x < base {
+                value = value + x
+                return true
+            }
+            return false
         } else if base > 10 {
             let xs = s.unicodeScalars
             let x = xs[xs.startIndex].value
@@ -94,10 +97,8 @@ private class IntegerLiteral : TokenComposer {
 
 class TokenComposersController {
     private var composers: [TokenComposer]
-    private var fileName: String
 
-    init(_ fileName: String) {
-        self.fileName = fileName
+    init() {
         composers = [
             IntegerLiteral()
         ]
@@ -117,13 +118,11 @@ class TokenComposersController {
         })
         switch tokenKinds.count {
         case 0:
-            return .Error(ErrorInfo(target: fileName,
-                                    reason: "Invalid token string"))
+            return .Error(ErrorInfo(reason: "Invalid token string"))
         case 1:
             return tokenKinds[0]!
         default:
-            return .Error(ErrorInfo(target: fileName,
-                                    reason: "Ambiguous token string"))
+            return .Error(ErrorInfo(reason: "Ambiguous token string"))
         }
     }
 }

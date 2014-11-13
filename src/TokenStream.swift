@@ -1,8 +1,66 @@
 enum TokenKind {
     case Error(ErrorInfo)
-    case Space, LineFeed, EndOfFile
+    case Space, LineFeed, Semicolon, EndOfFile
     case IntegerLiteral(Int)
     case Operator(String)
+}
+
+func ==(a: TokenKind, b: TokenKind) -> Bool {
+    switch a {
+    case .Error:
+        switch b {
+        case .Error:
+            return true
+        default:
+            return false
+        }
+    case .Space:
+        switch b {
+        case .Space:
+            return true
+        default:
+            return false
+        }
+    case .LineFeed:
+        switch b {
+        case .LineFeed:
+            return true
+        default:
+            return false
+        }
+    case .Semicolon:
+        switch b {
+        case .Semicolon:
+            return true
+        default:
+            return false
+        }
+    case .EndOfFile:
+        switch b {
+        case .EndOfFile:
+            return true
+        default:
+            return false
+        }
+    case .IntegerLiteral:
+        switch b {
+        case .IntegerLiteral:
+            return true
+        default:
+            return false
+        }
+    case .Operator:
+        switch b {
+        case .Operator:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+func !=(a: TokenKind, b: TokenKind) -> Bool {
+    return !(a == b)
 }
 
 struct Token {
@@ -17,14 +75,18 @@ struct Token {
     }
 
     init(kind: TokenKind, source: String, lineNo: Int, charNo: Int) {
+        self.init(lineNo: lineNo, charNo: charNo)
         self.kind = kind
         self.source = source
-        self.lineNo = lineNo
-        self.charNo = charNo
     }
 }
 
-class TokenStream {
+protocol TokenPeeper {
+    func look() -> Token
+    func look(ahead: Int) -> Token
+}
+
+class TokenStream : TokenPeeper {
     private enum State {
         case ParseHead
         case SpaceParse
@@ -41,14 +103,12 @@ class TokenStream {
         var charNo: Int = 1
     }
 
-    private let fileName: String
     private let cs: CharacterStream!
     private var ctx = Context()
     private var queue: [Token]!
     private var index: Int!
 
     init?(_ file: File) {
-        self.fileName = file.name
         cs = CharacterStream(file)
         if cs != nil {
             queue = [load()]
@@ -59,20 +119,16 @@ class TokenStream {
     }
 
     func look() -> Token {
-        if index == queue.count {
-            queue = [load()]
-            index = 0
-        }
-        return queue[index]
+        return look(0)
     }
 
-    func lookAhead(_ n: Int = 1) -> Token {
-        if index + n >= queue.count {
-            for var i = queue.count - 1; i < index + n; ++i {
+    func look(ahead: Int) -> Token {
+        if index + ahead >= queue.count {
+            for var i = queue.count - 1; i < index + ahead; ++i {
                 queue.append(load())
             }
         }
-        return queue[index + n]
+        return queue[index + ahead]
     }
 
     func next() {
@@ -95,6 +151,10 @@ class TokenStream {
                         ctx.charNo = 1
                         consumeCharacter(c)
                         return returnProcedure(.LineFeed)
+                    case ";":
+                        ++ctx.charNo
+                        consumeCharacter(c)
+                        return returnProcedure(.Semicolon)
                     case " ", "\t":
                         ++ctx.charNo
                         fallthrough
@@ -128,7 +188,7 @@ class TokenStream {
                                 consumeCharacter(c)
                                 consumeCharacter(succ)
                                 let r = "Operator */ is reserved for comment syntax"
-                                let ei = ErrorInfo(target: fileName, reason: r)
+                                let ei = ErrorInfo(reason: r)
                                 return returnProcedure(.Error(ei))
                             }
                         }
@@ -140,7 +200,7 @@ class TokenStream {
                         consumeCharacter(c)
                     default:
                         ++ctx.charNo
-                        var composers = TokenComposersController(fileName)
+                        var composers = TokenComposersController()
                         composers.put(c)
                         ctx.state = .ComposerParse(composers)
                         consumeCharacter(c)
@@ -214,7 +274,7 @@ class TokenStream {
                     }
                 case let .ComposerParse(composers):
                     switch c {
-                    case "\n", " ", "\t",
+                    case "\n", " ", "\t", ";",
                          "\0", "\r", "\u{000b}", "\u{000c}",
                          "/", "=", "-", "+", "!", "*", "%",
                          "<", ">", "&", "|", "^", "?", "~":
@@ -276,7 +336,7 @@ class TokenStream {
         if let p = parsing {
             r = "\(r) while parsing \(p)"
         }
-        let ei = ErrorInfo(target: fileName, reason: r)
+        let ei = ErrorInfo(reason: r)
         return returnProcedure(.Error(ei))
     }
 }

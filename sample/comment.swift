@@ -4,3 +4,4 @@
 with line feeded
 */
 /* /* nested /* comment */ */ */
+/* */ /* */ /* */

@@ -3,20 +3,34 @@ import Darwin
 class ErrorInfo {
     private let label = "error:"
 
-    var target: String
-    var reason: String
+    private var reason: String
 
-    init(target: String, reason: String) {
-        self.target = target
+    var lineNo: Int?
+    var charNo: Int?
+    var source: String?
+
+    init(reason: String) {
         self.reason = reason
     }
 
-    func print() {
-        printStderr("\(target): \(label) \(reason)\n")
+    func print(target: String) {
+        var message = "\(target):"
+        if let l = lineNo {
+            if let c = charNo {
+                message = message + "\(l):\(c):"
+            }
+        }
+        message = message + " \(label) \(reason)\n"
+        if let s = source {
+            message = message + "\t\(s)\n"
+        }
+        printStderr(message)
     }
-    func print(lineNo: Int, charNo: Int, source: String) {
-        let m = "\(target):\(lineNo):\(charNo): \(label) \(reason)\n\t\(source)\n"
-        printStderr(m)
+    func print(target: String, lineNo: Int, charNo: Int, source: String) {
+        self.lineNo = lineNo
+        self.charNo = charNo
+        self.source = source
+        print(target)
     }
 
     private func printStderr(message: String) {
