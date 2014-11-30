@@ -1,75 +1,59 @@
+typealias Error = (ErrorMessage, SourceInfo)
+
+enum ParseResult {
+    case Success
+    case Failure([Error])
+}
+
 protocol Symbol {
-    var errorInfo: [ErrorInfo] { get }
-    func parse(input: TokenStream) -> Bool
+    func parse(input: TokenStream) -> ParseResult
 }
 
 class TerminalSymbol : Symbol {
     private let kinds: [TokenKind]
+    private var errorGenerator: SourceInfo -> [Error]
+    private var isOptional: Bool
 
-    private var errorInfo_: ErrorInfo
-    var errorInfo: [ErrorInfo]  {
-        get {
-            return [errorInfo_]
-        }
-    }
-
-    init(kinds: [TokenKind], errorMessage: String) {
+    init(kinds: [TokenKind], errorGenerator: SourceInfo -> [Error],
+         isOptional: Bool = false) {
         self.kinds = kinds
-        errorInfo_ = ErrorInfo(reason: errorMessage)
+        self.errorGenerator = errorGenerator
+        self.isOptional = isOptional
     }
 
-    func parse(input: TokenStream) -> Bool {
-        var token: Token
-        do {
-            token = input.look()
-            input.next()
-        } while isMeaningless(token.kind)
-
-        for kind in kinds {
-            if token.kind == kind {
-                println("TerminalSymbol\t->\ttrue")
-                return true
-            }
-        }
-        errorInfo_.lineNo = token.lineNo
-        errorInfo_.charNo = token.charNo
-        errorInfo_.source = token.source
-        println("TerminalSymbol-> false")
-        return false
-    }
-
-    private func isMeaningless(target: TokenKind) -> Bool {
-        switch target {
-        case .Space:
-            for k in kinds {
-                if k == .Space {
-                    return false
-                }
-            }
-            return true
+    func parse(input: TokenStream) -> ParseResult {
+        var inputToken = input.look()
+        switch inputToken.kind {
+        case let .Error(e):
+            return .Failure([(e, inputToken.info)])
         case .LineFeed:
-            for k in kinds {
-                if k == .LineFeed || k == .Space {
-                    return false
+            for kind in kinds {
+                if kind == .LineFeed {
+                    input.next()
+                    return .Success
+                } else if kind == input.look(1).kind {
+                    input.next(n: 1)
+                    return .Success
                 }
             }
-            return true
         default:
-            return false
+            for kind in kinds {
+                if inputToken.kind == kind {
+                    input.next()
+                    return .Success
+                }
+            }
         }
+        if isOptional {
+            return .Success
+        }
+        return .Failure(errorGenerator(inputToken.info))
     }
 }
 
 class NonTerminalSymbol : Symbol {
     private var ruleArbiter: TokenPeeper -> [Symbol]?
     private var isOptional: Bool
-
-    private var errorInfo_: [ErrorInfo]
-    var errorInfo: [ErrorInfo] {
-        get {
-            return errorInfo_
-        }
-    }
 
     /*
      * `ruleArbiter` is DFA, which decides the rule that will be applied or
@@ -78,95 +62,85 @@ class NonTerminalSymbol : Symbol {
     init(_ ruleArbiter: TokenPeeper -> [Symbol]?, isOptional: Bool = false) {
         self.ruleArbiter = ruleArbiter
         self.isOptional = isOptional
-        errorInfo_ = []
     }
 
-    func parse(input: TokenStream) -> Bool {
+    func parse(input: TokenStream) -> ParseResult {
+        switch input.look().kind {
+        case let .Error(e):
+            return .Failure([(e, input.look().info)])
+        default:
+            break
+        }
+        var errors: [Error] = []
         if let elements = ruleArbiter(input) {
             for element in elements {
-                if !element.parse(input) {
-                    errorInfo_.extend(element.errorInfo)
-                    println("parse failed with \(reflect(element).summary)")
+                switch element.parse(input) {
+                case .Success:
+                    break
+                case let .Failure(es):
+                    errors.extend(es)
                 }
             }
-            println("\(reflect(self).summary)\t->\t\(errorInfo_.count == 0)")
-            return errorInfo_.count == 0
+            if errors.count > 0 {
+                return .Failure(errors)
+            } else {
+                return .Success
+            }
         } else if isOptional {
-            return true
+            return .Success
         }
-        println("\(reflect(self).summary)\t->\tfalse")
-        return false
+        return .Failure([(.UnexpectedSymbol, input.look().info)])
     }
 }
 
-/*
- * literal -> Space* IntegerLiteral
- */
 class LiteralSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [TerminalSymbol(
-            kinds: [.IntegerLiteral(0)],
-            errorMessage: "Expected integer literal"
-        )] })
+        super.init({ tp in [
+            TerminalSymbol(kinds: [.IntegerLiteral(0)], errorGenerator: {
+                [(.ExpectedIntegerLiteral, $0)]
+            })
+        ]})
     }
 }
 
-/*
- * literal-expression -> literal
- */
 class LiteralExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [LiteralSymbol()] })
     }
 }
 
-/*
- * primary-expression -> literal-expression
- */
 class PrimaryExpressionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [LiteralExpressionSymbol()] })
-    }
-}
-
-/*
- * postfix-operator -> Operator \ze [(Space | LineFeed | EndOfFile)]
- */
-class PostfixOperatorSymbol : NonTerminalSymbol {
-    init() {
         super.init({ tp in
-            if tp.look().kind == .Operator("") {
-                switch tp.look(1).kind! {
-                case .Space, .LineFeed, .EndOfFile:
-                    return [TerminalSymbol(
-                        kinds: [.Operator("")],
-                        errorMessage: "Expected postfix operator"
-                    )]
-                default:
-                    return nil
-                }
+            if tp.look().kind != .LeftParenthesis {
+                return [LiteralExpressionSymbol()]
             }
-            return nil
+            return [
+                TerminalSymbol(kinds: [.LeftParenthesis], errorGenerator: {
+                    [(.ExpectedLeftParenthesis, $0)]
+                }),
+                ExpressionSymbol(),
+                TerminalSymbol(kinds: [.RightParenthesis], errorGenerator: {
+                    [(.ExpectedRightParenthesis, $0)]
+                })
+            ]
         })
     }
 }
 
-/*
- * LL(k) (optional)
- * postfix-expression-tail -> postfix-operator postfix-expression-tail
- */
+
 class PostfixExpressionTailSymbol : NonTerminalSymbol {
     init(isOptional: Bool) {
         super.init({ tp in
-            switch tp.look().kind! {
-            case .Operator:
-                return [
-                    PostfixOperatorSymbol(),
-                    PostfixExpressionTailSymbol()
-                ]
-            default:
+            if tp.look().kind != .PostfixOperator("") {
                 return nil
             }
+            return [
+                TerminalSymbol(kinds: [.PostfixOperator("")], errorGenerator: {
+                    [(.ExpectedPostfixOperator, $0)]
+                }),
+                PostfixExpressionTailSymbol(isOptional: true)
+            ]
         }, isOptional: isOptional)
     }
     convenience init() {
@@ -174,9 +148,6 @@ class PostfixExpressionTailSymbol : NonTerminalSymbol {
     }
 }
 
-/*
- * postfix-expression -> primary-expression postfix-expression-tail?
- */
 class PostfixExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
@@ -186,114 +157,43 @@ class PostfixExpressionSymbol : NonTerminalSymbol {
     }
 }
 
-/*
- * LL(k) (optional)
- * prefix-operator -> Space* Operator \ze [^(Space | LineFeed | EndOfFile)]
- */
-class PrefixOperatorSymbol : NonTerminalSymbol {
-    init(isOptional: Bool = false) {
-        super.init({ tp in
-            var i: Int
-            for i = 0; tp.look(i).kind == .Space; ++i {}
-            if tp.look(i).kind == .Operator("") {
-                switch tp.look(i + 1).kind! {
-                case .Space, .LineFeed, .EndOfFile:
-                    return nil
-                default:
-                    return [TerminalSymbol(
-                        kinds: [.Operator("")],
-                        errorMessage: "Expected prefix operator"
-                    )]
-                }
-            }
-            return nil
-        })
-    }
-}
-
-/*
- * prefix-expression -> prefix-operator? postfix-expression
- */
 class PrefixExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
-            PrefixOperatorSymbol(isOptional: true),
+            TerminalSymbol(kinds: [.PrefixOperator("")], errorGenerator: {
+                [(.ExpectedPrefixOperator, $0)]
+            }, isOptional: true),
             PostfixExpressionSymbol()
         ]})
     }
 }
 
-/*
- * LL(1)
- * binary-operator -> Space+ Operator Space
- *                 -> Operator
- */
-class BinaryOperatorSymbol : NonTerminalSymbol {
-    init() {
-        super.init({ tp in
-            switch tp.look().kind! {
-            case .Space:
-                return [TerminalSymbol(
-                    kinds: [.Space],
-                    errorMessage: "Space existence before and after Binary operator should be unified"
-                ), TerminalSymbol(
-                    kinds: [.Operator("")],
-                    errorMessage: "Operator literal expected"
-                ), TerminalSymbol(
-                    kinds: [.Space],
-                    errorMessage: "Space existence before and after Binary operator should be unified"
-                )]
-            case .Operator:
-                return [TerminalSymbol(
-                    kinds: [.Operator("")],
-                    errorMessage: "Expected operator"
-                )]
-            default:
-                return nil
-            }
-        })
-    }
-}
 
-/*
- * binary-expression -> binary-operator prefix-expression
- */
 class BinaryExpressionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [BinaryOperatorSymbol(), PrefixExpressionSymbol()]})
+        super.init({ tp in [
+            TerminalSymbol(kinds: [.BinaryOperator("")], errorGenerator: {
+                [(.ExpectedBinaryOperator, $0)]
+            }),
+            PrefixExpressionSymbol()
+        ]})
     }
 }
 
-/*
- * LL(k) (optional)
- * binary-expressions -> binary-expression binary-expressions?
- */
 class BinaryExpressionsSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
-            switch tp.look().kind! {
-            case .Space:
-                var i: Int
-                for i = 1; tp.look(i).kind == .Space; ++i {}
-                if tp.look(i).kind == .Operator("") {
-                    fallthrough
-                }
-                return nil
-            case .Operator:
-                return [
-                    BinaryExpressionSymbol(),
-                    BinaryExpressionsSymbol(isOptional: true)
-                ]
-            default:
+            if tp.look().kind != .BinaryOperator("") {
                 return nil
             }
+            return [
+                BinaryExpressionSymbol(),
+                BinaryExpressionsSymbol(isOptional: true)
+            ]
         }, isOptional: isOptional)
     }
 }
 
-/*
- * expression -> prefix-expression binary-expressions?
- */
 class ExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
@@ -303,32 +203,24 @@ class ExpressionSymbol : NonTerminalSymbol {
     }
 }
 
-/*
- * statement -> expression Space* (LineFeed | Semicolon | EndOfFile)
- */
 class StatementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
             ExpressionSymbol(),
             TerminalSymbol(kinds: [.LineFeed, .Semicolon, .EndOfFile],
-                           errorMessage: "Expected line feed or semicolon at the end of statement")
+                           errorGenerator: { [(.ExpectedEndOfStatement, $0)] })
         ]})
     }
 }
 
-/*
- * LL(k) (optional)
- * statements -> (Space | LineFeed)* statement statements?
- */
 class StatementsSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in 
-            var i = -1
-            var target = tp.look(0).kind
-            do {
-                target = tp.look(++i).kind
-            } while target == .Space || target == .LineFeed
-            switch tp.look(i).kind! {
+            var kind = tp.look().kind
+            if kind == .LineFeed {
+                kind = tp.look(1).kind
+            }
+            switch kind {
             case .Semicolon, .EndOfFile:
                 return nil
             default:
@@ -338,9 +230,6 @@ class StatementsSymbol : NonTerminalSymbol {
     }
 }
 
-/*
- * top-level-declaration -> statements?
- */
 class TopLevelDeclarationSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [StatementsSymbol(isOptional: true)] })
@@ -349,33 +238,34 @@ class TopLevelDeclarationSymbol : NonTerminalSymbol {
 
 public class Parser {
     private let ts: TokenStream!
-    private var errors_: [ErrorInfo]
-    var errors: [ErrorInfo] {
-        get {
-            return errors_
-        }
-    }
 
     init?(_ file: File) {
-        errors_ = []
         ts = TokenStream(file)
         if ts == nil {
             return nil
         }
     }
 
-    func parse() -> Bool {
-        errors_ = []
+    func parse() -> ParseResult {
+        var errors: [Error] = []
         let stack: [Symbol] = [
             TopLevelDeclarationSymbol(),
-            TerminalSymbol(kinds: [.EndOfFile],
-                           errorMessage: "Expected end of file")
+            TerminalSymbol(kinds: [.EndOfFile], errorGenerator: {
+                [(.ExpectedEndOfFile, $0)]
+            })
         ]
         for element in stack {
-            if !element.parse(ts) {
-                errors_.extend(element.errorInfo)
+            switch element.parse(ts) {
+            case .Success:
+                break
+            case let .Failure(es):
+                errors.extend(es)
             }
         }
-        return errors_.count == 0
+        if errors.count > 0 {
+            return .Failure(errors)
+        } else {
+            return .Success
+        }
     }
 }
