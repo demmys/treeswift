@@ -18,3 +18,11 @@ To compile TreeSwift, run `make` command.
 ```
 $ make
 ```
+
+
+License
+-----
+
+TreeSwift is distributed under a 2-clause BSD license.
+
+See LICENSE for details.
