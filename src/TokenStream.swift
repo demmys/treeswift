@@ -123,7 +123,7 @@ struct Token {
 
 protocol TokenPeeper {
     func look() -> Token
-    func look(ahead: Int) -> Token
+    func look(Int) -> Token
 }
 
 class TokenStream : TokenPeeper {

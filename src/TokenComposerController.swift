@@ -1,6 +1,6 @@
 private protocol TokenComposer {
-    func put(cc: CharacterClass, c: Character) -> Bool
-    func compose(follow: CharacterClass) -> TokenKind?
+    func put(CharacterClass, Character) -> Bool
+    func compose(CharacterClass) -> TokenKind?
 }
 
 private class Operator : TokenComposer {
@@ -18,7 +18,7 @@ private class Operator : TokenComposer {
         headSeparated = isSeparator(prev, isPrev: true)
     }
 
-    func put(cc: CharacterClass, c: Character) -> Bool {
+    func put(cc: CharacterClass, _ c: Character) -> Bool {
         switch state {
         case .Head:
             switch cc {
@@ -116,7 +116,7 @@ private class IntegerLiteral : TokenComposer {
 
     init() {}
 
-    func put(cc: CharacterClass, c: Character) -> Bool {
+    func put(cc: CharacterClass, _ c: Character) -> Bool {
         switch cc {
         case .Literal:
             switch state {
@@ -210,7 +210,7 @@ class TokenComposersController {
 
     func put(cc: CharacterClass, c: Character) {
         composers = composers.filter({
-            $0.put(cc, c: c)
+            $0.put(cc, c)
         })
     }
 

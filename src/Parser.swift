@@ -6,7 +6,7 @@ enum ParseResult {
 }
 
 protocol Symbol {
-    func parse(input: TokenStream) -> ParseResult
+    func parse(TokenStream) -> ParseResult
 }
 
 class TerminalSymbol : Symbol {
