@@ -5,14 +5,20 @@ enum CharacterClass {
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
     case LeftBracket, RightBracket
-    case LessThan, GraterThan
     // context depended classes
+    case LessThan, GraterThan
     case Ampersand, Question, Exclamation, Dollar, BackQuote
     case OperatorHead, DotOperatorHead, OperatorFollow
     case IdentifierHead, IdentifierFollow, Digit
     // meaningless classes
     case LineCommentHead, BlockCommentHead, BlockCommentTail
     case Others
+}
+
+enum IdentifierKind {
+    case Identifier(String)
+    case QuotedIdentifier(String)
+    case ImplicitParameter(Int)
 }
 
 enum TokenKind {
@@ -23,14 +29,16 @@ enum TokenKind {
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
     case LeftBracket, RightBracket
-    case LessThan, GraterThan
-    case Ampersand, Question, Exclamation
+    case PrefixLessThan, PostfixGraterThan
+    case PrefixAmpersand
+    case PrefixQuestion, BinaryQuestion, PostfixQuestion
+    case PostfixExclamation
     case BinaryOperator(String), PrefixOperator(String), PostfixOperator(String)
-    case Identifier(String, Bool)
+    case Identifier(IdentifierKind)
     case IntegerLiteral(Int)
-    case For, While, Do, If, Else, Break, Continue, Return, Let, Var, Func, Inout
-    case Prefix, Postfix, Infix, Operator
-    case Precedence, Associativity, Left, Right, None, Is, As, In
+    case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix, In
+    case Inout, Is, Let, Left, None, Operator, Prefix, Postfix, Precedence
+    case Return, Var, Right, Typealias, While
 }
 
 func ==(a: TokenKind, b: TokenKind) -> Bool {
@@ -91,23 +99,51 @@ func ==(a: TokenKind, b: TokenKind) -> Bool {
         default:
             return false
         }
-    case .Ampersand:
+    case .PrefixLessThan:
         switch b {
-        case .Ampersand:
+        case .PrefixLessThan:
             return true
         default:
             return false
         }
-    case .Question:
+    case .PostfixGraterThan:
         switch b {
-        case .Question:
+        case .PostfixGraterThan:
             return true
         default:
             return false
         }
-    case .Exclamation:
+    case .PrefixAmpersand:
         switch b {
-        case .Exclamation:
+        case .PrefixAmpersand:
+            return true
+        default:
+            return false
+        }
+    case .PrefixQuestion:
+        switch b {
+        case .PrefixQuestion:
+            return true
+        default:
+            return false
+        }
+    case .BinaryQuestion:
+        switch b {
+        case .BinaryQuestion:
+            return true
+        default:
+            return false
+        }
+    case .PostfixQuestion:
+        switch b {
+        case .PostfixQuestion:
+            return true
+        default:
+            return false
+        }
+    case .PostfixExclamation:
+        switch b {
+        case .PostfixExclamation:
             return true
         default:
             return false
@@ -164,20 +200,6 @@ func ==(a: TokenKind, b: TokenKind) -> Bool {
     case .RightBracket:
         switch b {
         case .RightBracket:
-            return true
-        default:
-            return false
-        }
-    case .LessThan:
-        switch b {
-        case .LessThan:
-            return true
-        default:
-            return false
-        }
-    case .GraterThan:
-        switch b {
-        case .GraterThan:
             return true
         default:
             return false
@@ -399,6 +421,13 @@ func ==(a: TokenKind, b: TokenKind) -> Bool {
         default:
             return false
         }
+    case .Typealias:
+        switch b {
+        case .Typealias:
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -542,7 +571,7 @@ class TokenStream : TokenPeeper {
             ctx.consume(consumed: head)
             return produce(.Comma)
         case .Arrow:
-            ctx.consume(consumed: head)
+            ctx.consume(consumed: head, n: 2)
             return produce(.Arrow)
         case .Hash:
             ctx.consume(consumed: head)
@@ -574,12 +603,6 @@ class TokenStream : TokenPeeper {
         case .RightBracket:
             ctx.consume(consumed: head)
             return produce(.RightBracket)
-        case .LessThan:
-            ctx.consume(consumed: head)
-            return produce(.LessThan)
-        case .GraterThan:
-            ctx.consume(consumed: head)
-            return produce(.GraterThan)
         case .LineCommentHead:
             ctx.consume(n: 2)
             while true {
@@ -604,7 +627,7 @@ class TokenStream : TokenPeeper {
                     ctx.consume(n: 2)
                     ++depth
                 case .BlockCommentTail:
-                    ctx.consume(n: 2)
+                    ctx.consume(consumed: .BlockCommentTail, n: 2)
                     --depth
                 case .EndOfFile:
                     info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
@@ -625,7 +648,7 @@ class TokenStream : TokenPeeper {
             info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
             ctx.consume()
             return produce(.Error(.InvalidToken))
-        case .Ampersand, .Question, .Exclamation:
+        case .LessThan, .GraterThan, .Ampersand, .Question, .Exclamation:
             return produce(composerParse(
                 head,
                 composer: OperatorComposer(prev: ctx.prev),
@@ -704,6 +727,8 @@ class TokenStream : TokenPeeper {
                     WordLiteralComposer("as", .As),
                     WordLiteralComposer("associativity", .Associativity)
                 ]
+            case "b":
+                reservedWords = [WordLiteralComposer("break", .Break)]
             case "c":
                 reservedWords = [WordLiteralComposer("continue", .Continue)]
             case "d":
@@ -743,6 +768,8 @@ class TokenStream : TokenPeeper {
                     WordLiteralComposer("return", .Return),
                     WordLiteralComposer("right", .Right)
                 ]
+            case "t":
+                reservedWords = [WordLiteralComposer("typealias", .Typealias)]
             case "v":
                 reservedWords = [WordLiteralComposer("var", .Var)]
             case "w":
@@ -760,7 +787,7 @@ class TokenStream : TokenPeeper {
                 ctx.consume(consumed: follow)
                 follow = classify()
                 switch follow {
-                case .IdentifierHead, .IdentifierFollow, .Digit:
+                case .IdentifierHead, .IdentifierFollow, .Digit, .Underscore:
                     break
                 default:
                     endOfToken = true
@@ -999,7 +1026,8 @@ class TokenStream : TokenPeeper {
              "\u{00A8}", "\u{00AA}", "\u{00AD}", "\u{00AF}",
              "\u{00B2}"..."\u{00B5}", "\u{00B7}"..."\u{00BA}",
              "\u{00BC}"..."\u{00BE}", "\u{00C0}"..."\u{00D6}",
-             "\u{00D8}"..."\u{00F6}", "\u{00F8}"..."\u{00FF}",
+             "\u{00D8}"..."\u{00F0}", "\u{00F1}"..."\u{00F6}",
+             "\u{00F8}"..."\u{00FE}", "\u{00FF}",
              "\u{0100}"..."\u{02FF}", "\u{0370}"..."\u{167F}",
              "\u{1681}"..."\u{180D}", "\u{180F}"..."\u{1DBF}",
              "\u{1E00}"..."\u{1FFF}", "\u{200B}"..."\u{200D}",

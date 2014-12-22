@@ -36,12 +36,20 @@ func lex(file: File) {
                 println("#")
             case .Underscore:
                 println("_")
-            case .Ampersand:
-                println("&")
-            case .Question:
-                println("?")
-            case .Exclamation:
-                println("!")
+            case .PrefixLessThan:
+                println("Prefix: <")
+            case .PostfixGraterThan:
+                println("Postfix: >")
+            case .PrefixAmpersand:
+                println("Prefix: &")
+            case .PrefixQuestion:
+                println("Prefix: ?")
+            case .BinaryQuestion:
+                println("Binary: ?")
+            case .PostfixQuestion:
+                println("Postfix: ?")
+            case .PostfixExclamation:
+                println("Postfix: !")
             case .Dot:
                 println(".")
             case .LeftParenthesis:
@@ -56,12 +64,15 @@ func lex(file: File) {
                 println("[")
             case .RightBracket:
                 println("]")
-            case .LessThan:
-                println("<")
-            case .GraterThan:
-                println(">")
-            case let .Identifier(x, q):
-                println("Identifier: \(x), quoted: \(q)")
+            case let .Identifier(kind):
+                switch kind {
+                case let .Identifier(x):
+                    println("Identifier: \(x)")
+                case let .QuotedIdentifier(x):
+                    println("QuotedIdentifier: `\(x)`")
+                case let .ImplicitParameter(x):
+                    println("ImplicitParameter: $\(x)")
+                }
             case let .IntegerLiteral(x):
                 println("IntegerLiteral: \(x)")
             case .AssignmentOperator:
@@ -120,6 +131,8 @@ func lex(file: File) {
                 println("as")
             case .In:
                 println("in")
+            case .Typealias:
+                println("typealias")
             case let .Error(m):
                 m.print(file.name, info: t.info)
             }

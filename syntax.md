@@ -351,53 +351,55 @@ RightBracket -> ']'
 ### Words
 
 ```
-For -> 'for'
+As -> 'as'
 
-While -> 'while'
-
-Do -> 'do'
-
-If -> 'if'
-
-Else -> 'else'
+Associativity -> 'associativity'
 
 Break -> 'break'
 
 Continue -> 'continue'
 
-Return -> 'return'
+Do -> 'do'
 
-Let -> 'let'
+Else -> 'else'
 
-Var -> 'var'
+For -> 'for'
 
 Func -> 'func'
 
+If -> 'if'
+
+Infix -> 'infix'
+
+In -> 'in'
+
 Inout -> 'inout'
+
+Is -> 'is'
+
+Let -> 'let'
+
+Left -> 'left'
+
+None -> 'none'
+
+Operator -> 'operator'
 
 Prefix -> 'prefix'
 
 Postfix -> 'postfix'
 
-Infix -> 'infix'
-
-Operator -> 'operator'
-
 Precedence -> 'precedence'
 
-Associativity -> 'associativity'
+Return -> 'return'
 
-Left -> 'left'
+Var -> 'var'
 
 Right -> 'right'
 
-None -> 'none'
+Typealias -> 'typealias'
 
-Is -> 'is'
-
-As -> 'as'
-
-In -> 'in'
+While -> 'while'
 ```
 
 ### Identifier

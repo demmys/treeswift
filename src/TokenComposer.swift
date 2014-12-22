@@ -45,11 +45,13 @@ class IdentifierComposer : TokenComposer {
         case Head
         case QuotedIdentifierHead
         case IdentifierCharacter, QuotedIdentifierCharacter
+        case ImplicitParameterDigit
         case QuotedIdentifierTail
     }
 
     private var state = State.Head
-    private var value: String?
+    private var stringValue: String?
+    private var intValue: Int?
 
     init() {}
 
@@ -58,63 +60,82 @@ class IdentifierComposer : TokenComposer {
         case .Head:
             switch cc {
             case .IdentifierHead:
-                value = String(c)
+                stringValue = String(c)
                 state = .IdentifierCharacter
                 return true
             case .BackQuote:
                 state = .QuotedIdentifierHead
                 return true
+            case .Dollar:
+                intValue = 0
+                state = .ImplicitParameterDigit
+                return true
             default:
-                value = nil
+                stringValue = nil
                 return false
             }
         case .QuotedIdentifierHead:
             switch cc {
             case .IdentifierHead:
-                value = String(c)
+                stringValue = String(c)
                 state = .QuotedIdentifierCharacter
                 return true
             default:
-                value = nil
+                stringValue = nil
                 return false
             }
         case .IdentifierCharacter:
             switch cc {
-            case .IdentifierHead, .IdentifierFollow:
-                value!.append(c)
+            case .IdentifierHead, .IdentifierFollow, .Digit, .Underscore:
+                stringValue!.append(c)
                 return true
             default:
-                value = nil
+                stringValue = nil
                 return false
             }
         case .QuotedIdentifierCharacter:
             switch cc {
-            case .IdentifierHead, .IdentifierFollow:
-                value!.append(c)
+            case .IdentifierHead, .IdentifierFollow, .Digit, .Underscore:
+                stringValue!.append(c)
                 return true
             case .BackQuote:
                 state = .QuotedIdentifierTail
                 return true
             default:
-                value = nil
+                stringValue = nil
+                return false
+            }
+        case .ImplicitParameterDigit:
+            switch cc {
+            case .Digit:
+                intValue = intValue! * 10 + String(c).toInt()!
+                return true
+            default:
+                stringValue = nil
                 return false
             }
         case .QuotedIdentifierTail:
-            value = nil
+            stringValue = nil
             return false
         }
     }
 
     func compose(follow: CharacterClass) -> TokenKind? {
-        if let v = value {
-            switch state {
-            case .IdentifierCharacter:
-                return .Identifier(v, false)
-            case .QuotedIdentifierTail:
-                return .Identifier(v, true)
-            default:
-                break
+        switch state {
+        case .IdentifierCharacter:
+            if let v = stringValue {
+                return .Identifier(.Identifier(v))
             }
+        case .QuotedIdentifierTail:
+            if let v = stringValue {
+                return .Identifier(.QuotedIdentifier(v))
+            }
+        case .ImplicitParameterDigit:
+            if let v = intValue {
+                return .Identifier(.ImplicitParameter(v))
+            }
+        default:
+            break
         }
         return nil
     }
@@ -142,11 +163,12 @@ class IntegerLiteralComposer : TokenComposer {
 
     func put(cc: CharacterClass, _ c: Character) -> Bool {
         switch cc {
-        case .IdentifierHead, .IdentifierFollow:
+        case .Digit, .IdentifierHead:
             switch state {
             case .Head:
                 switch c {
                 case "0":
+                    value = 0
                     state = .BaseSpecifier
                 case "1"..."9":
                     value = String(c).toInt()
@@ -158,14 +180,16 @@ class IntegerLiteralComposer : TokenComposer {
             case .BaseSpecifier:
                 switch c {
                 case "b":
+                    value = nil
                     state = .BinaryDigit
                 case "o":
+                    value = nil
                     state = .OctalDigit
                 case "x":
+                    value = nil
                     state = .HexadecimalDigit
                 default:
                     state = .DecimalDigit
-                    value = 0
                     return accumulate(c)
                 }
             default:
@@ -225,17 +249,17 @@ class IntegerLiteralComposer : TokenComposer {
 class OperatorComposer : TokenComposer {
     private enum State {
         case Head
-        case ReservedOperator
+        case ReservedOperator(CharacterClass)
         case DotOperatorHead
         case OperatorCharacter, DotOperatorCharacter
     }
 
     private var state = State.Head
-    private var headSeparated: Bool = false
+    private var prev: CharacterClass
     private var value: String?
 
     init(prev: CharacterClass){
-        headSeparated = isSeparator(prev, isPrev: true)
+        self.prev = prev
     }
 
     func put(cc: CharacterClass, _ c: Character) -> Bool {
@@ -250,9 +274,9 @@ class OperatorComposer : TokenComposer {
                 value = String(c)
                 state = .DotOperatorHead
                 return true
-            case .Ampersand, .Question, .Exclamation:
+            case .LessThan, .GraterThan, .Ampersand, .Question, .Exclamation:
                 value = String(c)
-                state = .ReservedOperator
+                state = .ReservedOperator(cc)
                 return true
             default:
                 value = nil
@@ -292,21 +316,57 @@ class OperatorComposer : TokenComposer {
         }
     }
 
-    // TODO single "&" cannot become a custom prefix operator
     func compose(follow: CharacterClass) -> TokenKind? {
         if let v = value {
+            let kind = createKind(prev: self.prev, value: v, follow: follow)
             switch state {
             case .OperatorCharacter, .DotOperatorCharacter:
-                if isSeparator(follow, isPrev: false) {
-                    if headSeparated {
-                        return .BinaryOperator(v)
+                return kind
+            case let .ReservedOperator(cc):
+                switch cc {
+                case .LessThan:
+                    switch kind {
+                    case .PrefixOperator:
+                        return .PrefixLessThan
+                    default:
+                        return kind
                     }
-                    return .PostfixOperator(v)
-                } else {
-                    if headSeparated {
-                        return .PrefixOperator(v)
+                case .GraterThan:
+                    switch kind {
+                    case .PostfixOperator:
+                        return .PostfixGraterThan
+                    default:
+                        return kind
                     }
-                    return .BinaryOperator(v)
+                case .Ampersand:
+                    switch kind {
+                    case .PrefixOperator:
+                        return .PrefixAmpersand
+                    default:
+                        return kind
+                    }
+                case .Question:
+                    switch kind {
+                    case .PrefixOperator:
+                        return .PrefixQuestion
+                    case .BinaryOperator:
+                        return .BinaryQuestion
+                    case .PostfixOperator:
+                        return .PostfixQuestion
+                    default:
+                        assert(false,
+                               "[System Error] Unimplemented operator type found.")
+                    }
+                case .Exclamation:
+                    switch kind {
+                    case .PostfixOperator:
+                        return .PostfixExclamation
+                    default:
+                        return kind
+                    }
+                default:
+                    assert(false,
+                           "[System Error] Unimplemented reserved operator found.")
                 }
             default:
                 break
@@ -315,13 +375,30 @@ class OperatorComposer : TokenComposer {
         return nil
     }
 
+    private func createKind(#prev: CharacterClass, value: String,
+                            follow: CharacterClass) -> TokenKind {
+        var headSeparated = isSeparator(prev, isPrev: true)
+        var tailSeparated = isSeparator(follow, isPrev: false)
+        if headSeparated {
+            if tailSeparated {
+                return .BinaryOperator(value)
+            }
+            return .PrefixOperator(value)
+        } else {
+            if tailSeparated {
+                return .PostfixOperator(value)
+            }
+            return .BinaryOperator(value)
+        }
+    }
+
     private func isSeparator(cc: CharacterClass, isPrev: Bool) -> Bool {
         switch cc {
         case .EndOfFile, .LineFeed, .Semicolon, .Space:
             return true
-        case .LeftParenthesis, .LeftBrace, .LeftBracket:
+        case .BlockCommentTail, .LeftParenthesis, .LeftBrace, .LeftBracket:
             return isPrev
-        case .RightParenthesis, .RightBrace, .RightBracket:
+        case .BlockCommentHead, .RightParenthesis, .RightBrace, .RightBracket:
             return !isPrev
         default:
             return false
