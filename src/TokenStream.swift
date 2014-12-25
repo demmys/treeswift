@@ -660,7 +660,10 @@ class TokenStream : TokenPeeper {
                 composer: OperatorComposer(prev: ctx.prev),
                 isEndOfToken: { (follow) in
                     switch follow {
-                    case .OperatorHead, .OperatorFollow:
+                    case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
+                         .Ampersand, .Question, .Exclamation,
+                         .AssignmentOperator, .Arrow,
+                         .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
                         return false
                     case .DotOperatorHead, .Dot:
                         switch head {

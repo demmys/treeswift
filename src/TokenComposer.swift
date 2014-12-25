@@ -294,7 +294,9 @@ class OperatorComposer : TokenComposer {
             }
         case .OperatorCharacter:
             switch cc {
-            case .OperatorHead, .OperatorFollow:
+            case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
+                 .Ampersand, .Question, .Exclamation, .AssignmentOperator, .Arrow,
+                 .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
                 value!.append(c)
                 return true
             default:
@@ -303,7 +305,10 @@ class OperatorComposer : TokenComposer {
             }
         case .DotOperatorCharacter:
             switch cc {
-            case .OperatorHead, .OperatorFollow, .DotOperatorHead, .Dot:
+            case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
+                 .Ampersand, .Question, .Exclamation, .AssignmentOperator, .Arrow,
+                 .LineCommentHead, .BlockCommentHead, .BlockCommentTail,
+                 .DotOperatorHead, .Dot:
                 value!.append(c)
                 return true
             default:
