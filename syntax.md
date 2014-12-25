@@ -282,6 +282,9 @@ wildcard-expression -> Underscore
 
 ```
 literal -> IntegerLiteral
+         | True
+         | False
+         | Nil
 ```
 
 
@@ -363,6 +366,8 @@ Do -> 'do'
 
 Else -> 'else'
 
+False -> 'false'
+
 For -> 'for'
 
 Func -> 'func'
@@ -383,6 +388,8 @@ Left -> 'left'
 
 None -> 'none'
 
+Nil -> 'nil'
+
 Operator -> 'operator'
 
 Prefix -> 'prefix'
@@ -396,6 +403,8 @@ Return -> 'return'
 Var -> 'var'
 
 Right -> 'right'
+
+True -> 'true'
 
 Typealias -> 'typealias'
 

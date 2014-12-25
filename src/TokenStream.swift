@@ -36,9 +36,10 @@ enum TokenKind {
     case BinaryOperator(String), PrefixOperator(String), PostfixOperator(String)
     case Identifier(IdentifierKind)
     case IntegerLiteral(Int)
-    case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix, In
-    case Inout, Is, Let, Left, None, Operator, Prefix, Postfix, Precedence
-    case Return, Var, Right, Typealias, While
+    case BooleanLiteral(Bool)
+    case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
+    case In, Inout, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
+    case Precedence, Return, Var, Right, Typealias, While
 }
 
 func ==(a: TokenKind, b: TokenKind) -> Bool {
@@ -242,6 +243,20 @@ func ==(a: TokenKind, b: TokenKind) -> Bool {
     case .AssignmentOperator:
         switch b {
         case .AssignmentOperator:
+            return true
+        default:
+            return false
+        }
+    case .BooleanLiteral:
+        switch b {
+        case .BooleanLiteral:
+            return true
+        default:
+            return false
+        }
+    case .Nil:
+        switch b {
+        case .Nil:
             return true
         default:
             return false
@@ -740,6 +755,7 @@ class TokenStream : TokenPeeper {
                 reservedWords = [WordLiteralComposer("else", .Else)]
             case "f":
                 reservedWords = [
+                    WordLiteralComposer("false", .BooleanLiteral(false)),
                     WordLiteralComposer("for", .For),
                     WordLiteralComposer("func", .Func)
                 ]
@@ -757,7 +773,10 @@ class TokenStream : TokenPeeper {
                     WordLiteralComposer("let", .Let)
                 ]
             case "n":
-                reservedWords = [WordLiteralComposer("none", .None)]
+                reservedWords = [
+                    WordLiteralComposer("nil", .Nil),
+                    WordLiteralComposer("none", .None)
+                ]
             case "o":
                 reservedWords = [WordLiteralComposer("operator", .Operator)]
             case "p":
@@ -772,7 +791,10 @@ class TokenStream : TokenPeeper {
                     WordLiteralComposer("right", .Right)
                 ]
             case "t":
-                reservedWords = [WordLiteralComposer("typealias", .Typealias)]
+                reservedWords = [
+                    WordLiteralComposer("true", .BooleanLiteral(true)),
+                    WordLiteralComposer("typealias", .Typealias)
+                ]
             case "v":
                 reservedWords = [WordLiteralComposer("var", .Var)]
             case "w":

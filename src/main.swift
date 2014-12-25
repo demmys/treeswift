@@ -75,6 +75,8 @@ func lex(file: File) {
                 }
             case let .IntegerLiteral(x):
                 println("IntegerLiteral: \(x)")
+            case let .BooleanLiteral(x):
+                println("BooleanLiteral: \(x)")
             case .AssignmentOperator:
                 println("=")
             case let .BinaryOperator(x):
@@ -83,6 +85,8 @@ func lex(file: File) {
                 println("PrefixOperator: \(x)")
             case let .PostfixOperator(x):
                 println("PostfixOperator: \(x)")
+            case .Nil:
+                println("nil")
             case .For:
                 println("for")
             case .While:
