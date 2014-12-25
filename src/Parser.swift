@@ -96,7 +96,7 @@ class NonTerminalSymbol : Symbol {
 class LiteralSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
-            TerminalSymbol(kinds: [.IntegerLiteral(0)], errorGenerator: {
+            TerminalSymbol(kinds: [.IntegerLiteral(0, decimalDigit: false)], errorGenerator: {
                 [(.ExpectedIntegerLiteral, $0)]
             })
         ]})

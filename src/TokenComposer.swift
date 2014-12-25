@@ -207,7 +207,12 @@ class IntegerLiteralComposer : TokenComposer {
 
     func compose(follow: CharacterClass) -> TokenKind? {
         if let v = value {
-            return .IntegerLiteral(v)
+            switch state {
+            case .DecimalDigit:
+                return .IntegerLiteral(v, decimalDigit: true)
+            default:
+                return .IntegerLiteral(v, decimalDigit: false)
+            }
         }
         return nil
     }

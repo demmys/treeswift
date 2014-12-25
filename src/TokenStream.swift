@@ -35,7 +35,7 @@ enum TokenKind {
     case PostfixExclamation
     case BinaryOperator(String), PrefixOperator(String), PostfixOperator(String)
     case Identifier(IdentifierKind)
-    case IntegerLiteral(Int)
+    case IntegerLiteral(Int, decimalDigit: Bool)
     case BooleanLiteral(Bool)
     case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
     case In, Inout, Is, Let, Left, Nil, None, Operator, Prefix, Postfix

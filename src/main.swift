@@ -73,8 +73,8 @@ func lex(file: File) {
                 case let .ImplicitParameter(x):
                     println("ImplicitParameter: $\(x)")
                 }
-            case let .IntegerLiteral(x):
-                println("IntegerLiteral: \(x)")
+            case let .IntegerLiteral(x, d):
+                println("IntegerLiteral: \(x) (decimalDigit: \(d))")
             case let .BooleanLiteral(x):
                 println("BooleanLiteral: \(x)")
             case .AssignmentOperator:
