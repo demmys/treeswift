@@ -46,402 +46,288 @@ func ==(a: TokenKind, b: TokenKind) -> Bool {
     switch a {
     case .Error:
         switch b {
-        case .Error:
-            return true
-        default:
-            return false
+        case .Error: return true
+        default: return false
         }
     case .LineFeed:
         switch b {
-        case .LineFeed:
-            return true
-        default:
-            return false
+        case .LineFeed: return true
+        default: return false
         }
     case .Semicolon:
         switch b {
-        case .Semicolon:
-            return true
-        default:
-            return false
+        case .Semicolon: return true
+        default: return false
         }
     case .Colon:
         switch b {
-        case .Colon:
-            return true
-        default:
-            return false
+        case .Colon: return true
+        default: return false
         }
     case .Comma:
         switch b {
-        case .Comma:
-            return true
-        default:
-            return false
+        case .Comma: return true
+        default: return false
         }
     case .Arrow:
         switch b {
-        case .Arrow:
-            return true
-        default:
-            return false
+        case .Arrow: return true
+        default: return false
         }
     case .Hash:
         switch b {
-        case .Hash:
-            return true
-        default:
-            return false
+        case .Hash: return true
+        default: return false
         }
     case .Underscore:
         switch b {
-        case .Underscore:
-            return true
-        default:
-            return false
+        case .Underscore: return true
+        default: return false
         }
     case .PrefixLessThan:
         switch b {
-        case .PrefixLessThan:
-            return true
-        default:
-            return false
+        case .PrefixLessThan: return true
+        default: return false
         }
     case .PostfixGraterThan:
         switch b {
-        case .PostfixGraterThan:
-            return true
-        default:
-            return false
+        case .PostfixGraterThan: return true
+        default: return false
         }
     case .PrefixAmpersand:
         switch b {
-        case .PrefixAmpersand:
-            return true
-        default:
-            return false
+        case .PrefixAmpersand: return true
+        default: return false
         }
     case .PrefixQuestion:
         switch b {
-        case .PrefixQuestion:
-            return true
-        default:
-            return false
+        case .PrefixQuestion: return true
+        default: return false
         }
     case .BinaryQuestion:
         switch b {
-        case .BinaryQuestion:
-            return true
-        default:
-            return false
+        case .BinaryQuestion: return true
+        default: return false
         }
     case .PostfixQuestion:
         switch b {
-        case .PostfixQuestion:
-            return true
-        default:
-            return false
+        case .PostfixQuestion: return true
+        default: return false
         }
     case .PostfixExclamation:
         switch b {
-        case .PostfixExclamation:
-            return true
-        default:
-            return false
+        case .PostfixExclamation: return true
+        default: return false
         }
     case .Dot:
         switch b {
-        case .Dot:
-            return true
-        default:
-            return false
+        case .Dot: return true
+        default: return false
         }
     case .EndOfFile:
         switch b {
-        case .EndOfFile:
-            return true
-        default:
-            return false
+        case .EndOfFile: return true
+        default: return false
         }
     case .LeftParenthesis:
         switch b {
-        case .LeftParenthesis:
-            return true
-        default:
-            return false
+        case .LeftParenthesis: return true
+        default: return false
         }
     case .RightParenthesis:
         switch b {
-        case .RightParenthesis:
-            return true
-        default:
-            return false
+        case .RightParenthesis: return true
+        default: return false
         }
     case .LeftBrace:
         switch b {
-        case .LeftBrace:
-            return true
-        default:
-            return false
+        case .LeftBrace: return true
+        default: return false
         }
     case .RightBrace:
         switch b {
-        case .RightBrace:
-            return true
-        default:
-            return false
+        case .RightBrace: return true
+        default: return false
         }
     case .LeftBracket:
         switch b {
-        case .LeftBracket:
-            return true
-        default:
-            return false
+        case .LeftBracket: return true
+        default: return false
         }
     case .RightBracket:
         switch b {
-        case .RightBracket:
-            return true
-        default:
-            return false
+        case .RightBracket: return true
+        default: return false
         }
     case .Identifier:
         switch b {
-        case .Identifier:
-            return true
-        default:
-            return false
+        case .Identifier: return true
+        default: return false
         }
     case .IntegerLiteral:
         switch b {
-        case .IntegerLiteral:
-            return true
-        default:
-            return false
+        case .IntegerLiteral: return true
+        default: return false
         }
     case .BinaryOperator:
         switch b {
-        case .BinaryOperator:
-            return true
-        default:
-            return false
+        case .BinaryOperator: return true
+        default: return false
         }
     case .PrefixOperator:
         switch b {
-        case .PrefixOperator:
-            return true
-        default:
-            return false
+        case .PrefixOperator: return true
+        default: return false
         }
     case .PostfixOperator:
         switch b {
-        case .PostfixOperator:
-            return true
-        default:
-            return false
+        case .PostfixOperator: return true
+        default: return false
         }
     case .AssignmentOperator:
         switch b {
-        case .AssignmentOperator:
-            return true
-        default:
-            return false
+        case .AssignmentOperator: return true
+        default: return false
         }
     case .BooleanLiteral:
         switch b {
-        case .BooleanLiteral:
-            return true
-        default:
-            return false
+        case .BooleanLiteral: return true
+        default: return false
         }
     case .Nil:
         switch b {
-        case .Nil:
-            return true
-        default:
-            return false
+        case .Nil: return true
+        default: return false
         }
     case .For:
         switch b {
-        case .For:
-            return true
-        default:
-            return false
+        case .For: return true
+        default: return false
         }
     case .While:
         switch b {
-        case .While:
-            return true
-        default:
-            return false
+        case .While: return true
+        default: return false
         }
     case .Do:
         switch b {
-        case .Do:
-            return true
-        default:
-            return false
+        case .Do: return true
+        default: return false
         }
     case .If:
         switch b {
-        case .If:
-            return true
-        default:
-            return false
+        case .If: return true
+        default: return false
         }
     case .Else:
         switch b {
-        case .Else:
-            return true
-        default:
-            return false
+        case .Else: return true
+        default: return false
         }
     case .Break:
         switch b {
-        case .Break:
-            return true
-        default:
-            return false
+        case .Break: return true
+        default: return false
         }
     case .Continue:
         switch b {
-        case .Continue:
-            return true
-        default:
-            return false
+        case .Continue: return true
+        default: return false
         }
     case .Return:
         switch b {
-        case .Return:
-            return true
-        default:
-            return false
+        case .Return: return true
+        default: return false
         }
     case .Let:
         switch b {
-        case .Let:
-            return true
-        default:
-            return false
+        case .Let: return true
+        default: return false
         }
     case .Var:
         switch b {
-        case .Var:
-            return true
-        default:
-            return false
+        case .Var: return true
+        default: return false
         }
     case .Func:
         switch b {
-        case .Func:
-            return true
-        default:
-            return false
+        case .Func: return true
+        default: return false
         }
     case .Inout:
         switch b {
-        case .Inout:
-            return true
-        default:
-            return false
+        case .Inout: return true
+        default: return false
         }
     case .Prefix:
         switch b {
-        case .Prefix:
-            return true
-        default:
-            return false
+        case .Prefix: return true
+        default: return false
         }
     case .Postfix:
         switch b {
-        case .Postfix:
-            return true
-        default:
-            return false
+        case .Postfix: return true
+        default: return false
         }
     case .Infix:
         switch b {
-        case .Infix:
-            return true
-        default:
-            return false
+        case .Infix: return true
+        default: return false
         }
     case .Operator:
         switch b {
-        case .Operator:
-            return true
-        default:
-            return false
+        case .Operator: return true
+        default: return false
         }
     case .Precedence:
         switch b {
-        case .Precedence:
-            return true
-        default:
-            return false
+        case .Precedence: return true
+        default: return false
         }
     case .Associativity:
         switch b {
-        case .Associativity:
-            return true
-        default:
-            return false
+        case .Associativity: return true
+        default: return false
         }
     case .Left:
         switch b {
-        case .Left:
-            return true
-        default:
-            return false
+        case .Left: return true
+        default: return false
         }
     case .Right:
         switch b {
-        case .Right:
-            return true
-        default:
-            return false
+        case .Right: return true
+        default: return false
         }
     case .None:
         switch b {
-        case .None:
-            return true
-        default:
-            return false
+        case .None: return true
+        default: return false
         }
     case .Is:
         switch b {
-        case .Is:
-            return true
-        default:
-            return false
+        case .Is: return true
+        default: return false
         }
     case .As:
         switch b {
-        case .As:
-            return true
-        default:
-            return false
+        case .As: return true
+        default: return false
         }
     case .In:
         switch b {
-        case .In:
-            return true
-        default:
-            return false
+        case .In: return true
+        default: return false
         }
     case .Let:
         switch b {
-        case .Let:
-            return true
-        default:
-            return false
+        case .Let: return true
+        default: return false
         }
     case .Typealias:
         switch b {
-        case .Typealias:
-            return true
-        default:
-            return false
+        case .Typealias: return true
+        default: return false
         }
     }
 }
