@@ -16,7 +16,7 @@ enum TokenKind : Equatable {
     case PrefixAmpersand
     case PrefixQuestion, BinaryQuestion, PostfixQuestion
     case PostfixExclamation
-    case BinaryOperator(String), PrefixOperator(String), PostfixOperator(String)
+    case PrefixOperator(String), BinaryOperator(String), PostfixOperator(String)
     case Identifier(IdentifierKind)
     case IntegerLiteral(Int, decimalDigit: Bool)
     case BooleanLiteral(Bool)
@@ -147,14 +147,14 @@ func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         case .PostfixExclamation: return true
         default: return false
         }
-    case .BinaryOperator:
-        switch rhs {
-        case .BinaryOperator: return true
-        default: return false
-        }
     case .PrefixOperator:
         switch rhs {
         case .PrefixOperator: return true
+        default: return false
+        }
+    case .BinaryOperator:
+        switch rhs {
+        case .BinaryOperator: return true
         default: return false
         }
     case .PostfixOperator:

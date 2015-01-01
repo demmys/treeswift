@@ -41,7 +41,10 @@ class TokenStream : TokenPeeper {
     private struct Context {
         var cs: CharacterStream
         var source: String? = nil
+        // set `CharacterClass.LineFeed` to `prev`
+        // in order to remove linefeed in the head of file
         var prev: CharacterClass = .LineFeed
+        var exprev: CharacterClass = .LineFeed
 
         var lineNo: Int { get { return cs.lineNo } }
         var charNo: Int { get { return cs.charNo } }
@@ -57,6 +60,7 @@ class TokenStream : TokenPeeper {
 
         mutating func consume(consumed: CharacterClass? = nil, n: Int = 1) {
             if let cc = consumed {
+                exprev = prev
                 prev = cc
             }
             for var i = 0; i < n; ++i {
@@ -114,8 +118,15 @@ class TokenStream : TokenPeeper {
         case .EndOfFile:
             return produce(.EndOfFile)
         case .LineFeed:
-            if ctx.prev == .LineFeed {
-                // remove duplicated line feed
+            switch ctx.prev {
+            case .Space:
+                // ignore line composed by space or block comment only
+                if ctx.exprev == .LineFeed {
+                    fallthrough
+                }
+            case .LineFeed:
+                // remove duplicated line feed (includes current one)
+                ctx.consume()
                 while true {
                     let cc = classify()
                     if cc == .LineFeed {
@@ -125,21 +136,27 @@ class TokenStream : TokenPeeper {
                         return load(classified: cc)
                     }
                 }
+            default:
+                break
+            }
+            ctx.consume(consumed: head)
+            return produce(.LineFeed)
+        case .Space:
+            if ctx.prev == .Space {
+                // remove duplicated space (includes current one)
+                ctx.consume()
+                while true {
+                    let cc = classify()
+                    if cc == .Space {
+                        ctx.consume()
+                    } else {
+                        ctx.reset()
+                        return load(classified: cc)
+                    }
+                }
             } else {
                 ctx.consume(consumed: head)
-                return produce(.LineFeed)
-            }
-        case .Space:
-            ctx.consume(consumed: head)
-            // remove duplicated space
-            while true {
-                let cc = classify()
-                if cc == .Space {
-                    ctx.consume()
-                } else {
-                    ctx.reset()
-                    return load(classified: cc)
-                }
+                return load()
             }
         case .Semicolon:
             ctx.consume(consumed: head)
@@ -191,6 +208,9 @@ class TokenStream : TokenPeeper {
                 case .LineFeed, .EndOfFile:
                     // a comment produces nothing
                     ctx.reset()
+                    // duplicated linefeed will be ignored
+                    // because of the ignoring operation in
+                    // linefeed lexical analyzation
                     return load(classified: cc)
                 default:
                     // ignore comment characters
@@ -207,7 +227,13 @@ class TokenStream : TokenPeeper {
                     ctx.consume(n: 2)
                     ++depth
                 case .BlockCommentTail:
-                    ctx.consume(consumed: .BlockCommentTail, n: 2)
+                    if ctx.prev != .Space {
+                        // consume like a scape
+                        ctx.consume(consumed: .Space, n: 2)
+                    } else {
+                        // avoid duplicated space consumption
+                        ctx.consume(n: 2)
+                    }
                     --depth
                 case .EndOfFile:
                     info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
