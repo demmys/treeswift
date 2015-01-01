@@ -229,22 +229,18 @@ prefix-expression -> PrefixOperator? postfix-expression
                    | in-out-expression
 in-out-expression -> Ampersand Identifier
 
-postfix-expression      -> postfix-expression-head postfix-expression-tail?
-postfix-expression-head -> primary-expression
-                         | function-call-expression
-                         | explicit-member-expression
-                         | subscript-expression
-postfix-expression-tail -> PostfixOperator postfix-expression-tail?
-
-// TODO remove left recursion
-function-call-expression -> postfix-expression parenthesized-expression
-                          | postfix-expression parenthesized-expression? trailing-closure
-trailing-closure         -> closure-expression
-
-explicit-member-expression -> postfix-expression Dot DecimalDigits
-                            | postfix-expression Dot Identifier
-
-subscript-expression -> postfix-expression LeftBracket expression-list RightBracket
+postfix-expression           -> primary-expression postfix-expression-tail?
+postfix-expression-tail      -> postfix-expression-tail-head postfix-expression-tail?
+postfix-expression-tail-head -> PostfixOperator
+                             // function-call-expression
+                              | parenthesized-expression
+                              | parenthesized-expression? trailing-closure
+                             // explicit-member-expression
+                              | Dot DecimalDigits
+                              | Dot Identifier
+                             // subscript-expression
+                              | LeftBracket expression-list RightBracket
+trailing-closure             -> closure-expression
 
 primary-expression -> identifier
                     | literal-expression
