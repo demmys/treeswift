@@ -11,23 +11,6 @@ private let prefixOperator = TokenKind.PrefixOperator("")
 private let postfixOperator = TokenKind.PostfixOperator("")
 private let binaryOperator = TokenKind.BinaryOperator("")
 
-private func equalDFA(tp: TokenPeeper,
-                      target: TokenKind,
-                      index: Int = 0,
-                      skipLineFeed: Bool = true) -> Bool {
-    switch tp.look(index).kind {
-    case target:
-        return true
-    case .LineFeed:
-        if skipLineFeed && tp.look(index + 1).kind == target {
-            return true
-        }
-    default:
-        return false
-    }
-    return false
-}
-
 private func findDFA(tp: TokenPeeper,
                      rules: [(TokenKind, Void -> [Symbol]?)],
                      startIndex: Int = 0) -> [Symbol]? {
@@ -75,7 +58,7 @@ class TerminalSymbol : Symbol {
     }
 
     func parse(input: TokenStream) -> ParseResult {
-        var inputToken = input.look()
+        var inputToken = input.look(0, skipLineFeed: false)
         switch inputToken.kind {
         case let .Error(e):
             return .Failure([(e, inputToken.info)])
@@ -371,7 +354,7 @@ class TupleTypeBodySymbol : NonTerminalSymbol {
 class TupleTypeSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in 
-            if equalDFA(tp, .RightParenthesis, index: 1) {
+            if tp.look(1).kind == .RightParenthesis {
                 return [
                     TerminalSymbol([.LeftParenthesis]),
                     TerminalSymbol([.RightParenthesis],
@@ -484,7 +467,7 @@ class TuplePatternElementListSymbol : NonTerminalSymbol {
 class TuplePatternSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in 
-            if equalDFA(tp, .RightParenthesis, index: 1) {
+            if tp.look(1).kind == .RightParenthesis {
                 return [
                     TerminalSymbol([.LeftParenthesis]),
                     TerminalSymbol([.RightParenthesis],
@@ -792,7 +775,7 @@ class ParameterListSymbol : NonTerminalSymbol {
 class ParameterClauseSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in
-            if equalDFA(tp, .RightParenthesis, index: 1) {
+            if tp.look(1).kind == .RightParenthesis {
                 return [
                     TerminalSymbol([.LeftParenthesis]),
                     TerminalSymbol([.RightParenthesis],
@@ -1043,7 +1026,7 @@ class ForConditionSymbol : NonTerminalSymbol {
             var i = 0
             var rule: [Symbol] = []
             // optional for-init
-            if equalDFA(tp, .Semicolon) {
+            if tp.look().kind == .Semicolon {
                 i = 1
             } else {
                 rule.append(ForInitSymbol())
@@ -1059,7 +1042,7 @@ class ForConditionSymbol : NonTerminalSymbol {
                 errorGenerator: { [(.ExpectedSemicolon, $0)] }
             ))
             // optional discriminate expression
-            if equalDFA(tp, .Semicolon, index: i) {
+            if tp.look(i).kind == .Semicolon {
                 ++i
             } else {
                 rule.append(ExpressionSymbol())
@@ -1075,7 +1058,7 @@ class ForConditionSymbol : NonTerminalSymbol {
                 errorGenerator: { [(.ExpectedSemicolon, $0)] }
             ))
             // optional post loop expression
-            if !equalDFA(tp, .LeftBrace, index: i) {
+            if tp.look(i).kind != .LeftBrace {
                 rule.append(ExpressionSymbol())
             }
             return rule
@@ -1098,7 +1081,7 @@ class ForInStatementSymbol : NonTerminalSymbol {
 class ForStatementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in
-            if equalDFA(tp, .LeftParenthesis, index: 1) {
+            if tp.look(1).kind == .LeftParenthesis {
                 return [
                     TerminalSymbol([.For]),
                     TerminalSymbol([.LeftParenthesis]),
@@ -1181,9 +1164,9 @@ class ElseClauseSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
             if tp.look().kind == .Else {
-                if equalDFA(tp, .If, index: 1) {
+                if tp.look(1).kind == .If {
                     return [TerminalSymbol([.Else]), CodeBlockSymbol()]
-                } else if equalDFA(tp, .LeftBrace, index: 1) {
+                } else if tp.look(1).kind == .LeftBrace {
                     return [TerminalSymbol([.Else]), IfStatementSymbol()]
                 }
             }
@@ -1307,7 +1290,7 @@ class StatementSymbol : NonTerminalSymbol {
             case .If:
                 return [BranchStatementSymbol(), term]
             case .Identifier:
-                if equalDFA(tp, .Colon, index: 1) {
+                if tp.look(1).kind == .Colon {
                     return [LabeledStatementSymbol(), term]
                 }
                 return [ExpressionSymbol(), term]
@@ -1323,7 +1306,7 @@ class StatementSymbol : NonTerminalSymbol {
 class StatementsSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in 
-            switch tp.look().kind {
+            switch tp.look(0, skipLineFeed: false).kind {
             case .EndOfFile, .LineFeed, .Semicolon,
                  .Colon, .Comma, .Arrow, .Hash, .Dot,
                  .AssignmentOperator,

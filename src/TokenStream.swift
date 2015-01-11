@@ -35,6 +35,7 @@ struct Token {
 protocol TokenPeeper {
     func look() -> Token
     func look(Int) -> Token
+    func look(Int, skipLineFeed: Bool) -> Token
 }
 
 class TokenStream : TokenPeeper {
@@ -93,12 +94,19 @@ class TokenStream : TokenPeeper {
         return look(0)
     }
     func look(ahead: Int) -> Token {
+        return look(ahead, skipLineFeed: true)
+    }
+    func look(ahead: Int, skipLineFeed: Bool) -> Token {
         if index + ahead >= queue.count {
             for var i = queue.count - 1; i < index + ahead; ++i {
                 queue.append(load())
             }
         }
-        return queue[index + ahead]
+        var top = queue[index + ahead]
+        if skipLineFeed && top.kind == .LineFeed {
+            return look(ahead + 1, skipLineFeed: false)
+        }
+        return top
     }
 
     func next(n: Int = 1) {
