@@ -18,7 +18,7 @@ func parse(file: File) {
 func lex(file: File) {
     if let stream = TokenStream(file) {
         var endOfFile = false
-        for var t = stream.look(); !endOfFile; stream.next(), t = stream.look() {
+        for var t = stream.look(0, skipLineFeed: false); !endOfFile; stream.next(), t = stream.look(0, skipLineFeed: false) {
             switch t.kind {
             case .LineFeed:
                 println("LineFeed")
@@ -151,7 +151,7 @@ if Process.arguments.count < 2 {
 } else {
     let file = File(name: Process.arguments[1], mode: "r")
     if let f = file {
-        lex(f);
+        parse(f);
     } else {
         ErrorMessage.FileNotFound.print(Process.arguments[0])
     }

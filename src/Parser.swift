@@ -50,12 +50,16 @@ class TerminalSymbol : Symbol {
     private let kinds: [TokenKind]
     private var errorGenerator: (SourceInfo -> [Error])?
     private var isOptional: Bool
+    private var skipLineFeed: Bool
 
-    init(_ kinds: [TokenKind], errorGenerator: (SourceInfo -> [Error])? = nil,
-         isOptional: Bool = false) {
+    init(_ kinds: [TokenKind],
+         errorGenerator: (SourceInfo -> [Error])? = nil,
+         isOptional: Bool = false,
+         skipLineFeed: Bool = true) {
         self.kinds = kinds
         self.errorGenerator = errorGenerator
         self.isOptional = isOptional
+        self.skipLineFeed = skipLineFeed
     }
 
     func parse(input: TokenStream) -> ParseResult {
@@ -67,9 +71,15 @@ class TerminalSymbol : Symbol {
             for kind in kinds {
                 if kind == .LineFeed {
                     input.next()
+                    if let s = inputToken.info.source {
+                        println("\(s)")
+                    }
                     return .Success
-                } else if kind == input.look(1).kind {
+                } else if self.skipLineFeed && kind == input.look(1).kind {
                     input.next(n: 1)
+                    if let s = inputToken.info.source {
+                        println("\(s)")
+                    }
                     return .Success
                 }
             }
@@ -77,11 +87,15 @@ class TerminalSymbol : Symbol {
             for kind in kinds {
                 if inputToken.kind == kind {
                     input.next()
+                    if let s = inputToken.info.source {
+                        println("\(s)")
+                    }
                     return .Success
                 }
             }
         }
         if isOptional {
+            println("\t(optional)")
             return .Success
         }
 
@@ -106,6 +120,7 @@ class NonTerminalSymbol : Symbol {
     }
 
     func parse(input: TokenStream) -> ParseResult {
+        println("\(reflect(self).summary)")
         switch input.look().kind {
         case let .Error(e):
             return .Failure([(e, input.look().info)])
@@ -128,6 +143,7 @@ class NonTerminalSymbol : Symbol {
                 return .Success
             }
         } else if isOptional {
+            println("\t(optional)")
             return .Success
         }
         return .Failure([(.UnexpectedSymbol, input.look().info)])
@@ -166,7 +182,7 @@ class WildcardExpressionSymbol : NonTerminalSymbol {
 class ExpressionElementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in
-            if tp.look().kind != identifier {
+            if tp.look(1).kind != .Colon {
                 return [ExpressionSymbol()]
             }
             return [
@@ -195,7 +211,7 @@ class ExpressionElementListTailSymbol : NonTerminalSymbol {
 class ExpressionElementListSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
-            if tp.look(1).kind == .RightBrace {
+            if tp.look().kind == .RightParenthesis {
                 return nil
             }
             return [
@@ -209,10 +225,10 @@ class ExpressionElementListSymbol : NonTerminalSymbol {
 class ParenthesizedExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
-            TerminalSymbol([.LeftBrace]),
+            TerminalSymbol([.LeftParenthesis]),
             ExpressionElementListSymbol(isOptional: true),
-            TerminalSymbol([.RightBrace],
-                           errorGenerator: { [(.ExpectedRightBrace, $0)] })
+            TerminalSymbol([.RightParenthesis],
+                           errorGenerator: { [(.ExpectedRightParenthesis, $0)] })
         ]})
     }
 }
@@ -446,13 +462,13 @@ class PostfixExpressionTailSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
             var rule: [Symbol] = []
-            switch tp.look().kind {
+            switch tp.look(0, skipLineFeed: false).kind {
             case .PostfixOperator:
                 rule.append(TerminalSymbol(
                     [postfixOperator],
                     errorGenerator: { [(.ExpectedPostfixOperator, $0)] }
                 ))
-            case .LeftParenthesis, .LeftBrace:
+            case .LeftParenthesis/*, .LeftBrace*/:
                 rule.append(FunctionCallExpressionSymbol())
             case .Dot:
                 rule.append(ExplicitMemberExpressionSymbol())
@@ -481,7 +497,8 @@ class InOutExpression : NonTerminalSymbol {
         super.init({ tp in [
             TerminalSymbol([.PrefixAmpersand]),
             TerminalSymbol([identifier],
-                           errorGenerator: { [(.ExpectedIdentifier, $0)] })
+                           errorGenerator: { [(.ExpectedIdentifier, $0)] },
+                           skipLineFeed: false)
         ]})
     }
 }
@@ -729,8 +746,13 @@ class TypeIdentifierSymbol : NonTerminalSymbol {
 }
 
 class TypeAnnotationSymbol : NonTerminalSymbol {
-    init() {
-        super.init({ tp in [TerminalSymbol([.Colon]), TypeSymbol()] })
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind != .Colon {
+                return nil
+            }
+            return [TerminalSymbol([.Colon]), TypeSymbol()]
+        }, isOptional: isOptional)
     }
 }
 
@@ -872,13 +894,22 @@ class PatternSymbol : NonTerminalSymbol {
         super.init({ tp in
             switch tp.look().kind {
             case .Underscore:
-                return [WildcardPatternSymbol()]
+                return [
+                    WildcardPatternSymbol(),
+                    TypeAnnotationSymbol(isOptional: true)
+                ]
             case .Identifier:
-                return [IdentifierPatternSymbol()]
+                return [
+                    IdentifierPatternSymbol(),
+                    TypeAnnotationSymbol(isOptional: true)
+                ]
             case .Var, .Let:
                 return [ValueBindingPatternSymbol()]
             case .LeftParenthesis:
-                return [TuplePatternSymbol()]
+                return [
+                    TuplePatternSymbol(),
+                    TypeAnnotationSymbol(isOptional: true)
+                ]
             case .Is:
                 return [TypeCastingPatternSymbol()]
             default:
@@ -1050,9 +1081,15 @@ class LocalParameterNameSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in
             if tp.look().kind == .Underscore {
-                return [TerminalSymbol([.Underscore])]
+                return [TerminalSymbol(
+                    [.Underscore],
+                    errorGenerator: { [(.ExpectedUnderscore, $0)] }
+                )]
             }
-            return [TerminalSymbol([identifier])]
+            return [TerminalSymbol(
+                [identifier],
+                errorGenerator: { [(.ExpectedIdentifier, $0)] }
+            )]
         })
     }
 }
@@ -1062,9 +1099,21 @@ class ExternalParameterNameSymbol : NonTerminalSymbol {
         super.init({ tp in
             switch tp.look().kind {
             case .Identifier:
-                return [TerminalSymbol([identifier])]
+                if tp.look(1).kind == .Colon {
+                    return nil
+                }
+                return [TerminalSymbol(
+                    [identifier],
+                    errorGenerator: { [(.ExpectedIdentifier, $0)] }
+                )]
             case .Underscore:
-                return [TerminalSymbol([.Underscore])]
+                if tp.look(1).kind == .Colon {
+                    return nil
+                }
+                return [TerminalSymbol(
+                    [.Underscore],
+                    errorGenerator: { [(.ExpectedUnderscore, $0)] }
+                )]
             default:
                 return nil
             }
@@ -1115,15 +1164,19 @@ class ParameterClauseSymbol : NonTerminalSymbol {
             if tp.look(1).kind == .RightParenthesis {
                 return [
                     TerminalSymbol([.LeftParenthesis]),
-                    TerminalSymbol([.RightParenthesis],
-                        errorGenerator: { [(.ExpectedRightParenthesis, $0)] })
+                    TerminalSymbol(
+                        [.RightParenthesis],
+                        errorGenerator: { [(.ExpectedRightParenthesis, $0)] }
+                    )
                 ]
             }
             return [
                 TerminalSymbol([.LeftParenthesis]),
                 ParameterListSymbol(),
-                TerminalSymbol([.RightParenthesis],
-                    errorGenerator: { [(.ExpectedRightParenthesis, $0)] })
+                TerminalSymbol(
+                    [.RightParenthesis],
+                    errorGenerator: { [(.ExpectedRightParenthesis, $0)] }
+                )
             ]
         })
     }
@@ -1587,10 +1640,17 @@ class ContinueStatementSymbol : NonTerminalSymbol {
 
 class ReturnStatementSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [
-            TerminalSymbol([.Return]),
-            LabelNameSymbol(isOptional: true)
-        ]})
+        super.init({ tp in
+            switch tp.look(1).kind {
+            case .LineFeed, .Semicolon, .EndOfFile:
+                return [TerminalSymbol([.Return])]
+            default:
+                return [
+                    TerminalSymbol([.Return]),
+                    ExpressionSymbol()
+                ]
+            }
+        })
     }
 }
 
@@ -1619,7 +1679,9 @@ class StatementSymbol : NonTerminalSymbol {
         let term = TerminalSymbol([.LineFeed, .Semicolon, .EndOfFile],
                                   errorGenerator: { [(.ExpectedEndOfStatement, $0)] })
         super.init({ tp in
-            switch tp.look().kind {
+            switch tp.look(0, skipLineFeed: false).kind {
+            case .LineFeed:
+                return [TerminalSymbol([.LineFeed])]
             case .Let, .Var, .Typealias, .Func, .Prefix, .Infix, .Postfix:
                 return [DeclarationSymbol(), term]
             case .For, .While, .Do:
@@ -1643,9 +1705,9 @@ class StatementSymbol : NonTerminalSymbol {
 class StatementsSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in 
-            switch tp.look(0, skipLineFeed: false).kind {
-            case .EndOfFile, .LineFeed, .Semicolon,
-                 .Colon, .Comma, .Arrow, .Hash, .Dot,
+            switch tp.look().kind {
+            case .EndOfFile, .Semicolon, .Colon,
+                 .Comma, .Arrow, .Hash, .Dot,
                  .AssignmentOperator,
                  .RightParenthesis, .RightBrace, .RightBracket,
                  .PostfixGraterThan, .BinaryQuestion, .PostfixQuestion,

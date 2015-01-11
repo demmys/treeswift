@@ -39,6 +39,7 @@ enum ErrorMessage: String {
     case ExpectedRightBracket = "Expected right bracket"
     case ExpectedColon = "Expected colon"
     case ExpectedSemicolon = "Expected semicolon"
+    case ExpectedUnderscore = "Expected underscore"
     case ExpectedOperator = "Expected the word operator"
     case ExpectedIn = "Expected the word in"
     case ExpectedWhile = "Expected the word while"

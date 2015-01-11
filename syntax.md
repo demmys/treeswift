@@ -73,7 +73,8 @@ break-statement -> Break label-name?
 
 continue-statement -> Continue label-name?
 
-return-statement -> Return expression?
+return-statement -> Return
+                  | Return expression
 ```
 
 ### Decralations
@@ -237,7 +238,7 @@ postfix-expression-tail    -> PostfixOperator postfix-expression-tail?
                             | explicit-member-expression postfix-expression-tail?
                             | subscript-expression postfix-expression-tail?
 function-call-expression   -> parenthesized-expression trailing-closure?
-                            | trailing-closure
+                            /* | trailing-closure */
 explicit-member-expression -> Dot DecimalDigits
                             | Dot Identifier
 subscript-expression       -> LeftBracket expression-list RightBracket
