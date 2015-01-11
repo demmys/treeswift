@@ -126,8 +126,7 @@ parameter-clause        -> LeftParenthesis RightParenthesis
                          | Leftparenthesis parameter-list RightParenthesis
 parameter-list          -> parameter parameter-list-tail?
 parameter-list-tail     -> Comma parameter-list
-parameter               -> Inout? (Let | Var)? Hash? external-parameter-name local-parameter-name type-annotation default-argument-clause?
-                        -> Inout? (Let | Var)? Hash? local-parameter-name type-annotation default-argument-clause?
+parameter               -> Inout? (Let | Var)? Hash? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
 external-parameter-name -> Identifier | Underscore
 local-parameter-name    -> Identifier | Underscore
 default-argument-clause -> Assignmentoperator expression
@@ -176,7 +175,7 @@ tuple-pattern-element           -> pattern
 
 type-casting-pattern -> is-pattern /* | as-pattern */
 is-pattern           -> Is type
-// as-pattern           -> pattern As type
+as-pattern           -> pattern As type
 
 expression-pattern -> expression
 ```
@@ -222,28 +221,26 @@ binary-expression  -> BinaryOperator prefix-expression
                     | conditional-operator prefix-expression
                     | type-casting-operator
 
-conditional-operator -> Question expression Colon
+conditional-operator -> BinaryQuestion expression Colon
 
 type-casting-operator -> Is type
                        | As type
-                       | As Question type
+                       | As BinaryQuestion type
 
 prefix-expression -> PrefixOperator? postfix-expression
                    | in-out-expression
 in-out-expression -> Ampersand Identifier
 
-postfix-expression           -> primary-expression postfix-expression-tail?
-postfix-expression-tail      -> postfix-expression-tail-head postfix-expression-tail?
-postfix-expression-tail-head -> PostfixOperator
-                             // function-call-expression
-                              | parenthesized-expression
-                              | parenthesized-expression? trailing-closure
-                             // explicit-member-expression
-                              | Dot DecimalDigits
-                              | Dot Identifier
-                             // subscript-expression
-                              | LeftBracket expression-list RightBracket
-trailing-closure             -> closure-expression
+postfix-expression         -> primary-expression postfix-expression-tail?
+postfix-expression-tail    -> PostfixOperator postfix-expression-tail?
+                            | function-call-expression postfix-expression-tail?
+                            | explicit-member-expression postfix-expression-tail?
+                            | subscript-expression postfix-expression-tail?
+function-call-expression   -> parenthesized-expression trailing-closure?
+                            | trailing-closure
+explicit-member-expression -> Dot DecimalDigits
+                            | Dot Identifier
+subscript-expression       -> LeftBracket expression-list RightBracket
 
 primary-expression -> identifier
                     | literal-expression
@@ -254,24 +251,26 @@ primary-expression -> identifier
 literal-expression -> literal
                     | array-literal
 
-array-literal       -> LeftBracket array-literal-items? RightBracket
-array-literal-items -> array-literal-item Comma?
-                     | array-literal-item Comma array-literal-items
-array-literal-item  -> expression
+array-literal            -> LeftBracket array-literal-items? RightBracket
+array-literal-items      -> array-literal-item array-literal-items-tail? Comma?
+array-literal-items-tail -> Comma array-literal-items
+array-literal-item       -> expression
 
-closure-expression -> capture-list? LeftBracket closure-signature? statements RightBracket
-closure-signature  -> capture-list? parameter-clause function-result? In
-                    | identifier-list function-result? In
-                    | capture-list In
-identifier-list    -> Identifier
-                    | Identifier Comma identifier-list
-capture-list       -> LeftBracket expression RightBracket
+trailing-closure     -> closure-expression
+closure-expression   -> LeftBrace closure-signature? statements RightBrace
+closure-signature    -> capture-list closure-type-clause? In
+                      | closure-type-clause In
+                      | identifier-list function-result? In
+closure-type-clause  -> parameter-clause function-result?
+identifier-list      -> Identifier identifier-list-tail?
+identifier-list-tail  | Comma identifier-list
+capture-list         -> LeftBracket expression RightBracket
 
-parenthesized-expression -> LeftParenthesis expression-element-list? RightParenthesis
-expression-element-list  -> expression-element
-                          | expression-element Comma expression-element-list
-expression-element       -> expression
-                          | Identifier Colon expression
+parenthesized-expression      -> LeftParenthesis expression-element-list? RightParenthesis
+expression-element-list       -> expression-element expression-element-list-tail?
+expression-element-list-tail  -> Comma expression-element-list
+expression-element            -> expression
+                               | Identifier Colon expression
 
 wildcard-expression -> Underscore
 
@@ -332,7 +331,9 @@ Underscore -> '_'
 
 Ampersand -> '&'
 
-Question -> '?'
+PrefixQuestion -> '?'
+BinaryQuestion -> '?'
+PostfixQuestion -> '?'
 
 Dollar -> '$'
 ```

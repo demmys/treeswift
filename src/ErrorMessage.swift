@@ -25,6 +25,7 @@ enum ErrorMessage: String {
     // Syntax errors
     case UnexpectedSymbol = "Unexpected Symbol"
     case ExpectedEndOfFile = "Expected end of file"
+    case ExpectedIdentifier = "Expected identifier"
     case ExpectedIntegerLiteral = "Expected integer literal"
     case ExpectedEndOfStatement = "Expected line feed or semicolon at the end of statement"
     case ExpectedBinaryOperator = "Expected binary operator"

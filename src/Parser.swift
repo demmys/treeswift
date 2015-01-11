@@ -6,7 +6,8 @@ enum ParseResult {
 }
 
 private let identifier = TokenKind.Identifier(.Identifier(""))
-private let integerLiteral = TokenKind.IntegerLiteral(0, decimalDigit: false)
+private let integerLiteral = TokenKind.IntegerLiteral(0, decimalDigits: false)
+private let booleanLiteral = TokenKind.BooleanLiteral(true)
 private let prefixOperator = TokenKind.PrefixOperator("")
 private let postfixOperator = TokenKind.PostfixOperator("")
 private let binaryOperator = TokenKind.BinaryOperator("")
@@ -138,55 +139,330 @@ class NonTerminalSymbol : Symbol {
  */
 class LiteralSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [
-            TerminalSymbol([.IntegerLiteral(0, decimalDigit: false)], errorGenerator: {
-                [(.ExpectedIntegerLiteral, $0)]
-            })
-        ]})
+        super.init({ tp in
+            switch tp.look().kind {
+            case .IntegerLiteral:
+                return [TerminalSymbol([integerLiteral])]
+            case .BooleanLiteral:
+                return [TerminalSymbol([booleanLiteral])]
+            case .Nil:
+                return [TerminalSymbol([.Nil])]
+            default:
+                return nil
+            }
+        })
     }
 }
 
 /*
  * Expressions
  */
+class WildcardExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [TerminalSymbol([.Underscore])] })
+    }
+}
+
+class ExpressionElementSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in
+            if tp.look().kind != identifier {
+                return [ExpressionSymbol()]
+            }
+            return [
+                TerminalSymbol([identifier]),
+                TerminalSymbol([.Colon]),
+                ExpressionSymbol()
+            ]
+        })
+    }
+}
+
+class ExpressionElementListTailSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind != .Comma {
+                return nil
+            }
+            return [
+                TerminalSymbol([.Comma]),
+                ExpressionElementListSymbol()
+            ]
+        }, isOptional: isOptional)
+    }
+}
+
+class ExpressionElementListSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look(1).kind == .RightBrace {
+                return nil
+            }
+            return [
+                ExpressionElementSymbol(),
+                ExpressionElementListTailSymbol(isOptional: true)
+            ]
+        }, isOptional: isOptional)
+    }
+}
+
+class ParenthesizedExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.LeftBrace]),
+            ExpressionElementListSymbol(isOptional: true),
+            TerminalSymbol([.RightBrace],
+                           errorGenerator: { [(.ExpectedRightBrace, $0)] })
+        ]})
+    }
+}
+
+class CaptureListSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.LeftBracket]),
+            ExpressionSymbol(),
+            TerminalSymbol([.RightBracket],
+                           errorGenerator: { [(.ExpectedRightBracket, $0)] })
+        ]})
+    }
+}
+
+class IdentifierListTailSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind != .Comma {
+                return nil
+            }
+            return [
+                TerminalSymbol([.Comma]),
+                IdentifierListSymbol()
+            ]
+        }, isOptional: isOptional)
+    }
+}
+
+class IdentifierListSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([identifier],
+                           errorGenerator: { [(.ExpectedIdentifier, $0)] }),
+            IdentifierListTailSymbol(isOptional: true)
+        ]})
+    }
+}
+
+class ClosureTypeClauseSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind != .LeftParenthesis {
+                return nil
+            }
+            return [
+                ParameterClauseSymbol(),
+                FunctionResultSymbol(isOptional: true),
+                TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
+            ]
+        }, isOptional: isOptional)
+    }
+}
+
+class ClosureSignatureSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            switch tp.look().kind {
+            case .LeftBracket:
+                return [
+                    CaptureListSymbol(),
+                    ClosureTypeClauseSymbol(isOptional: true),
+                    TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
+                ]
+            case .LeftParenthesis:
+                return [
+                    ClosureTypeClauseSymbol(),
+                    TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
+                ]
+            case .Identifier:
+                return [
+                    IdentifierListSymbol(),
+                    FunctionResultSymbol(isOptional: true),
+                    TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
+                ]
+            default:
+                return nil
+            }
+        }, isOptional: isOptional)
+    }
+}
+
+class ClosureExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.LeftBrace]),
+            ClosureSignatureSymbol(isOptional: true),
+            StatementsSymbol(),
+            TerminalSymbol([.RightBrace])
+        ]})
+    }
+}
+
+class TrailingClosureSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind != .LeftBrace {
+                return nil
+            }
+            return [ClosureExpressionSymbol()]
+        }, isOptional: isOptional)
+    }
+}
+
+class ArrayLiteralItemSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [ExpressionSymbol()] })
+    }
+}
+
+class ArrayLiteralItemsTailSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind != .Comma {
+                return nil
+            }
+            return [
+                TerminalSymbol([.Comma]),
+                ArrayLiteralItemsSymbol()
+            ]
+        }, isOptional: isOptional)
+    }
+}
+
+class ArrayLiteralItemsSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind == .RightBracket {
+                return nil
+            }
+            return [
+                ArrayLiteralItemSymbol(),
+                ArrayLiteralItemsTailSymbol(isOptional: true),
+                TerminalSymbol([.Comma], isOptional: true)
+            ]
+        }, isOptional: isOptional)
+    }
+}
+
+class ArrayLiteralSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.LeftBracket]),
+            ArrayLiteralItemsSymbol(isOptional: true),
+            TerminalSymbol([.RightBracket],
+                           errorGenerator: { [(.ExpectedRightBracket, $0)] })
+        ]})
+    }
+}
+
 class LiteralExpressionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [LiteralSymbol()] })
+        super.init({ tp in
+            if tp.look().kind == .LeftBracket {
+                return [ArrayLiteralSymbol()]
+            }
+            return [LiteralSymbol()]
+        })
     }
 }
 
 class PrimaryExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in
-            if tp.look().kind != .LeftParenthesis {
+            switch tp.look().kind {
+            case .Identifier:
+                return [TerminalSymbol([identifier])]
+            case .IntegerLiteral, .BooleanLiteral, .Nil, .LeftBracket:
                 return [LiteralExpressionSymbol()]
+            case .LeftBrace:
+                return [ClosureExpressionSymbol()]
+            case .LeftParenthesis:
+                return [ParenthesizedExpressionSymbol()]
+            case .Underscore:
+                return [WildcardExpressionSymbol()]
+            default:
+                return nil
             }
-            return [
-                TerminalSymbol([.LeftParenthesis], errorGenerator: {
-                    [(.ExpectedLeftParenthesis, $0)]
-                }),
-                ExpressionSymbol(),
-                TerminalSymbol([.RightParenthesis], errorGenerator: {
-                    [(.ExpectedRightParenthesis, $0)]
-                })
-            ]
         })
     }
 }
 
+class SubscriptMemberExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.LeftBracket]),
+            ExpressionListSymbol(),
+            TerminalSymbol([.RightBracket],
+                           errorGenerator: { [(.ExpectedRightBracket, $0)] })
+        ]})
+    }
+}
+
+class ExplicitMemberExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in
+            switch tp.look(1).kind {
+            case let .IntegerLiteral(value, decimalDigits: true):
+                return [
+                    TerminalSymbol([.Dot]),
+                    TerminalSymbol([integerLiteral])
+                ]
+            case .Identifier:
+                return [
+                    TerminalSymbol([.Dot]),
+                    TerminalSymbol([identifier])
+                ]
+            default:
+                // TODO create proper error
+                return nil
+            }
+        })
+    }
+}
+
+class FunctionCallExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in
+            if tp.look().kind == .LeftParenthesis {
+                return [
+                    ParenthesizedExpressionSymbol(),
+                    TrailingClosureSymbol(isOptional: true)
+                ]
+            }
+            return [TrailingClosureSymbol()]
+        })
+    }
+}
 
 class PostfixExpressionTailSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
-            if tp.look().kind != .PostfixOperator("") {
+            var rule: [Symbol] = []
+            switch tp.look().kind {
+            case .PostfixOperator:
+                rule.append(TerminalSymbol(
+                    [postfixOperator],
+                    errorGenerator: { [(.ExpectedPostfixOperator, $0)] }
+                ))
+            case .LeftParenthesis, .LeftBrace:
+                rule.append(FunctionCallExpressionSymbol())
+            case .Dot:
+                rule.append(ExplicitMemberExpressionSymbol())
+            case .LeftBracket:
+                rule.append(SubscriptMemberExpressionSymbol())
+            default:
                 return nil
             }
-            return [
-                TerminalSymbol([.PostfixOperator("")], errorGenerator: {
-                    [(.ExpectedPostfixOperator, $0)]
-                }),
-                PostfixExpressionTailSymbol(isOptional: true)
-            ]
+            rule.append(PostfixExpressionTailSymbol(isOptional: true))
+            return rule
         }, isOptional: isOptional)
     }
 }
@@ -200,38 +476,109 @@ class PostfixExpressionSymbol : NonTerminalSymbol {
     }
 }
 
-class PrefixExpressionSymbol : NonTerminalSymbol {
+class InOutExpression : NonTerminalSymbol {
     init() {
         super.init({ tp in [
-            TerminalSymbol([.PrefixOperator("")], errorGenerator: {
-                [(.ExpectedPrefixOperator, $0)]
-            }, isOptional: true),
-            PostfixExpressionSymbol()
+            TerminalSymbol([.PrefixAmpersand]),
+            TerminalSymbol([identifier],
+                           errorGenerator: { [(.ExpectedIdentifier, $0)] })
+        ]})
+    }
+}
+
+class PrefixExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in
+            if tp.look().kind == .PrefixAmpersand {
+                return [InOutExpression()]
+            }
+            return [
+                TerminalSymbol([prefixOperator], isOptional: true),
+                PostfixExpressionSymbol()
+            ]
+        })
+    }
+}
+
+class TypeCastingOperatorSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in
+            switch tp.look().kind {
+            case .Is:
+                return [
+                    TerminalSymbol([.Is]),
+                    TypeSymbol()
+                ]
+            case .As:
+                if tp.look(1).kind == .BinaryQuestion {
+                    return [
+                        TerminalSymbol([.As]),
+                        TerminalSymbol([.BinaryQuestion]),
+                        TypeSymbol()
+                    ]
+                }
+                return [
+                    TerminalSymbol([.As]),
+                    TypeSymbol()
+                ]
+            default:
+                return nil
+            }
+        })
+    }
+}
+
+class ConditionalOperatorSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.BinaryQuestion]),
+            ExpressionSymbol(),
+            TerminalSymbol([.Colon], errorGenerator: { [(.ExpectedColon, $0)] })
         ]})
     }
 }
 
 class BinaryExpressionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [
-            TerminalSymbol([.BinaryOperator("")], errorGenerator: {
-                [(.ExpectedBinaryOperator, $0)]
-            }),
-            PrefixExpressionSymbol()
-        ]})
+        super.init({ tp in
+            switch tp.look().kind {
+            case .BinaryOperator:
+                return [
+                    TerminalSymbol([binaryOperator]),
+                    PrefixExpressionSymbol()
+                ]
+            case .AssignmentOperator:
+                return [
+                    TerminalSymbol([.AssignmentOperator]),
+                    PrefixExpressionSymbol()
+                ]
+            case .BinaryQuestion:
+                return [
+                    ConditionalOperatorSymbol(),
+                    PrefixExpressionSymbol()
+                ]
+            case .Is, .As:
+                return [TypeCastingOperatorSymbol()]
+            default:
+                return nil
+            }
+        })
     }
 }
 
 class BinaryExpressionsSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
-            if tp.look().kind != .BinaryOperator("") {
+            switch tp.look().kind {
+            case .BinaryOperator, .AssignmentOperator,
+                 .BinaryQuestion, .Is, .As:
+                return [
+                    BinaryExpressionSymbol(),
+                    BinaryExpressionsSymbol(isOptional: true)
+                ]
+            default:
                 return nil
             }
-            return [
-                BinaryExpressionSymbol(),
-                BinaryExpressionsSymbol(isOptional: true)
-            ]
         }, isOptional: isOptional)
     }
 }
@@ -261,7 +608,10 @@ class ExpressionListTailSymbol : NonTerminalSymbol {
 
 class ExpressionListSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [ExpressionSymbol(), ExpressionListTailSymbol(isOptional: true)] })
+        super.init({ tp in [
+            ExpressionSymbol(),
+            ExpressionListTailSymbol(isOptional: true)
+        ]})
     }
 }
 
@@ -312,16 +662,11 @@ class TupleTypeElementTailSymbol : NonTerminalSymbol {
 
 class TupleTypeElementSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in
-            if tp.look().kind == .Inout {
-                return [
-                    TerminalSymbol([.Inout]),
-                    TypeSymbol(),
-                    TupleTypeElementTailSymbol(isOptional: true)
-                ]
-            }
-            return nil
-        })
+        super.init({ tp in [
+            TerminalSymbol([.Inout], isOptional: true),
+            TypeSymbol(),
+            TupleTypeElementTailSymbol(isOptional: true)
+        ]})
     }
 }
 
@@ -415,6 +760,16 @@ class ExpressionPatternSymbol : NonTerminalSymbol {
     }
 }
 
+class AsPatternSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            PatternSymbol(),
+            TerminalSymbol([.As]),
+            TypeSymbol()
+        ]})
+    }
+}
+
 class IsPatternSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
@@ -426,7 +781,12 @@ class IsPatternSymbol : NonTerminalSymbol {
 
 class TypeCastingPatternSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [IsPatternSymbol()] })
+        super.init({ tp in
+            if tp.look().kind == .Is{
+                return [IsPatternSymbol()]
+            }
+            return [AsPatternSymbol()]
+        })
     }
 }
 
@@ -663,7 +1023,7 @@ class OperatorDeclarationSymbol : NonTerminalSymbol {
             case .Infix:
                 return [InfixOperatorDeclarationSymbol()]
             default:
-                assert(false, "Unexpected syntax error")
+                return nil
             }
         })
     }
@@ -714,38 +1074,15 @@ class ExternalParameterNameSymbol : NonTerminalSymbol {
 
 class ParameterSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in
-            var rule: [Symbol] = []
-            var i = 0
-            if tp.look().kind == .Inout {
-                rule.append(TerminalSymbol([.Inout]))
-                ++i
-            }
-            switch tp.look(i).kind {
-            case .Let:
-                rule.append(TerminalSymbol([.Let]))
-                ++i
-            case .Var:
-                rule.append(TerminalSymbol([.Var]))
-                ++i
-            default:
-                break
-            }
-            if tp.look(i).kind == .Hash {
-                rule.append(TerminalSymbol([.Hash]))
-                ++i
-            }
-            switch tp.look(i + 1).kind {
-            case .Identifier, .Underscore:
-                rule.append(ExternalParameterNameSymbol(isOptional: true))
-                fallthrough
-            default:
-                rule.append(LocalParameterNameSymbol())
-            }
-            rule.append(TypeAnnotationSymbol())
-            rule.append(DefaultArgumentClauseSymbol(isOptional: true))
-            return rule
-        })
+        super.init({ tp in [
+            TerminalSymbol([.Inout], isOptional: true),
+            TerminalSymbol([.Let, .Var], isOptional: true),
+            TerminalSymbol([.Hash], isOptional: true),
+            ExternalParameterNameSymbol(isOptional: true),
+            LocalParameterNameSymbol(),
+            TypeAnnotationSymbol(),
+            DefaultArgumentClauseSymbol(isOptional: true)
+        ]})
     }
 }
 
@@ -1151,7 +1488,7 @@ class LoopStatementSymbol : NonTerminalSymbol {
             case .Do:
                 return [DoWhileStatementSymbol()]
             default:
-                assert(false, "Unexpected syntax error")
+                return nil
             }
         })
     }
@@ -1268,7 +1605,7 @@ class ControlTransferStatementSymbol : NonTerminalSymbol {
             case .Return:
                 return [ReturnStatementSymbol()]
             default:
-                assert(false, "Unexpected syntax error")
+                return nil
             }
         })
     }

@@ -209,9 +209,9 @@ class IntegerLiteralComposer : TokenComposer {
         if let v = value {
             switch state {
             case .DecimalDigit:
-                return .IntegerLiteral(v, decimalDigit: true)
+                return .IntegerLiteral(v, decimalDigits: true)
             default:
-                return .IntegerLiteral(v, decimalDigit: false)
+                return .IntegerLiteral(v, decimalDigits: false)
             }
         }
         return nil
