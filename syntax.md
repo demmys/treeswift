@@ -34,10 +34,11 @@ for-condition -> for-init? Semicolon expression? Semicolon expression?
 for-init      -> variable-declaration
                | expression-list
 
-for-in-statement -> For pattern in expression code-block
+for-in-statement -> For pattern In expression code-block
 
 while-statement -> While while-condition code-block
 while-condition -> expression
+                 | declaration
 
 do-while-statement -> Do code-block while while-condition
 ```
@@ -90,13 +91,12 @@ code-block -> LeftBrace statements? RightBrace
 #### Constant declaration, Variable declaration
 
 ```
-constant-declaration -> Let pattern-initializer-list
+constant-declaration -> Let pattern-initializer pattern-initializer-tail?
 
-variable-declaration      -> variable-declaration-head pattern-initializer-list
+variable-declaration      -> variable-declaration-head pattern-initializer pattern-initializer-tail
 variable-declaration-head -> Var
 
-pattern-initializer-list -> pattern-initializer
-                          | pattern-initializer Comma pattern-initializer-list
+pattern-initializer-tail -> Comma pattern-initializer pattern-initializer-tail?
 pattern-initializer      -> pattern initializer?
 initializer              -> AssignmentOperator expression
 ```
@@ -116,7 +116,7 @@ typealias-assignment  -> AssignmentOperator type
 function-declaration -> function-head function-name function-signature function-body
 
 function-head      -> Func
-function-name      -> Identifier | Operator
+function-name      -> Identifier | PrefixOperator | PostfixOperator | BinaryOperator
 function-signature -> parameter-clauses function-result?
 function-result    -> Arrow type
 function-body      -> code-block
@@ -124,9 +124,10 @@ function-body      -> code-block
 parameter-clauses       -> parameter-clause parameter-clauses?
 parameter-clause        -> LeftParenthesis RightParenthesis
                          | Leftparenthesis parameter-list RightParenthesis
-parameter-list          -> parameter
-                         | parameter Comma parameter-list
-parameter               -> Inout? (Let | Var)? Hash? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
+parameter-list          -> parameter parameter-list-tail?
+parameter-list-tail     -> Comma parameter-list
+parameter               -> Inout? (Let | Var)? Hash? external-parameter-name local-parameter-name type-annotation default-argument-clause?
+                        -> Inout? (Let | Var)? Hash? local-parameter-name type-annotation default-argument-clause?
 external-parameter-name -> Identifier | Underscore
 local-parameter-name    -> Identifier | Underscore
 default-argument-clause -> Assignmentoperator expression
@@ -146,9 +147,9 @@ postfix-operator-declaration -> Postfix Operator BinaryOperator LeftBrace RightB
 infix-operator-declaration -> Infix Operator BinaryOperator LeftBrace infix-operator-attributes? RightBrace
 infix-operator-attributes  -> precedence-clause? associativity-clause?
 precedence-clause          -> Precedence precedence-level
-precedence-level           -> DecimalDigits
+precedence-level           -> DecimalDigits(0...255)
 associativity-clause       -> Associativity associativity
-associativity              -> left | right | none
+associativity              -> Left | Right | None
 ```
 
 ### Patterns
@@ -167,14 +168,15 @@ identifier-pattern -> Identifier
 
 value-binding-pattern -> Var pattern | Let pattern
 
-tuple-pattern              -> LeftParenthesis tuple-pattern-element-list? RightParenthesis
-tuple-pattern-element-list -> tuple-pattern-element
-                            | tuple-pattern-element Comma tuple-pattern-element-list
-tuple-pattern-element      -> pattern
+tuple-pattern                   -> LeftParenthesis tuple-pattern-element-list RightParenthesis
+                                 | LeftParenthesis RightParenthesis
+tuple-pattern-element-list      -> tuple-pattern-element tuple-pattern-element-list-tail?
+tuple-pattern-element-list-tail -> Comma tuple-pattern-element-list
+tuple-pattern-element           -> pattern
 
-type-casting-pattern -> is-pattern | as-pattern
+type-casting-pattern -> is-pattern /* | as-pattern */
 is-pattern           -> Is type
-as-pattern           -> pattern As type
+// as-pattern           -> pattern As type
 
 expression-pattern -> expression
 ```
@@ -182,23 +184,24 @@ expression-pattern -> expression
 ### Types
 
 ```
-type-annotation -> Colon type
-
 type -> type-identifier
       | tuple-type
       | function-type
       | array-type
 
+type-annotation -> Colon type
+
 type-identifier -> type-name
 type-name       -> Identifier
 
-tuple-type              -> LeftParenthesis tuple-type-body? RightParenthesis
-tuple-type-body         -> tuple-type-element-list
-tuple-type-element-list -> tuple-type-element
-                         | tuple-type-element Comma tuple-type-element-list
-tuple-type-element      -> Inout? type
-                         | Inout? type element-name type-annotation
-element-name            -> Identifier
+tuple-type                   -> LeftParenthesis tuple-type-body RightParenthesis
+                              | LeftParenthesis Rightparenthesis
+tuple-type-body              -> tuple-type-element-list
+tuple-type-element-list      -> tuple-type-element tuple-type-element-tail?
+tuple-type-element-list-tail -> Comma tuple-type-element-list
+tuple-type-element           -> Inout? type tuple-type-element-tail?
+tuple-type-element-tail      -> element-name type-annotation
+element-name                 -> Identifier
 
 function-type -> type Arrow type
 
@@ -208,8 +211,8 @@ array-type -> LeftBracket type RightBracket
 ### Expressions
 
 ```
-expression-list -> expression
-                 | expression Comma expression-list
+expression-list      -> expression
+expression-list-tail -> Comma expression-list
 
 expression -> prefix-expression binary-expressions?
 

@@ -30,8 +30,17 @@ enum ErrorMessage: String {
     case ExpectedBinaryOperator = "Expected binary operator"
     case ExpectedPrefixOperator = "Expected prefix operator"
     case ExpectedPostfixOperator = "Expected postfix operator"
+    case ExpectedAssignmentOperator = "Expected assignment operator"
     case ExpectedLeftParenthesis = "Expected left parenthesis"
     case ExpectedRightParenthesis = "Expected right parenthesis"
+    case ExpectedRightBrace = "Expected right brace"
+    case ExpectedLeftBrace = "Expected left brace"
+    case ExpectedRightBracket = "Expected right bracket"
+    case ExpectedColon = "Expected colon"
+    case ExpectedSemicolon = "Expected semicolon"
+    case ExpectedOperator = "Expected the word operator"
+    case ExpectedIn = "Expected the word in"
+    case ExpectedWhile = "Expected the word while"
 
     func print(target: String, info: SourceInfo? = nil) {
         var message = "error: \(self.rawValue)"
