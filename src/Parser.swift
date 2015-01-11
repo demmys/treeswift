@@ -1421,7 +1421,7 @@ class ForConditionSymbol : NonTerminalSymbol {
             } else {
                 rule.append(ForInitSymbol())
                 if let j = countDFA(tp, .Semicolon) {
-                    i = j
+                    i = j + 1
                 } else {
                     return nil
                 }
@@ -1437,7 +1437,7 @@ class ForConditionSymbol : NonTerminalSymbol {
             } else {
                 rule.append(ExpressionSymbol())
                 if let j = countDFA(tp, .Semicolon, startIndex: i) {
-                    i = j
+                    i = j + 1
                 } else {
                     return nil
                 }
