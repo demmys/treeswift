@@ -5,4 +5,4 @@ func fibonacci(n: Int) -> Int {
     return fibonacci(n - 2) + fibonacci(n - 1)
 }
 
-println(fibonacci(10))
+println(fibonacci(45))
