@@ -1,3 +1,5 @@
+import Util
+
 enum CharacterClass {
     case EndOfFile, LineFeed, Space
     case Semicolon, Colon, Comma, Arrow, Hash, Underscore, Dot
@@ -15,16 +17,9 @@ enum CharacterClass {
     case Others
 }
 
-struct Token {
-    var kind: TokenKind
-    var info: SourceInfo
-
-    var source: String? {
-        get { return info.source }
-        set(src) { info.source = src }
-    }
-    var lineNo: Int { get { return info.lineNo } }
-    var charNo: Int { get { return info.charNo } }
+public struct Token {
+    public var kind: TokenKind
+    public var info: SourceInfo
 
     init(kind: TokenKind, info: SourceInfo) {
         self.kind = kind

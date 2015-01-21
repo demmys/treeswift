@@ -1,10 +1,12 @@
-enum IdentifierKind {
+import Util
+
+public enum IdentifierKind {
     case Identifier(String)
     case QuotedIdentifier(String)
     case ImplicitParameter(Int)
 }
 
-enum TokenKind : Equatable {
+public enum TokenKind : Equatable {
     case Error(ErrorMessage)
     case EndOfFile, LineFeed
     case Semicolon, Colon, Comma, Arrow, Hash, Underscore, Dot
@@ -25,7 +27,7 @@ enum TokenKind : Equatable {
     case Precedence, Return, Var, Right, Typealias, While
 }
 
-func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
+public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
     switch lhs {
     case .Error:
         switch rhs {

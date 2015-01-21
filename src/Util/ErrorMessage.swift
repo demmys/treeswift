@@ -1,18 +1,18 @@
 import Darwin
 
-struct SourceInfo {
-    var lineNo: Int
-    var charNo: Int
-    var source: String?
+public struct SourceInfo {
+    public var lineNo: Int
+    public var charNo: Int
+    public var source: String?
 
-    init(lineNo: Int, charNo: Int, source: String? = nil) {
+    public init(lineNo: Int, charNo: Int, source: String? = nil) {
         self.lineNo = lineNo
         self.charNo = charNo
         self.source = source
     }
 }
 
-enum ErrorMessage: String {
+public enum ErrorMessage: String {
     // System errors
     case NoInputFile = "No input file"
     case FileNotFound = "File not found"
@@ -44,7 +44,7 @@ enum ErrorMessage: String {
     case ExpectedIn = "Expected the word in"
     case ExpectedWhile = "Expected the word while"
 
-    func print(target: String, info: SourceInfo? = nil) {
+    public func print(target: String, info: SourceInfo? = nil) {
         var message = "error: \(self.rawValue)"
         if let i = info {
             message = "\(target):\(i.lineNo):\(i.charNo) \(message)"

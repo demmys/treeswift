@@ -1,3 +1,5 @@
+import Util
+
 protocol CharacterPeeper {
     func look() -> Character?
     func lookAhead() -> Character?

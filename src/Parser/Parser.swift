@@ -1,7 +1,9 @@
-typealias Error = (ErrorMessage, SourceInfo)
+import Util
 
-enum ParseResult {
-    case Success
+public typealias Error = (ErrorMessage, SourceInfo)
+
+public enum ParseResult {
+    case Success(ASTStructure)
     case Failure([Error])
 }
 
@@ -71,16 +73,23 @@ class TerminalSymbol : Symbol {
             for kind in kinds {
                 if kind == .LineFeed {
                     input.next()
+                    /* */
                     if let s = inputToken.info.source {
                         println("\(s)")
                     }
-                    return .Success
-                } else if self.skipLineFeed && kind == input.look(1).kind {
-                    input.next(n: 1)
-                    if let s = inputToken.info.source {
-                        println("\(s)")
+                    /* */
+                    return .Success(.Terminal(inputToken))
+                } else if self.skipLineFeed {
+                    inputToken = input.look(1)
+                    if kind == inputToken.kind {
+                        input.next(n: 2)
+                        /* */
+                        if let s = inputToken.info.source {
+                            println("\(s)")
+                        }
+                        /* */
+                        return .Success(.Terminal(inputToken))
                     }
-                    return .Success
                 }
             }
         default:
@@ -90,13 +99,13 @@ class TerminalSymbol : Symbol {
                     if let s = inputToken.info.source {
                         println("\(s)")
                     }
-                    return .Success
+                    return .Success(.Terminal(inputToken))
                 }
             }
         }
         if isOptional {
             println("\t(optional)")
-            return .Success
+            return .Success(.Optional)
         }
 
         if let eg = errorGenerator {
@@ -112,7 +121,9 @@ class NonTerminalSymbol : Symbol {
 
     /*
      * `ruleArbiter` is DFA, which decides the rule that will be applied or
-     * returns nil when there's no rule to apply to
+     * returns nil when there's no rule to apply to.
+     * `astGenerator` generates Abstruct Syntax Tree of this symbol from
+     * parse result.
      */
     init(_ ruleArbiter: TokenPeeper -> [Symbol]?, isOptional: Bool = false) {
         self.ruleArbiter = ruleArbiter
@@ -128,11 +139,12 @@ class NonTerminalSymbol : Symbol {
             break
         }
         var errors: [Error] = []
+        var asts: [ASTStructure] = []
         if let elements = ruleArbiter(input) {
             for element in elements {
                 switch element.parse(input) {
-                case .Success:
-                    break
+                case let .Success(ast):
+                    asts.append(ast)
                 case let .Failure(es):
                     errors.extend(es)
                 }
@@ -140,13 +152,17 @@ class NonTerminalSymbol : Symbol {
             if errors.count > 0 {
                 return .Failure(errors)
             } else {
-                return .Success
+                return .Success(generateAST(asts))
             }
         } else if isOptional {
             println("\t(optional)")
-            return .Success
+            return .Success(.Optional)
         }
         return .Failure([(.UnexpectedSymbol, input.look().info)])
+    }
+
+    func generateAST([ASTStructure]) -> ASTStructure {
+        return .Unimplemented
     }
 }
 
@@ -1732,15 +1748,16 @@ class TopLevelDeclarationSymbol : NonTerminalSymbol {
 public class Parser {
     private let ts: TokenStream!
 
-    init?(_ file: File) {
+    public init?(_ file: File) {
         ts = TokenStream(file)
         if ts == nil {
             return nil
         }
     }
 
-    func parse() -> ParseResult {
+    public func parse() -> ParseResult {
         var errors: [Error] = []
+        var asts: [ASTStructure] = []
         let stack: [Symbol] = [
             TopLevelDeclarationSymbol(),
             TerminalSymbol([.EndOfFile],
@@ -1748,8 +1765,8 @@ public class Parser {
         ]
         for element in stack {
             switch element.parse(ts) {
-            case .Success:
-                break
+            case let .Success(ast):
+                asts.append(ast);
             case let .Failure(es):
                 errors.extend(es)
             }
@@ -1757,7 +1774,7 @@ public class Parser {
         if errors.count > 0 {
             return .Failure(errors)
         } else {
-            return .Success
+            return .Success(asts[0])
         }
     }
 }
