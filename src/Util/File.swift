@@ -5,6 +5,18 @@ private typealias FilePointer = UnsafeMutablePointer<FILE>
 public class File {
     private let fp: FilePointer
     public let name: String
+    public var baseName: String {
+        get {
+            var i = name.endIndex
+            while i != name.startIndex {
+                i = i.predecessor()
+                if name[i] == "." {
+                    return name[name.startIndex..<i]
+                }
+            }
+            return name
+        }
+    }
 
     public init?(name: String, mode: String) {
         self.name = name
