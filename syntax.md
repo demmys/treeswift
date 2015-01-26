@@ -77,7 +77,7 @@ return-statement -> Return
                   | Return expression
 ```
 
-### Decralations
+### Declarations
 
 ```
 declaration -> constant-declaration
