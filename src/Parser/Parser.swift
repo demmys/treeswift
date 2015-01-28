@@ -1,9 +1,7 @@
 import Util
 
-public typealias Error = (ErrorMessage, SourceInfo)
-
 public enum ParseResult {
-    case Success(ASTStructure)
+    case Success(ASTParts)
     case Failure([Error])
 }
 
@@ -24,20 +22,6 @@ private func findDFA(tp: TokenPeeper,
             if kind == target {
                 return generator()
             }
-        }
-        kind = tp.look(++i).kind
-    }
-    return nil
-}
-
-private func countDFA(tp: TokenPeeper,
-                      target: TokenKind,
-                      startIndex: Int = 0) -> Int? {
-    var i = startIndex
-    var kind = tp.look(i).kind
-    while kind != .EndOfFile {
-        if kind == target {
-            return i
         }
         kind = tp.look(++i).kind
     }
@@ -78,7 +62,7 @@ class TerminalSymbol : Symbol {
                         println("\(s)")
                     }
                     /* */
-                    return .Success(.Terminal(inputToken))
+                    return .Success(Terminal(token: inputToken))
                 } else if self.skipLineFeed {
                     inputToken = input.look(1)
                     if kind == inputToken.kind {
@@ -88,7 +72,7 @@ class TerminalSymbol : Symbol {
                             println("\(s)")
                         }
                         /* */
-                        return .Success(.Terminal(inputToken))
+                        return .Success(Terminal(token: inputToken))
                     }
                 }
             }
@@ -99,13 +83,13 @@ class TerminalSymbol : Symbol {
                     if let s = inputToken.info.source {
                         println("\(s)")
                     }
-                    return .Success(.Terminal(inputToken))
+                    return .Success(Terminal(token: inputToken))
                 }
             }
         }
         if isOptional {
             println("\t(optional)")
-            return .Success(.Optional)
+            return .Success(OptionalParts())
         }
 
         if let eg = errorGenerator {
@@ -139,7 +123,7 @@ class NonTerminalSymbol : Symbol {
             break
         }
         var errors: [Error] = []
-        var asts: [ASTStructure] = []
+        var asts: [ASTParts] = []
         if let elements = ruleArbiter(input) {
             for element in elements {
                 switch element.parse(input) {
@@ -152,17 +136,18 @@ class NonTerminalSymbol : Symbol {
             if errors.count > 0 {
                 return .Failure(errors)
             } else {
-                return .Success(generateAST(asts))
+                // return .Success(generateAST(elements, asts))
+                return .Success(OptionalParts())
             }
         } else if isOptional {
             println("\t(optional)")
-            return .Success(.Optional)
+            return .Success(OptionalParts())
         }
         return .Failure([(.UnexpectedSymbol, input.look().info)])
     }
 
-    func generateAST([ASTStructure]) -> ASTStructure {
-        return .Unimplemented
+    func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unimplemented ASTParts generation")
     }
 }
 
@@ -184,6 +169,10 @@ class LiteralSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
+    }
 }
 
 /*
@@ -192,6 +181,10 @@ class LiteralSymbol : NonTerminalSymbol {
 class WildcardExpressionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([.Underscore])] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -208,6 +201,10 @@ class ExpressionElementSymbol : NonTerminalSymbol {
             ]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ExpressionElementListTailSymbol : NonTerminalSymbol {
@@ -221,6 +218,10 @@ class ExpressionElementListTailSymbol : NonTerminalSymbol {
                 ExpressionElementListSymbol()
             ]
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -236,6 +237,10 @@ class ExpressionElementListSymbol : NonTerminalSymbol {
             ]
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ParenthesizedExpressionSymbol : NonTerminalSymbol {
@@ -247,16 +252,56 @@ class ParenthesizedExpressionSymbol : NonTerminalSymbol {
                            errorGenerator: { [(.ExpectedRightParenthesis, $0)] })
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
+}
+
+class CaptureSpecifierSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            switch tp.look().kind {
+            case .Weak:
+                return [TerminalSymbol([.Weak])]
+            case .Unowned:
+                return [TerminalSymbol([.Unowned])]
+            default:
+                return nil
+            }
+        }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class CaptureListSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
+            CaptureSpecifierSymbol(isOptional: true),
+            ExpressionSymbol()
+        ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
+}
+
+class CaptureClauseSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
             TerminalSymbol([.LeftBracket]),
-            ExpressionSymbol(),
+            CaptureListSymbol(),
             TerminalSymbol([.RightBracket],
                            errorGenerator: { [(.ExpectedRightBracket, $0)] })
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -272,6 +317,10 @@ class IdentifierListTailSymbol : NonTerminalSymbol {
             ]
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class IdentifierListSymbol : NonTerminalSymbol {
@@ -282,20 +331,34 @@ class IdentifierListSymbol : NonTerminalSymbol {
             IdentifierListTailSymbol(isOptional: true)
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ClosureTypeClauseSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
-            if tp.look().kind != .LeftParenthesis {
+            switch tp.look().kind {
+            case .LeftParenthesis:
+                return [
+                    ParameterClauseSymbol(),
+                    FunctionResultSymbol(isOptional: true)
+                ]
+            case .Identifier:
+                return [
+                    IdentifierListSymbol(),
+                    FunctionResultSymbol(isOptional: true)
+                ]
+            default:
                 return nil
             }
-            return [
-                ParameterClauseSymbol(),
-                FunctionResultSymbol(isOptional: true),
-                TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
-            ]
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -305,25 +368,23 @@ class ClosureSignatureSymbol : NonTerminalSymbol {
             switch tp.look().kind {
             case .LeftBracket:
                 return [
-                    CaptureListSymbol(),
+                    CaptureClauseSymbol(),
                     ClosureTypeClauseSymbol(isOptional: true),
                     TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
                 ]
-            case .LeftParenthesis:
+            case .LeftParenthesis, .Identifier:
                 return [
                     ClosureTypeClauseSymbol(),
-                    TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
-                ]
-            case .Identifier:
-                return [
-                    IdentifierListSymbol(),
-                    FunctionResultSymbol(isOptional: true),
                     TerminalSymbol([.In], errorGenerator: { [(.ExpectedIn, $0)] })
                 ]
             default:
                 return nil
             }
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -336,6 +397,10 @@ class ClosureExpressionSymbol : NonTerminalSymbol {
             TerminalSymbol([.RightBrace])
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TrailingClosureSymbol : NonTerminalSymbol {
@@ -347,11 +412,19 @@ class TrailingClosureSymbol : NonTerminalSymbol {
             return [ClosureExpressionSymbol()]
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ArrayLiteralItemSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [ExpressionSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -366,6 +439,10 @@ class ArrayLiteralItemsTailSymbol : NonTerminalSymbol {
                 ArrayLiteralItemsSymbol()
             ]
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -382,6 +459,10 @@ class ArrayLiteralItemsSymbol : NonTerminalSymbol {
             ]
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ArrayLiteralSymbol : NonTerminalSymbol {
@@ -393,6 +474,10 @@ class ArrayLiteralSymbol : NonTerminalSymbol {
                            errorGenerator: { [(.ExpectedRightBracket, $0)] })
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class LiteralExpressionSymbol : NonTerminalSymbol {
@@ -403,6 +488,10 @@ class LiteralExpressionSymbol : NonTerminalSymbol {
             }
             return [LiteralSymbol()]
         })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -425,6 +514,10 @@ class PrimaryExpressionSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class SubscriptMemberExpressionSymbol : NonTerminalSymbol {
@@ -435,6 +528,10 @@ class SubscriptMemberExpressionSymbol : NonTerminalSymbol {
             TerminalSymbol([.RightBracket],
                            errorGenerator: { [(.ExpectedRightBracket, $0)] })
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -458,6 +555,10 @@ class ExplicitMemberExpressionSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class FunctionCallExpressionSymbol : NonTerminalSymbol {
@@ -471,6 +572,10 @@ class FunctionCallExpressionSymbol : NonTerminalSymbol {
             }
             return [TrailingClosureSymbol()]
         })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -497,6 +602,10 @@ class PostfixExpressionTailSymbol : NonTerminalSymbol {
             return rule
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class PostfixExpressionSymbol : NonTerminalSymbol {
@@ -506,30 +615,22 @@ class PostfixExpressionSymbol : NonTerminalSymbol {
             PostfixExpressionTailSymbol(isOptional: true)
         ]})
     }
-}
 
-class InOutExpression : NonTerminalSymbol {
-    init() {
-        super.init({ tp in [
-            TerminalSymbol([.PrefixAmpersand]),
-            TerminalSymbol([identifier],
-                           errorGenerator: { [(.ExpectedIdentifier, $0)] },
-                           skipLineFeed: false)
-        ]})
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
 class PrefixExpressionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in
-            if tp.look().kind == .PrefixAmpersand {
-                return [InOutExpression()]
-            }
-            return [
-                TerminalSymbol([prefixOperator], isOptional: true),
-                PostfixExpressionSymbol()
-            ]
-        })
+        super.init({ tp in [
+            TerminalSymbol([prefixOperator], isOptional: true),
+            PostfixExpressionSymbol()
+        ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -559,6 +660,10 @@ class TypeCastingOperatorSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ConditionalOperatorSymbol : NonTerminalSymbol {
@@ -568,6 +673,10 @@ class ConditionalOperatorSymbol : NonTerminalSymbol {
             ExpressionSymbol(),
             TerminalSymbol([.Colon], errorGenerator: { [(.ExpectedColon, $0)] })
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -597,6 +706,10 @@ class BinaryExpressionSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class BinaryExpressionsSymbol : NonTerminalSymbol {
@@ -614,14 +727,44 @@ class BinaryExpressionsSymbol : NonTerminalSymbol {
             }
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
+}
+
+class InOutExpressionSymbol : NonTerminalSymbol {
+    init() {
+        super.init({ tp in [
+            TerminalSymbol([.PrefixAmpersand]),
+            TerminalSymbol([identifier],
+                           errorGenerator: { [(.ExpectedIdentifier, $0)] },
+                           skipLineFeed: false)
+        ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ExpressionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [
-            PrefixExpressionSymbol(),
-            BinaryExpressionsSymbol(isOptional: true)
-        ]})
+        super.init({ tp in 
+            switch tp.look().kind {
+            case .PrefixAmpersand:
+                return [InOutExpressionSymbol()]
+            default:
+                return [
+                    PrefixExpressionSymbol(),
+                    BinaryExpressionsSymbol(isOptional: true)
+                ]
+            }
+        })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -637,6 +780,10 @@ class ExpressionListTailSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ExpressionListSymbol : NonTerminalSymbol {
@@ -645,6 +792,10 @@ class ExpressionListSymbol : NonTerminalSymbol {
             ExpressionSymbol(),
             ExpressionListTailSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -660,6 +811,10 @@ class ArrayTypeSymbol : NonTerminalSymbol {
                            errorGenerator: { [(.ExpectedRightBracket, $0)] })
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class FunctionTypeSymbol : NonTerminalSymbol {
@@ -671,35 +826,50 @@ class FunctionTypeSymbol : NonTerminalSymbol {
             TypeSymbol()
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ElementNameSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([identifier])] })
     }
-}
 
-class TupleTypeElementTailSymbol : NonTerminalSymbol {
-    init(isOptional: Bool = false) {
-        super.init({ tp in
-            if tp.look().kind == identifier {
-                return [
-                    ElementNameSymbol(),
-                    TypeAnnotationSymbol()
-                ]
-            }
-            return nil
-        }, isOptional: isOptional)
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
 class TupleTypeElementSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in [
-            TerminalSymbol([.Inout], isOptional: true),
-            TypeSymbol(),
-            TupleTypeElementTailSymbol(isOptional: true)
-        ]})
+        super.init({ tp in
+            var ahead = tp.look().kind == .Inout ? 1 : 0
+            switch tp.look(ahead).kind {
+            case .Identifier:
+                if tp.look(ahead + 1).kind == .Colon {
+                    return [
+                        TerminalSymbol([.Inout], isOptional: true),
+                        TerminalSymbol(
+                            [identifier],
+                            errorGenerator: { [(.ExpectedIdentifier, $0)] }
+                        ),
+                        TypeAnnotationSymbol()
+                    ]
+                }
+            default:
+                break
+            }
+            return [
+                TerminalSymbol([.Inout], isOptional: true),
+                TypeSymbol()
+            ]
+        })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -712,20 +882,32 @@ class TupleTypeElementListTailSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TupleTypeElementListSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
             TupleTypeElementSymbol(),
-            TupleTypeElementTailSymbol(isOptional: true)
+            TupleTypeElementListTailSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
 class TupleTypeBodySymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TupleTypeElementListSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -735,8 +917,10 @@ class TupleTypeSymbol : NonTerminalSymbol {
             if tp.look(1).kind == .RightParenthesis {
                 return [
                     TerminalSymbol([.LeftParenthesis]),
-                    TerminalSymbol([.RightParenthesis],
-                        errorGenerator: { [(.ExpectedRightParenthesis, $0)] })
+                    TerminalSymbol(
+                        [.RightParenthesis],
+                        errorGenerator: { [(.ExpectedRightParenthesis, $0)] }
+                    )
                 ]
             }
             return [
@@ -747,17 +931,29 @@ class TupleTypeSymbol : NonTerminalSymbol {
             ]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TypeNameSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([identifier])] })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TypeIdentifierSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TypeNameSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -769,6 +965,10 @@ class TypeAnnotationSymbol : NonTerminalSymbol {
             }
             return [TerminalSymbol([.Colon]), TypeSymbol()]
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -787,50 +987,22 @@ class TypeSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 /*
  * Patterns
  */
-class ExpressionPatternSymbol : NonTerminalSymbol {
-    init() {
-        super.init({ tp in [ExpressionSymbol()] })
-    }
-}
-
-class AsPatternSymbol : NonTerminalSymbol {
-    init() {
-        super.init({ tp in [
-            PatternSymbol(),
-            TerminalSymbol([.As]),
-            TypeSymbol()
-        ]})
-    }
-}
-
-class IsPatternSymbol : NonTerminalSymbol {
-    init() {
-        super.init({ tp in [
-            TerminalSymbol([.Is]),
-            TypeSymbol()
-        ]})
-    }
-}
-
-class TypeCastingPatternSymbol : NonTerminalSymbol {
-    init() {
-        super.init({ tp in
-            if tp.look().kind == .Is{
-                return [IsPatternSymbol()]
-            }
-            return [AsPatternSymbol()]
-        })
-    }
-}
-
 class TuplePatternElementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [PatternSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -846,6 +1018,10 @@ class TuplePatternElementListTailSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TuplePatternElementListSymbol : NonTerminalSymbol {
@@ -859,6 +1035,10 @@ class TuplePatternElementListSymbol : NonTerminalSymbol {
             }
             return nil
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -880,6 +1060,10 @@ class TuplePatternSymbol : NonTerminalSymbol {
             ]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ValueBindingPatternSymbol : NonTerminalSymbol {
@@ -891,17 +1075,29 @@ class ValueBindingPatternSymbol : NonTerminalSymbol {
             return [TerminalSymbol([.Let]), PatternSymbol()]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class IdentifierPatternSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([identifier])] })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class WildcardPatternSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([.Underscore])] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -926,12 +1122,14 @@ class PatternSymbol : NonTerminalSymbol {
                     TuplePatternSymbol(),
                     TypeAnnotationSymbol(isOptional: true)
                 ]
-            case .Is:
-                return [TypeCastingPatternSymbol()]
             default:
-                return [ExpressionPatternSymbol()]
+                assert(false, "Unexpected syntax error")
             }
         })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -953,6 +1151,10 @@ class AssociativitySymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class AssociativityClauseSymbol : NonTerminalSymbol {
@@ -963,6 +1165,10 @@ class AssociativityClauseSymbol : NonTerminalSymbol {
             }
             return nil
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -981,6 +1187,10 @@ class PrecedenceLevelSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class PrecedenceClauseSymbol : NonTerminalSymbol {
@@ -991,6 +1201,10 @@ class PrecedenceClauseSymbol : NonTerminalSymbol {
             }
             return nil
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1009,6 +1223,10 @@ class InfixOperatorAttributesSymbol : NonTerminalSymbol {
             }
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class PrefixOperatorDeclarationSymbol : NonTerminalSymbol {
@@ -1024,6 +1242,10 @@ class PrefixOperatorDeclarationSymbol : NonTerminalSymbol {
             TerminalSymbol([.RightBrace], 
                            errorGenerator: { [(.ExpectedRightBrace, $0)] })
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1041,6 +1263,10 @@ class PostfixOperatorDeclarationSymbol : NonTerminalSymbol {
                            errorGenerator: { [(.ExpectedRightBrace, $0)] })
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class InfixOperatorDeclarationSymbol : NonTerminalSymbol {
@@ -1056,6 +1282,10 @@ class InfixOperatorDeclarationSymbol : NonTerminalSymbol {
             TerminalSymbol([.RightBrace],
                            errorGenerator: { [(.ExpectedRightBrace, $0)] })
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1074,6 +1304,10 @@ class OperatorDeclarationSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 /*
@@ -1091,6 +1325,10 @@ class DefaultArgumentClauseSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class LocalParameterNameSymbol : NonTerminalSymbol {
@@ -1107,6 +1345,10 @@ class LocalParameterNameSymbol : NonTerminalSymbol {
                 errorGenerator: { [(.ExpectedIdentifier, $0)] }
             )]
         })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1135,6 +1377,10 @@ class ExternalParameterNameSymbol : NonTerminalSymbol {
             }
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ParameterSymbol : NonTerminalSymbol {
@@ -1148,6 +1394,10 @@ class ParameterSymbol : NonTerminalSymbol {
             TypeAnnotationSymbol(),
             DefaultArgumentClauseSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1163,6 +1413,10 @@ class ParameterListTailSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ParameterListSymbol : NonTerminalSymbol {
@@ -1171,6 +1425,10 @@ class ParameterListSymbol : NonTerminalSymbol {
             ParameterSymbol(),
             ParameterListTailSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1196,6 +1454,10 @@ class ParameterClauseSymbol : NonTerminalSymbol {
             ]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ParameterClausesSymbol : NonTerminalSymbol {
@@ -1210,11 +1472,19 @@ class ParameterClausesSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class FunctionBodySymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [CodeBlockSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1230,6 +1500,10 @@ class FunctionResultSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class FunctionSignatureSymbol : NonTerminalSymbol {
@@ -1238,6 +1512,10 @@ class FunctionSignatureSymbol : NonTerminalSymbol {
             ParameterClausesSymbol(),
             FunctionResultSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1250,11 +1528,19 @@ class FunctionNameSymbol : NonTerminalSymbol {
             return [TerminalSymbol([prefixOperator, postfixOperator, binaryOperator])]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class FunctionHeadSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([.Func])]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1266,6 +1552,10 @@ class FunctionDeclarationSymbol : NonTerminalSymbol {
             FunctionSignatureSymbol(),
             FunctionBodySymbol()
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1280,6 +1570,10 @@ class TypealiasAssignmentSymbol : NonTerminalSymbol {
             TypeSymbol()
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TypealiasNameSymbol : NonTerminalSymbol {
@@ -1289,11 +1583,19 @@ class TypealiasNameSymbol : NonTerminalSymbol {
                            errorGenerator: { [(.ExpectedAssignmentOperator, $0)] }),
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class TypealiasHeadSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([.Typealias]), TypealiasNameSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1303,6 +1605,10 @@ class TypealiasDeclarationSymbol : NonTerminalSymbol {
             TypealiasHeadSymbol(),
             TypealiasAssignmentSymbol()
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1321,6 +1627,10 @@ class InitializerSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class PatternInitializerSymbol : NonTerminalSymbol {
@@ -1329,6 +1639,10 @@ class PatternInitializerSymbol : NonTerminalSymbol {
             PatternSymbol(),
             InitializerSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1345,11 +1659,19 @@ class PatternInitializerTailSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class VariableDeclarationHeadSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [TerminalSymbol([.Var])] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1361,6 +1683,10 @@ class VariableDeclarationSymbol: NonTerminalSymbol {
             PatternInitializerTailSymbol(isOptional: true)
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 class ConstantDeclarationSymbol : NonTerminalSymbol {
@@ -1370,6 +1696,10 @@ class ConstantDeclarationSymbol : NonTerminalSymbol {
             PatternInitializerSymbol(),
             PatternInitializerTailSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1385,6 +1715,10 @@ class CodeBlockSymbol : NonTerminalSymbol {
             TerminalSymbol([.RightBrace],
                            errorGenerator: { [(.ExpectedRightBrace, $0)] })
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
     }
 }
 
@@ -1408,67 +1742,94 @@ class DeclarationSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        assert(false, "Unexpected syntax error")
+    }
 }
 
 /*
  * Loop statement
  */
 class ForInitSymbol : NonTerminalSymbol {
-    init() {
+    init(isOptional: Bool = false) {
         super.init({ tp in
             switch tp.look().kind {
+            case .Semicolon:
+                return nil
             case .Var:
                 return [VariableDeclarationSymbol()]
             default:
                 return [ExpressionListSymbol()]
             }
-        })
+        }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        switch asts[0] {
+        case let i as Declaration:
+            return ForInit.VariableDeclaration(i)
+        case let i as Expressions:
+            return ForInit.Terms(i.value)
+        default:
+            assert(false, "Unexpected syntax error")
+        }
+    }
+}
+
+class ForConfirmationSymbol : NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind == .Semicolon {
+                return nil
+            }
+            return [ExpressionSymbol()]
+        }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
+    }
+}
+
+class ForFinalize: NonTerminalSymbol {
+    init(isOptional: Bool = false) {
+        super.init({ tp in
+            if tp.look().kind == .LeftBrace {
+                return nil
+            }
+            return [ExpressionSymbol()]
+        }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
     }
 }
 
 class ForConditionSymbol : NonTerminalSymbol {
     init() {
-        super.init({ tp in
-            var i = 0
-            var rule: [Symbol] = []
-            // optional for-init
-            if tp.look().kind == .Semicolon {
-                i = 1
-            } else {
-                rule.append(ForInitSymbol())
-                if let j = countDFA(tp, .Semicolon) {
-                    i = j + 1
-                } else {
-                    return nil
-                }
-            }
-            // Semicolon
-            rule.append(TerminalSymbol(
+        super.init({ tp in [
+            ForInitSymbol(isOptional: true),
+            TerminalSymbol(
                 [.Semicolon],
                 errorGenerator: { [(.ExpectedSemicolon, $0)] }
-            ))
-            // optional discriminate expression
-            if tp.look(i).kind == .Semicolon {
-                ++i
-            } else {
-                rule.append(ExpressionSymbol())
-                if let j = countDFA(tp, .Semicolon, startIndex: i) {
-                    i = j + 1
-                } else {
-                    return nil
-                }
-            }
-            // Semicolon
-            rule.append(TerminalSymbol(
+            ),
+            ForConfirmationSymbol(isOptional: true),
+            TerminalSymbol(
                 [.Semicolon],
                 errorGenerator: { [(.ExpectedSemicolon, $0)] }
-            ))
-            // optional post loop expression
-            if tp.look(i).kind != .LeftBrace {
-                rule.append(ExpressionSymbol())
-            }
-            return rule
-        })
+            ),
+            ForFinalize(isOptional: true),
+        ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return ForCondition(
+            initial: asts[0] as? ForInit,
+            condition: asts[2] as? Expression,
+            finalize: asts[4] as? Expression
+        )
     }
 }
 
@@ -1481,6 +1842,15 @@ class ForInStatementSymbol : NonTerminalSymbol {
             ExpressionSymbol(),
             CodeBlockSymbol()
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return Statement.ForIn(
+            asts[1] as Pattern,
+            asts[3] as Expression,
+            (asts[4] as? Statements)?.value,
+            nil
+        )
     }
 }
 
@@ -1504,6 +1874,20 @@ class ForStatementSymbol : NonTerminalSymbol {
             ]
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        var condition = 1
+        var body = 2
+        if asts.count > 3 {
+            condition = 2
+            body = 4
+        }
+        return Statement.For(
+            asts[condition] as ForCondition,
+            (asts[body] as? Statements)?.value,
+            nil
+        )
+    }
 }
 
 class WhileConditionSymbol : NonTerminalSymbol {
@@ -1517,6 +1901,17 @@ class WhileConditionSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        switch asts[0] {
+        case let c as Expression:
+            return WhileCondition.Term(c)
+        case let c as Declaration:
+            return WhileCondition.Definition(c)
+        default:
+            assert(false, "Unexpected syntax error")
+        }
+    }
 }
 
 class DoWhileStatementSymbol : NonTerminalSymbol {
@@ -1528,6 +1923,14 @@ class DoWhileStatementSymbol : NonTerminalSymbol {
             WhileConditionSymbol()
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return Statement.DoWhile(
+            asts[3] as WhileCondition,
+            (asts[1] as? Statements)?.value,
+            nil
+        );
+    }
 }
 
 class WhileStatementSymbol : NonTerminalSymbol {
@@ -1537,6 +1940,14 @@ class WhileStatementSymbol : NonTerminalSymbol {
             WhileConditionSymbol(),
             CodeBlockSymbol()
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return Statement.While(
+            asts[1] as WhileCondition,
+            (asts[2] as? Statements)?.value,
+            nil
+        )
     }
 }
 
@@ -1561,6 +1972,10 @@ class LoopStatementSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
+    }
 }
 
 /*
@@ -1579,11 +1994,22 @@ class ElseClauseSymbol : NonTerminalSymbol {
             return nil
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        if let e = asts[1] as? Statement {
+            return ElseClause.ElseIf(StatementWrapper(e))
+        }
+        return ElseClause.Else((asts[1] as? Statements)?.value)
+    }
 }
 
 class IfConditionSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [ExpressionSymbol()] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return IfCondition.Term(asts[0] as Expression)
     }
 }
 
@@ -1596,11 +2022,24 @@ class IfStatementSymbol : NonTerminalSymbol {
             ElseClauseSymbol(isOptional: true)
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        var cond = asts[1] as IfCondition
+        var body = (asts[2] as? Statements)?.value
+        if let e = asts[3] as? OptionalParts {
+            return Statement.If(cond, body, nil)
+        }
+        return Statement.If(cond, body, asts[3] as? ElseClause)
+    }
 }
 
 class BranchStatementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [ IfStatementSymbol() ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
     }
 }
 
@@ -1610,11 +2049,31 @@ class BranchStatementSymbol : NonTerminalSymbol {
 class LabelNameSymbol : NonTerminalSymbol {
     init(isOptional: Bool = false) {
         super.init({ tp in
-            if tp.look().kind == identifier {
-                return [TerminalSymbol([identifier])]
+            switch tp.look().kind {
+            case let .Identifier(k):
+                switch k {
+                case .Identifier:
+                    fallthrough
+                case .QuotedIdentifier:
+                    return [TerminalSymbol([identifier])]
+                case .ImplicitParameter:
+                    // TODO create proper error
+                    return nil
+                }
+            default:
+                return nil
             }
-            return nil
         }, isOptional: isOptional)
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        let token = (asts[0] as Terminal).token
+        switch token.kind {
+        case let .Identifier(k):
+            return Identifier(value: k)
+        default:
+            assert(false, "Unexpected syntax error")
+        }
     }
 }
 
@@ -1625,11 +2084,31 @@ class StatementLabelSymbol : NonTerminalSymbol {
             TerminalSymbol([.Colon], errorGenerator: { [(.ExpectedColon, $0)] })
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
+    }
 }
 
 class LabeledStatementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [StatementLabelSymbol(), LoopStatementSymbol()] });
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        var l = asts[0] as Identifier
+        switch asts[1] as Statement {
+        case let .For(c, b, _):
+            return Statement.For(c, b, l)
+        case let .ForIn(p, e, s, _):
+            return Statement.ForIn(p, e, s, l)
+        case let .While(c, b, _):
+            return Statement.While(c, b, l)
+        case let .DoWhile(c, b, _):
+            return Statement.DoWhile(c, b, l)
+        default:
+            assert(false, "Unexpected syntax error")
+        }
     }
 }
 
@@ -1643,6 +2122,13 @@ class BreakStatementSymbol : NonTerminalSymbol {
             LabelNameSymbol(isOptional: true)
         ]})
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        if let l = asts[1] as? OptionalParts {
+            return Statement.Break(nil)
+        }
+        return Statement.Break(asts[1] as? Identifier)
+    }
 }
 
 class ContinueStatementSymbol : NonTerminalSymbol {
@@ -1651,6 +2137,13 @@ class ContinueStatementSymbol : NonTerminalSymbol {
             TerminalSymbol([.Continue]),
             LabelNameSymbol(isOptional: true)
         ]})
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        if let l = asts[1] as? OptionalParts {
+            return Statement.Continue(nil)
+        }
+        return Statement.Continue(asts[1] as? Identifier)
     }
 }
 
@@ -1667,6 +2160,13 @@ class ReturnStatementSymbol : NonTerminalSymbol {
                 ]
             }
         })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        if asts.count < 2 {
+            return Statement.Return(nil)
+        }
+        return Statement.Return(asts[1] as? Expression)
     }
 }
 
@@ -1685,6 +2185,10 @@ class ControlTransferStatementSymbol : NonTerminalSymbol {
             }
         })
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        return asts[0]
+    }
 }
 
 /*
@@ -1695,9 +2199,7 @@ class StatementSymbol : NonTerminalSymbol {
         let term = TerminalSymbol([.LineFeed, .Semicolon, .EndOfFile],
                                   errorGenerator: { [(.ExpectedEndOfStatement, $0)] })
         super.init({ tp in
-            switch tp.look(0, skipLineFeed: false).kind {
-            case .LineFeed:
-                return [TerminalSymbol([.LineFeed])]
+            switch tp.look().kind {
             case .Let, .Var, .Typealias, .Func, .Prefix, .Infix, .Postfix:
                 return [DeclarationSymbol(), term]
             case .For, .While, .Do:
@@ -1715,6 +2217,17 @@ class StatementSymbol : NonTerminalSymbol {
                 return [ExpressionSymbol(), term]
             }
         })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        switch asts[0] {
+        case let s as Expression:
+            return Statement.Term(s)
+        case let s as Declaration:
+            return Statement.Definition(s)
+        default:
+            return asts[0]
+        }
     }
 }
 
@@ -1734,6 +2247,16 @@ class StatementsSymbol : NonTerminalSymbol {
             }
         }, isOptional: isOptional)
     }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        var s = asts[0] as Statement
+        if let ss = asts[1] as? OptionalParts {
+            return Statements(value: [s])
+        }
+        var ss: [Statement] = (asts[1] as Statements).value
+        ss.insert(s, atIndex: 0)
+        return Statements(value: ss)
+    }
 }
 
 /*
@@ -1742,6 +2265,11 @@ class StatementsSymbol : NonTerminalSymbol {
 class TopLevelDeclarationSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [StatementsSymbol(isOptional: true)] })
+    }
+
+    override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
+        var ss = asts[0] as? Statements
+        return TopLevelDeclaration(statements: ss?.value)
     }
 }
 
@@ -1757,7 +2285,7 @@ public class Parser {
 
     public func parse() -> ParseResult {
         var errors: [Error] = []
-        var asts: [ASTStructure] = []
+        var asts: [ASTParts] = []
         let stack: [Symbol] = [
             TopLevelDeclarationSymbol(),
             TerminalSymbol([.EndOfFile],

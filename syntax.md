@@ -28,11 +28,13 @@ loop-statement -> for-statement
                 | while-statement
                 | do-while-statement
 
-for-statement -> For for-condition code-block
-               | For LeftParenthesis for-condition RightParenthesis code-block
-for-condition -> for-init? Semicolon expression? Semicolon expression?
-for-init      -> variable-declaration
-               | expression-list
+for-statement    -> For for-condition code-block
+                  | For LeftParenthesis for-condition RightParenthesis code-block
+for-condition    -> for-init? Semicolon for-confirmation? Semicolon for-execute-post?
+for-init         -> variable-declaration
+                  | expression-list
+for-confirmation -> expression \ze ^Semicolon
+for-finalize -> expression \ze ^LeftBrace
 
 for-in-statement -> For pattern In expression code-block
 
@@ -159,8 +161,6 @@ pattern -> wildcard-pattern type-annotation?
          | identifier-pattern type-annotation?
          | value-binding-pattern
          | tuple-pattern type-annotation?
-         | type-casting-pattern
-         | expression-pattern
 
 wildcard-pattern -> Underscore
 
@@ -173,12 +173,6 @@ tuple-pattern                   -> LeftParenthesis tuple-pattern-element-list Ri
 tuple-pattern-element-list      -> tuple-pattern-element tuple-pattern-element-list-tail?
 tuple-pattern-element-list-tail -> Comma tuple-pattern-element-list
 tuple-pattern-element           -> pattern
-
-type-casting-pattern -> is-pattern /* | as-pattern */
-is-pattern           -> Is type
-as-pattern           -> pattern As type
-
-expression-pattern -> expression
 ```
 
 ### Types
@@ -191,17 +185,15 @@ type -> type-identifier
 
 type-annotation -> Colon type
 
-type-identifier -> type-name
-type-name       -> Identifier
+type-identifier -> Identifier
 
 tuple-type                   -> LeftParenthesis tuple-type-body RightParenthesis
                               | LeftParenthesis Rightparenthesis
 tuple-type-body              -> tuple-type-element-list
-tuple-type-element-list      -> tuple-type-element tuple-type-element-tail?
+tuple-type-element-list      -> tuple-type-element tuple-type-element-list-tail?
 tuple-type-element-list-tail -> Comma tuple-type-element-list
-tuple-type-element           -> Inout? type tuple-type-element-tail?
-tuple-type-element-tail      -> element-name type-annotation
-element-name                 -> Identifier
+tuple-type-element           -> Inout? type
+                              | Inout? Identifier type-annotation
 
 function-type -> type Arrow type
 
@@ -211,10 +203,13 @@ array-type -> LeftBracket type RightBracket
 ### Expressions
 
 ```
-expression-list      -> expression
+expression-list      -> expression expression-list-tail
 expression-list-tail -> Comma expression-list
 
 expression -> prefix-expression binary-expressions?
+            | in-out-expression
+
+in-out-expression -> Ampersand Identifier
 
 binary-expressions -> binary-expression binary-expressions?
 binary-expression  -> BinaryOperator prefix-expression
@@ -229,8 +224,6 @@ type-casting-operator -> Is type
                        | As BinaryQuestion type
 
 prefix-expression -> PrefixOperator? postfix-expression
-                   | in-out-expression
-in-out-expression -> Ampersand Identifier
 
 postfix-expression         -> primary-expression postfix-expression-tail?
 postfix-expression-tail    -> PostfixOperator postfix-expression-tail?
@@ -238,12 +231,12 @@ postfix-expression-tail    -> PostfixOperator postfix-expression-tail?
                             | explicit-member-expression postfix-expression-tail?
                             | subscript-expression postfix-expression-tail?
 function-call-expression   -> parenthesized-expression trailing-closure?
-                            /* | trailing-closure */
+                            | trailing-closure
 explicit-member-expression -> Dot DecimalDigits
                             | Dot Identifier
 subscript-expression       -> LeftBracket expression-list RightBracket
 
-primary-expression -> identifier
+primary-expression -> Identifier
                     | literal-expression
                     | closure-expression
                     | parenthesized-expression
@@ -259,13 +252,15 @@ array-literal-item       -> expression
 
 trailing-closure     -> closure-expression
 closure-expression   -> LeftBrace closure-signature? statements RightBrace
-closure-signature    -> capture-list closure-type-clause? In
+closure-signature    -> capture-clause closure-type-clause? In
                       | closure-type-clause In
-                      | identifier-list function-result? In
 closure-type-clause  -> parameter-clause function-result?
+                      | identifier-list function-result?
 identifier-list      -> Identifier identifier-list-tail?
 identifier-list-tail  | Comma identifier-list
-capture-list         -> LeftBracket expression RightBracket
+capture-clause       -> LeftBracket capture-list RightBracket
+capture-list         -> capture-specifier? expression
+capture-specifier    -> Weak | Unowned
 
 parenthesized-expression      -> LeftParenthesis expression-element-list? RightParenthesis
 expression-element-list       -> expression-element expression-element-list-tail?
@@ -401,13 +396,17 @@ Precedence -> 'precedence'
 
 Return -> 'return'
 
-Var -> 'var'
-
 Right -> 'right'
 
 True -> 'true'
 
 Typealias -> 'typealias'
+
+Unowned -> 'unowned'
+
+Var -> 'var'
+
+Weak -> 'weak'
 
 While -> 'while'
 ```

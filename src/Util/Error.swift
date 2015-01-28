@@ -1,5 +1,7 @@
 import Darwin
 
+public typealias Error = (ErrorMessage, SourceInfo)
+
 public struct SourceInfo {
     public var lineNo: Int
     public var charNo: Int

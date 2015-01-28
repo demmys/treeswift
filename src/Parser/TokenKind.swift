@@ -24,7 +24,7 @@ public enum TokenKind : Equatable {
     case BooleanLiteral(Bool)
     case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
     case In, Inout, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
-    case Precedence, Return, Var, Right, Typealias, While
+    case Precedence, Return, Right, Typealias, Unowned, Var, Weak, While
 }
 
 public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
@@ -307,6 +307,16 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
     case .While:
         switch rhs {
         case .While: return true
+        default: return false
+        }
+    case .Weak:
+        switch rhs {
+        case .Weak: return true
+        default: return false
+        }
+    case .Unowned:
+        switch rhs {
+        case .Unowned: return true
         default: return false
         }
     }

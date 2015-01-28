@@ -391,8 +391,13 @@ class TokenStream : TokenPeeper {
                 ]
             case "v":
                 reservedWords = [WordLiteralComposer("var", .Var)]
+            case "u":
+                reservedWords = [WordLiteralComposer("unowned", .Unowned)]
             case "w":
-                reservedWords = [WordLiteralComposer("while", .While)]
+                reservedWords = [
+                    WordLiteralComposer("weak", .Weak),
+                    WordLiteralComposer("while", .While)
+                ]
             default:
                 break
             }
