@@ -62,7 +62,7 @@ class TerminalSymbol : Symbol {
                         println("\(s)")
                     }
                     /* */
-                    return .Success(Terminal(token: inputToken))
+                    return .Success(Terminal(inputToken))
                 } else if self.skipLineFeed {
                     inputToken = input.look(1)
                     if kind == inputToken.kind {
@@ -72,7 +72,7 @@ class TerminalSymbol : Symbol {
                             println("\(s)")
                         }
                         /* */
-                        return .Success(Terminal(token: inputToken))
+                        return .Success(Terminal(inputToken))
                     }
                 }
             }
@@ -83,7 +83,7 @@ class TerminalSymbol : Symbol {
                     if let s = inputToken.info.source {
                         println("\(s)")
                     }
-                    return .Success(Terminal(token: inputToken))
+                    return .Success(Terminal(inputToken))
                 }
             }
         }
@@ -136,8 +136,7 @@ class NonTerminalSymbol : Symbol {
             if errors.count > 0 {
                 return .Failure(errors)
             } else {
-                // return .Success(generateAST(elements, asts))
-                return .Success(OptionalParts())
+                return .Success(generateAST(elements, asts))
             }
         } else if isOptional {
             println("\t(optional)")
@@ -1826,9 +1825,9 @@ class ForConditionSymbol : NonTerminalSymbol {
 
     override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
         return ForCondition(
-            initial: asts[0] as? ForInit,
-            condition: asts[2] as? Expression,
-            finalize: asts[4] as? Expression
+            asts[0] as? ForInit,
+            asts[2] as? Expression,
+            asts[4] as? Expression
         )
     }
 }
@@ -2067,10 +2066,10 @@ class LabelNameSymbol : NonTerminalSymbol {
     }
 
     override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
-        let token = (asts[0] as Terminal).token
+        let token = (asts[0] as Terminal).value
         switch token.kind {
         case let .Identifier(k):
-            return Identifier(value: k)
+            return Identifier(k)
         default:
             assert(false, "Unexpected syntax error")
         }
@@ -2251,11 +2250,11 @@ class StatementsSymbol : NonTerminalSymbol {
     override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
         var s = asts[0] as Statement
         if let ss = asts[1] as? OptionalParts {
-            return Statements(value: [s])
+            return Statements([s])
         }
         var ss: [Statement] = (asts[1] as Statements).value
         ss.insert(s, atIndex: 0)
-        return Statements(value: ss)
+        return Statements(ss)
     }
 }
 
@@ -2269,7 +2268,7 @@ class TopLevelDeclarationSymbol : NonTerminalSymbol {
 
     override func generateAST(rule: [Symbol], _ asts: [ASTParts]) -> ASTParts {
         var ss = asts[0] as? Statements
-        return TopLevelDeclaration(statements: ss?.value)
+        return TopLevelDeclaration(ss?.value)
     }
 }
 

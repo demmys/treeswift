@@ -33,14 +33,24 @@ public protocol AST : ASTParts {
     func accept(v: ASTVisitor)
 }
 
-struct OptionalParts : ASTParts {}
-
-struct Terminal : ASTParts {
-    let token: Token
+class OptionalParts : ASTParts {
+    init() {}
 }
 
-public struct Identifier : ASTParts {
+class Terminal : ASTParts {
+    let value: Token
+
+    init(_ v: Token) {
+        value = v
+    }
+}
+
+public class Identifier : ASTParts {
     var value: IdentifierKind
+
+    init(_ v: IdentifierKind) {
+        value = v
+    }
 }
 
 /*
@@ -49,6 +59,7 @@ public struct Identifier : ASTParts {
 public enum Literal : AST {
     case Integer(Int)
     case True, False, Nil
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -59,20 +70,30 @@ public enum Literal : AST {
 public enum ExpressionElement : AST {
     case Unnamed(Expression)
     case Named(Identifier, Expression)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct ExpressionElements : ASTParts {
+class ExpressionElements : ASTParts {
     var value: [ExpressionElement]
+
+    init(_ v: [ExpressionElement]) {
+        value = v
+    }
 }
 
-struct Identifiers : ASTParts {
+class Identifiers : ASTParts {
     var value: [Identifier]
+
+    init(_ v: [Identifier]) {
+        value = v
+    }
 }
 
 public enum ClosureTypeClause : AST {
     case Typed(ParameterClause, Type?)
     case Untyped([Identifier], Type?)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -80,20 +101,37 @@ enum CaptureSpecifier : ASTParts {
     case Weak, Unowned
 }
 
-public struct CaptureElement : AST {
+public class CaptureElement : AST {
     var specifier: CaptureSpecifier
     var element: Expression
+
+    init(_ s: CaptureSpecifier, _ e: Expression) {
+        specifier = s
+        element = e
+    }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct CaptureElements : ASTParts {
+class CaptureElements : ASTParts {
     var value: [CaptureElement]
+
+    init(_ v: [CaptureElement]) {
+        value = v
+    }
 }
 
-public struct ClosureExpression : AST {
+public class ClosureExpression : AST {
     var capture: [CaptureElement]?
     var type: ClosureTypeClause?
     var body: [Statement]
+
+    init(_ c: [CaptureElement]?, _ t: ClosureTypeClause?, _ b: [Statement]) {
+        capture = c
+        type = t
+        body = b
+    }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -103,6 +141,7 @@ public enum PrimaryExpression : AST {
     case Closure(ClosureExpression)
     case Parenthesized([ExpressionElement])
     case Whildcard
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -116,6 +155,7 @@ public enum PostfixExpression : AST {
     case FunctionCall([ExpressionElement], ClosureExpression?)
     case ExplicitMember(MemberExpression)
     case Subscript([Expression])
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -123,16 +163,22 @@ public class PrefixExpression : AST {
     var op: String?
     var head: PrimaryExpression
     var tail: [PostfixExpression]?
-    init(op: String?, head: PrimaryExpression, tail: [PostfixExpression]?) {
-        self.op = op
-        self.head = head
-        self.tail = tail
+
+    init(_ o: String?, _ h: PrimaryExpression, _ t: [PostfixExpression]?) {
+        op = o
+        head = h
+        tail = t
     }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct PostfixExpressions : ASTParts {
+class PostfixExpressions : ASTParts {
     var value: [PostfixExpression]
+
+    init(_ v: [PostfixExpression]) {
+        value = v
+    }
 }
 
 public enum BinaryExpression : AST {
@@ -142,35 +188,56 @@ public enum BinaryExpression : AST {
     case IsOperation(Type)
     case AsOperation(Type)
     case OptionalAsOperation(Type)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct BinaryExpressions : ASTParts {
+class BinaryExpressions : ASTParts {
     var value: [BinaryExpression]
+
+    init(_ v: [BinaryExpression]) {
+        value = v
+    }
 }
 
 public enum Expression : AST {
     case InOut(Identifier)
     case Term(PrefixExpression, [BinaryExpression]?)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct Expressions : ASTParts {
+class Expressions : ASTParts {
     var value: [Expression]
+
+    init(_ v: [Expression]) {
+        value = v
+    }
 }
 
 /*
  * Types
  */
-public struct TupleTypeElement : AST {
+public class TupleTypeElement : AST {
     var isInout: Bool
     var name: Identifier?
     var type: Type
+
+    init(_ i: Bool, _ n: Identifier?, _ t: Type) {
+        isInout = i
+        name = n
+        type = t
+    }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct TupleTypeElements : ASTParts {
+class TupleTypeElements : ASTParts {
     var value: [TupleTypeElement]
+
+    init(_ v: [TupleTypeElement]) {
+        value = v
+    }
 }
 
 public enum Type : AST {
@@ -178,18 +245,24 @@ public enum Type : AST {
     case Tuple([TupleTypeElement])
     case Function([FunctionType])
     case Array(ArrayType)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 /*
  * Patterns
  */
-struct TuplePatternElement : ASTParts {
+class TuplePatternElement : ASTParts {
     var value: [Pattern]
+
+    init(_ v: [Pattern]) {
+        value = v
+    }
 }
 
 public class PatternWrapper {
     var value: Pattern
+
     init(_ value: Pattern) {
         self.value = value
     }
@@ -198,6 +271,7 @@ public class PatternWrapper {
 public enum BindingPattern : AST {
     case Variable(PatternWrapper)
     case Constant(PatternWrapper)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -206,6 +280,7 @@ public enum Pattern : ASTParts {
     case Variable(Identifier, Type?)
     case ValueBinding(BindingPattern)
     case Tuple([Pattern]?, Type?)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -216,18 +291,33 @@ public enum Associativity : ASTParts {
     case Left, Right, None
 }
 
-public struct ParameterClause : AST {
+public class ParameterClause : AST {
     var isInout: Bool
     var isConstant: Bool
     var externalName: Identifier?
     var localName: Identifier?
     var type: Type
     var defaultArgument: Expression?
+
+    init(_ i: Bool, _ c: Bool, _ e: Identifier?,
+         _ l: Identifier?, _ t: Type, _ d: Expression?) {
+        isInout = i
+        isConstant = c
+        externalName = e
+        localName = l
+        type = t
+        defaultArgument = d
+    }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct ParameterClauses : ASTParts {
+class ParameterClauses : ASTParts {
     var value: [ParameterClause]
+
+    init(_ v: [ParameterClause]) {
+        value = v
+    }
 }
 
 public enum Declaration : AST {
@@ -248,6 +338,7 @@ public enum Declaration : AST {
 
 public class StatementWrapper {
     var value: Statement
+
     init(_ value: Statement) {
         self.value = value
     }
@@ -255,17 +346,20 @@ public class StatementWrapper {
 public enum ElseClause : AST {
     case Else([Statement]?)
     case ElseIf(StatementWrapper)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public enum IfCondition : AST {
     case Term(Expression)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public enum WhileCondition : AST {
     case Term(Expression)
     case Definition(Declaration)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
@@ -288,24 +382,41 @@ public enum Statement : AST {
     case Break(Identifier?)
     case Continue(Identifier?)
     case Return(Expression?)
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-public struct ForCondition : AST {
+public class ForCondition : AST {
     var initial: ForInit?
     var condition: Expression?
     var finalize: Expression?
+
+    init(_ i: ForInit?, _ c: Expression?, _ f: Expression?) {
+        initial = i
+        condition = c
+        finalize = f
+    }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-struct Statements : ASTParts {
+class Statements : ASTParts {
     var value: [Statement]
+
+    init(_ v: [Statement]) {
+        value = v
+    }
 }
 
 /*
  * Top level declaration
  */
-public struct TopLevelDeclaration : AST {
-    var statements: [Statement]?
+public class TopLevelDeclaration : AST {
+    var value: [Statement]?
+
+    init(_ v: [Statement]?) {
+        value = v
+    }
+
     public func accept(v: ASTVisitor) { v.visit(self) }
 }
