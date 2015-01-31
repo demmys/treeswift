@@ -1,40 +1,16 @@
 import Util
 
-public protocol ASTVisitor {
-    func visit(ast: TopLevelDeclaration)
-    func visit(ast: Statement)
-    func visit(ast: CaptureElement)
-    func visit(ast: ClosureExpression)
-    func visit(ast: PrimaryExpression)
-    func visit(ast: PostfixExpression)
-    func visit(ast: PrefixExpression)
-    func visit(ast: BinaryExpression)
-    func visit(ast: Expression)
-    func visit(ast: Type)
-    func visit(ast: BindingPattern)
-    func visit(ast: Pattern)
-    func visit(ast: Declaration)
-    func visit(ast: ElseClause)
-    func visit(ast: IfCondition)
-    func visit(ast: WhileCondition)
-    func visit(ast: ForCondition)
-}
+public protocol AST {}
 
-public protocol ASTParts {}
-
-public protocol AST : ASTParts {
-    func accept(v: ASTVisitor)
-}
-
-class OptionalParts : ASTParts {
+class OptionalParts : AST {
     init() {}
 }
 
-class Terminal : ASTParts {
+class Terminal : AST {
     init() {}
 }
 
-class Identifier : ASTParts {
+class Identifier : AST {
     var value: IdentifierKind
 
     init(_ v: IdentifierKind) {
@@ -42,7 +18,7 @@ class Identifier : ASTParts {
     }
 }
 
-class IntegerLiteral : ASTParts {
+class IntegerLiteral : AST {
     var value: Int
 
     init(_ v: Int) {
@@ -50,7 +26,7 @@ class IntegerLiteral : ASTParts {
     }
 }
 
-class PrefixOperator : ASTParts {
+class PrefixOperator : AST {
     var value: String
 
     init(_ v: String) {
@@ -58,7 +34,7 @@ class PrefixOperator : ASTParts {
     }
 }
 
-class PostfixOperator : ASTParts {
+class PostfixOperator : AST {
     var value: String
 
     init(_ v: String) {
@@ -66,7 +42,7 @@ class PostfixOperator : ASTParts {
     }
 }
 
-class BinaryOperator : ASTParts {
+class BinaryOperator : AST {
     var value: String
 
     init(_ v: String) {
@@ -74,35 +50,35 @@ class BinaryOperator : ASTParts {
     }
 }
 
-class AssignmentOperator : ASTParts {
+class AssignmentOperator : AST {
     init() {}
 }
 
-class Underscore : ASTParts {
+class Underscore : AST {
     init() {}
 }
 
-class Inout : ASTParts {
+class Inout : AST {
     init() {}
 }
 
-class Hash : ASTParts {
+class Hash : AST {
     init() {}
 }
 
-enum ValueClass : ASTParts {
+enum ValueClass : AST {
     case Var, Let
 }
 
 /*
  * Expression
  */
-public enum ExpressionElement : ASTParts {
+public enum ExpressionElement : AST {
     case Unnamed(Expression)
     case Named(IdentifierKind, Expression)
 }
 
-class ExpressionElements : ASTParts {
+class ExpressionElements : AST {
     var value: [ExpressionElement]
 
     init(_ v: [ExpressionElement]) {
@@ -110,7 +86,7 @@ class ExpressionElements : ASTParts {
     }
 }
 
-class Identifiers : ASTParts {
+class Identifiers : AST {
     var value: [IdentifierKind]
 
     init(_ v: [IdentifierKind]) {
@@ -118,12 +94,12 @@ class Identifiers : ASTParts {
     }
 }
 
-public enum ClosureTypeClause : ASTParts {
+public enum ClosureTypeClause : AST {
     case Typed(ParameterClause, Type?)
     case Untyped([IdentifierKind], Type?)
 }
 
-enum CaptureSpecifier : ASTParts {
+enum CaptureSpecifier : AST {
     case Weak, Unowned
 }
 
@@ -135,11 +111,9 @@ public class CaptureElement : AST {
         specifier = s
         element = e
     }
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-class CaptureElements : ASTParts {
+class CaptureElements : AST {
     var value: [CaptureElement]
 
     init(_ v: [CaptureElement]) {
@@ -147,7 +121,7 @@ class CaptureElements : ASTParts {
     }
 }
 
-class ClosureSignature : ASTParts {
+class ClosureSignature : AST {
     var capture: [CaptureElement]?
     var type: ClosureTypeClause?
 
@@ -167,11 +141,9 @@ public class ClosureExpression : AST {
         type = t
         body = b
     }
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-public enum LiteralExpression : ASTParts {
+public enum LiteralExpression : AST {
     case Integer(Int)
     case True, False, Nil
     case Array([Expression]?)
@@ -183,8 +155,6 @@ public enum PrimaryExpression : AST {
     case Closure(ClosureExpression)
     case Parenthesized([ExpressionElement])
     case Whildcard
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public enum MemberExpression {
@@ -197,11 +167,9 @@ public enum PostfixExpression : AST {
     case FunctionCall([ExpressionElement], ClosureExpression?)
     case ExplicitMember(MemberExpression)
     case Subscript([Expression])
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-class PostfixExpressions : ASTParts {
+class PostfixExpressions : AST {
     var value: [PostfixExpression]
 
     init(_ v: [PostfixExpression]) {
@@ -219,11 +187,9 @@ public class PrefixExpression : AST {
         head = h
         tail = t
     }
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-enum TypeCastingOperator : ASTParts {
+enum TypeCastingOperator : AST {
     case Is, As
 }
 
@@ -234,11 +200,9 @@ public enum BinaryExpression : AST {
     case IsOperation(Type)
     case AsOperation(Type)
     case OptionalAsOperation(Type)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-class BinaryExpressions : ASTParts {
+class BinaryExpressions : AST {
     var value: [BinaryExpression]
 
     init(_ v: [BinaryExpression]) {
@@ -249,11 +213,9 @@ class BinaryExpressions : ASTParts {
 public enum Expression : AST {
     case InOut(IdentifierKind)
     case Term(PrefixExpression, [BinaryExpression]?)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-class Expressions : ASTParts {
+class Expressions : AST {
     var value: [Expression]
 
     init(_ v: [Expression]) {
@@ -282,7 +244,7 @@ public class FunctionType {
     }
 }
 
-public class TupleTypeElement : ASTParts {
+public class TupleTypeElement : AST {
     var isInout: Bool
     var name: IdentifierKind?
     var type: Type
@@ -294,7 +256,7 @@ public class TupleTypeElement : ASTParts {
     }
 }
 
-class TupleTypeElements : ASTParts {
+class TupleTypeElements : AST {
     var value: [TupleTypeElement]
 
     init(_ v: [TupleTypeElement]) {
@@ -307,14 +269,12 @@ public enum Type : AST {
     case Tuple([TupleTypeElement]?)
     case Function(FunctionType)
     case Array(ArrayType)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 /*
  * Patterns
  */
-class TuplePatternElements : ASTParts {
+class TuplePatternElements : AST {
     var value: [Pattern]?
 
     init(_ v: [Pattern]?) {
@@ -333,27 +293,23 @@ public class PatternWrapper {
 public enum BindingPattern : AST {
     case Variable(PatternWrapper)
     case Constant(PatternWrapper)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-public enum Pattern : ASTParts {
+public enum Pattern : AST {
     case Wildcard(Type?)
     case Variable(IdentifierKind, Type?)
     case ValueBinding(BindingPattern)
     case Tuple([Pattern]?, Type?)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 /*
  * Declaration
  */
-public enum Associativity : ASTParts {
+public enum Associativity : AST {
     case Left, Right, None
 }
 
-class InfixOperatorAttributes : ASTParts {
+class InfixOperatorAttributes : AST {
     var precedence: Int?
     var associativity: Associativity?
 
@@ -363,7 +319,7 @@ class InfixOperatorAttributes : ASTParts {
     }
 }
 
-class ParameterName : ASTParts {
+class ParameterName : AST {
     var value: IdentifierKind?
 
     init(_ v: IdentifierKind?) {
@@ -371,7 +327,7 @@ class ParameterName : ASTParts {
     }
 }
 
-public class Parameter : ASTParts {
+public class Parameter : AST {
     var isInout: Bool
     var isConstant: Bool
     var externalName: IdentifierKind?
@@ -390,7 +346,7 @@ public class Parameter : ASTParts {
     }
 }
 
-class Parameters : ASTParts {
+class Parameters : AST {
     var value: [Parameter]
 
     init(_ v: [Parameter]) {
@@ -398,7 +354,7 @@ class Parameters : ASTParts {
     }
 }
 
-public class ParameterClause : ASTParts {
+public class ParameterClause : AST {
     var value: [Parameter]?
 
     init(_ v: [Parameter]?) {
@@ -406,7 +362,7 @@ public class ParameterClause : ASTParts {
     }
 }
 
-class ParameterClauses : ASTParts {
+class ParameterClauses : AST {
     var value: [ParameterClause]
 
     init(_ v: [ParameterClause]) {
@@ -414,7 +370,7 @@ class ParameterClauses : ASTParts {
     }
 }
 
-class FunctionSignature : ASTParts {
+class FunctionSignature : AST {
     var parameter: [ParameterClause]
     var result: Type?
 
@@ -424,12 +380,12 @@ class FunctionSignature : ASTParts {
     }
 }
 
-enum FunctionName : ASTParts {
+enum FunctionName : AST {
     case Function(IdentifierKind)
     case Operator(String)
 }
 
-public class PatternInitializer : ASTParts {
+public class PatternInitializer : AST {
     var pattern: Pattern
     var initializer: Expression?
 
@@ -439,7 +395,7 @@ public class PatternInitializer : ASTParts {
     }
 }
 
-class PatternInitializers : ASTParts {
+class PatternInitializers : AST {
     var value: [PatternInitializer]
 
     init(_ v: [PatternInitializer]) {
@@ -456,7 +412,6 @@ public enum Declaration : AST {
     case PrefixOperator(String)
     case PostfixOperator(String)
     case InfixOperator(String, Int?, Associativity?)
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 /*
@@ -473,24 +428,18 @@ public class StatementWrapper {
 public enum ElseClause : AST {
     case Else([Statement]?)
     case ElseIf(StatementWrapper)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public enum IfCondition : AST {
     case Term(Expression)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public enum WhileCondition : AST {
     case Term(Expression)
     case Definition(Declaration)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-enum ForInit : ASTParts {
+enum ForInit : AST {
     case VariableDeclaration(Declaration)
     case Terms([Expression])
 }
@@ -509,8 +458,6 @@ public enum Statement : AST {
     case Break(IdentifierKind?)
     case Continue(IdentifierKind?)
     case Return(Expression?)
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public class ForCondition : AST {
@@ -523,11 +470,9 @@ public class ForCondition : AST {
         condition = c
         finalize = f
     }
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
-class Statements : ASTParts {
+class Statements : AST {
     var value: [Statement]
 
     init(_ v: [Statement]) {
@@ -544,6 +489,4 @@ public class TopLevelDeclaration : AST {
     init(_ v: [Statement]?) {
         value = v
     }
-
-    public func accept(v: ASTVisitor) { v.visit(self) }
 }

@@ -1,7 +1,7 @@
 import Util
 
 public enum ParseResult {
-    case Success(ASTParts)
+    case Success(AST)
     case Failure([Error])
 }
 
@@ -98,7 +98,7 @@ class TerminalSymbol : Symbol {
         assert(false, "Unexpected syntax error")
     }
 
-    func generateAST(token: Token) -> ASTParts {
+    func generateAST(token: Token) -> AST {
         switch token.kind {
         case let .Identifier(k):
             return Identifier(k)
@@ -173,7 +173,7 @@ class NonTerminalSymbol : Symbol {
             break
         }
         var errors: [Error] = []
-        var asts: [ASTParts] = []
+        var asts: [AST] = []
         if let elements = ruleArbiter(input) {
             for element in elements {
                 switch element.parse(input) {
@@ -195,8 +195,8 @@ class NonTerminalSymbol : Symbol {
         return .Failure([(.UnexpectedSymbol, input.look().info)])
     }
 
-    func generateAST(asts: [ASTParts]) -> ASTParts {
-        assert(false, "Unimplemented ASTParts generation")
+    func generateAST(asts: [AST]) -> AST {
+        assert(false, "Unimplemented AST generation")
     }
 }
 
@@ -219,7 +219,7 @@ class LiteralSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let i as IntegerLiteral:
             return LiteralExpression.Integer(i.value)
@@ -237,7 +237,7 @@ class WildcardExpressionSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([.Underscore])] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return PrimaryExpression.Whildcard
     }
 }
@@ -256,7 +256,7 @@ class ExpressionElementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count > 1 {
             return ExpressionElement.Named(
                 (asts[0] as Identifier).value,
@@ -280,7 +280,7 @@ class ExpressionElementListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -298,7 +298,7 @@ class ExpressionElementListSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var head = asts[0] as ExpressionElement
         if let tail = asts[1] as? ExpressionElements {
             tail.value.insert(head, atIndex: 0)
@@ -318,7 +318,7 @@ class ParenthesizedExpressionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -337,7 +337,7 @@ class CaptureSpecifierSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -355,7 +355,7 @@ class CaptureListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -369,7 +369,7 @@ class CaptureListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var head = CaptureElement(asts[0] as CaptureSpecifier, asts[1] as Expression)
         if let tail = asts[2] as? CaptureElements {
             tail.value.insert(head, atIndex: 0)
@@ -389,7 +389,7 @@ class CaptureClauseSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -407,7 +407,7 @@ class IdentifierListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -421,7 +421,7 @@ class IdentifierListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as Identifier
         if let tail = asts[1] as? Identifiers {
             tail.value.insert(head.value, atIndex: 0)
@@ -451,7 +451,7 @@ class ClosureTypeClauseSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var t = asts[1] as Type
         switch asts[0] {
         case let p as ParameterClause:
@@ -485,7 +485,7 @@ class ClosureSignatureSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count > 2 {
             return ClosureSignature(
                 (asts[0] as CaptureElements).value,
@@ -506,7 +506,7 @@ class ClosureExpressionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let ss = asts[2] as Statements
         if let s = asts[1] as? ClosureSignature {
             return ClosureExpression(s.capture, s.type, ss.value)
@@ -525,7 +525,7 @@ class TrailingClosureSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -535,7 +535,7 @@ class ArrayLiteralItemSymbol : NonTerminalSymbol {
         super.init({ tp in [ExpressionSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -553,7 +553,7 @@ class ArrayLiteralItemsTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -572,7 +572,7 @@ class ArrayLiteralItemsSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var head = asts[0] as Expression
         if let tail = asts[1] as? Expressions {
             tail.value.insert(head, atIndex: 0)
@@ -591,7 +591,7 @@ class ArrayLiteralSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return LiteralExpression.Array((asts[1] as? Expressions)?.value)
     }
 }
@@ -606,7 +606,7 @@ class LiteralExpressionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -631,7 +631,7 @@ class PrimaryExpressionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let i as Identifier:
             return PrimaryExpression.Reference(i.value)
@@ -657,7 +657,7 @@ class SubscriptMemberExpressionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return PostfixExpression.Subscript((asts[1] as Expressions).value)
     }
 }
@@ -683,7 +683,7 @@ class ExplicitMemberExpressionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[1] {
         case let n as IntegerLiteral:
             return PostfixExpression.ExplicitMember(
@@ -712,7 +712,7 @@ class FunctionCallExpressionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var es = asts[0] as ExpressionElements
         return PostfixExpression.FunctionCall(
             es.value,
@@ -728,7 +728,7 @@ class PostfixOperatorSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return PostfixExpression.PostfixOperation((asts[0] as PostfixOperator).value)
     }
 }
@@ -754,7 +754,7 @@ class PostfixExpressionTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var head: PostfixExpression = asts[0] as PostfixExpression
         if let tail = asts[1] as? PostfixExpressions {
             tail.value.insert(head, atIndex: 0)
@@ -772,7 +772,7 @@ class PostfixExpressionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return PrefixExpression(
             nil,
             asts[0] as PrimaryExpression,
@@ -789,7 +789,7 @@ class PrefixExpressionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var p = asts[1] as PrefixExpression
         if let o = asts[0] as? PrefixOperator {
             p.op = o.value
@@ -825,7 +825,7 @@ class TypeCastingOperatorSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] as TypeCastingOperator {
         case .Is:
             return BinaryExpression.IsOperation(asts[1] as Type)
@@ -847,7 +847,7 @@ class ConditionalOperatorSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -879,7 +879,7 @@ class BinaryExpressionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let b as BinaryOperator:
             return BinaryExpression.BinaryOperation(
@@ -917,7 +917,7 @@ class BinaryExpressionsSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as BinaryExpression
         if let tail = asts[1] as? BinaryExpressions {
             tail.value.insert(head, atIndex: 0)
@@ -936,7 +936,7 @@ class InOutExpressionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -956,7 +956,7 @@ class ExpressionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count > 1 {
             return Expression.Term(
                 asts[0] as PrefixExpression,
@@ -980,7 +980,7 @@ class ExpressionListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -993,7 +993,7 @@ class ExpressionListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as Expression
         if let tail = asts[1] as? Expressions {
             tail.value.insert(head, atIndex: 0)
@@ -1016,7 +1016,7 @@ class ArrayTypeSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Type.Array(ArrayType(asts[1] as Type))
     }
 }
@@ -1031,7 +1031,7 @@ class FunctionTypeSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Type.Function(FunctionType(asts[0] as Type, asts[2] as Type))
     }
 }
@@ -1041,7 +1041,7 @@ class ElementNameSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([identifier])] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1072,7 +1072,7 @@ class TupleTypeElementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var isInout = (asts[0] as? Inout) != nil
         if asts.count > 2 {
             return TupleTypeElement(
@@ -1095,7 +1095,7 @@ class TupleTypeElementListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1108,7 +1108,7 @@ class TupleTypeElementListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as TupleTypeElement
         if let tail = asts[1] as? TupleTypeElements {
             tail.value.insert(head, atIndex: 0)
@@ -1123,7 +1123,7 @@ class TupleTypeBodySymbol : NonTerminalSymbol {
         super.init({ tp in [TupleTypeElementListSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1149,7 +1149,7 @@ class TupleTypeSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count > 2 {
             return Type.Tuple((asts[1] as TupleTypeElements).value)
         }
@@ -1162,7 +1162,7 @@ class TypeNameSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([identifier])] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1172,7 +1172,7 @@ class TypeIdentifierSymbol : NonTerminalSymbol {
         super.init({ tp in [TypeNameSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Type.Single((asts[0] as Identifier).value)
     }
 }
@@ -1187,7 +1187,7 @@ class TypeAnnotationSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1208,7 +1208,7 @@ class TypeSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1221,7 +1221,7 @@ class TuplePatternElementSymbol : NonTerminalSymbol {
         super.init({ tp in [PatternSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1239,7 +1239,7 @@ class TuplePatternElementListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1252,7 +1252,7 @@ class TuplePatternElementListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as Pattern
         if let tail = asts[1] as? TuplePatternElements {
             tail.value!.insert(head, atIndex: 0)
@@ -1281,7 +1281,7 @@ class TuplePatternSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count > 2 {
             return asts[1]
         }
@@ -1299,7 +1299,7 @@ class ValueBindingPatternSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let p = PatternWrapper(asts[1] as Pattern)
         switch asts[0] as ValueClass {
         case .Var:
@@ -1315,7 +1315,7 @@ class IdentifierPatternSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([identifier])] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1325,7 +1325,7 @@ class WildcardPatternSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([.Underscore])] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1357,7 +1357,7 @@ class PatternSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count == 1 {
             return asts[0]
         }
@@ -1394,7 +1394,7 @@ class AssociativitySymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1409,7 +1409,7 @@ class AssociativityClauseSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1430,7 +1430,7 @@ class PrecedenceLevelSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1445,7 +1445,7 @@ class PrecedenceClauseSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1466,7 +1466,7 @@ class InfixOperatorAttributesSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return InfixOperatorAttributes(
             (asts[0] as? IntegerLiteral)?.value,
             asts[1] as? Associativity
@@ -1489,7 +1489,7 @@ class PrefixOperatorDeclarationSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Declaration.PrefixOperator((asts[2] as BinaryOperator).value)
     }
 }
@@ -1509,7 +1509,7 @@ class PostfixOperatorDeclarationSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Declaration.PostfixOperator((asts[2] as BinaryOperator).value)
     }
 }
@@ -1529,7 +1529,7 @@ class InfixOperatorDeclarationSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let a = asts[4] as? InfixOperatorAttributes
         return Declaration.InfixOperator(
             (asts[2] as BinaryOperator).value,
@@ -1555,7 +1555,7 @@ class OperatorDeclarationSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1576,7 +1576,7 @@ class DefaultArgumentClauseSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1597,7 +1597,7 @@ class LocalParameterNameSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if let i = asts[0] as? Identifier {
             return ParameterName(i.value)
         }
@@ -1631,7 +1631,7 @@ class ExternalParameterNameSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if let i = asts[0] as? Identifier {
             return ParameterName(i.value)
         }
@@ -1652,7 +1652,7 @@ class ParameterSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var p = Parameter(
             false,
             false,
@@ -1694,7 +1694,7 @@ class ParameterListTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1707,7 +1707,7 @@ class ParameterListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as Parameter
         if let tail = asts[1] as? Parameters {
             tail.value.insert(head, atIndex: 0)
@@ -1740,7 +1740,7 @@ class ParameterClauseSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return ParameterClause((asts[1] as? Parameters)?.value)
     }
 }
@@ -1758,7 +1758,7 @@ class ParameterClausesSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as ParameterClause
         if let tail = asts[1] as? ParameterClauses {
             tail.value.insert(head, atIndex: 0)
@@ -1773,7 +1773,7 @@ class FunctionBodySymbol : NonTerminalSymbol {
         super.init({ tp in [CodeBlockSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1791,7 +1791,7 @@ class FunctionResultSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1804,7 +1804,7 @@ class FunctionSignatureSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return FunctionSignature(
             (asts[0] as ParameterClauses).value,
             asts[1] as? Type
@@ -1822,7 +1822,7 @@ class FunctionNameSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let i as Identifier:
             return FunctionName.Function(i.value)
@@ -1843,7 +1843,7 @@ class FunctionHeadSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([.Func])]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1858,7 +1858,7 @@ class FunctionDeclarationSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let fs = asts[2] as FunctionSignature
         let b = asts[3] as Statements
         switch asts[1] as FunctionName {
@@ -1882,7 +1882,7 @@ class TypealiasAssignmentSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1895,7 +1895,7 @@ class TypealiasNameSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -1905,7 +1905,7 @@ class TypealiasHeadSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([.Typealias]), TypealiasNameSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1918,7 +1918,7 @@ class TypealiasDeclarationSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Declaration.Typealias(
             (asts[0] as Identifier).value,
             asts[1] as Type
@@ -1942,7 +1942,7 @@ class InitializerSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1955,7 +1955,7 @@ class PatternInitializerSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return PatternInitializer(
             asts[0] as Pattern,
             asts[1] as? Expression
@@ -1976,7 +1976,7 @@ class PatternInitializerTailSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -1989,7 +1989,7 @@ class PatternInitializerListSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         let head = asts[0] as PatternInitializer
         if let tail = asts[1] as? PatternInitializers {
             tail.value.insert(head, atIndex: 0)
@@ -2004,7 +2004,7 @@ class VariableDeclarationHeadSymbol : NonTerminalSymbol {
         super.init({ tp in [TerminalSymbol([.Var])] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2017,7 +2017,7 @@ class VariableDeclarationSymbol: NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Declaration.Variable((asts[1] as PatternInitializers).value)
     }
 }
@@ -2030,7 +2030,7 @@ class ConstantDeclarationSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Declaration.Constant((asts[1] as PatternInitializers).value)
     }
 }
@@ -2049,7 +2049,7 @@ class CodeBlockSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[1]
     }
 }
@@ -2075,7 +2075,7 @@ class DeclarationSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2097,7 +2097,7 @@ class ForInitSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let i as Declaration:
             return ForInit.VariableDeclaration(i)
@@ -2119,7 +2119,7 @@ class ForConfirmationSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2134,7 +2134,7 @@ class ForFinalize: NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2156,7 +2156,7 @@ class ForConditionSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return ForCondition(
             asts[0] as? ForInit,
             asts[2] as? Expression,
@@ -2176,7 +2176,7 @@ class ForInStatementSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Statement.ForIn(
             asts[1] as Pattern,
             asts[3] as Expression,
@@ -2207,7 +2207,7 @@ class ForStatementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var condition = 1
         var body = 2
         if asts.count > 3 {
@@ -2234,7 +2234,7 @@ class WhileConditionSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let c as Expression:
             return WhileCondition.Term(c)
@@ -2256,7 +2256,7 @@ class DoWhileStatementSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Statement.DoWhile(
             asts[3] as WhileCondition,
             (asts[1] as? Statements)?.value,
@@ -2274,7 +2274,7 @@ class WhileStatementSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return Statement.While(
             asts[1] as WhileCondition,
             (asts[2] as? Statements)?.value,
@@ -2305,7 +2305,7 @@ class LoopStatementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2327,7 +2327,7 @@ class ElseClauseSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if let e = asts[1] as? Statement {
             return ElseClause.ElseIf(StatementWrapper(e))
         }
@@ -2340,7 +2340,7 @@ class IfConditionSymbol : NonTerminalSymbol {
         super.init({ tp in [ExpressionSymbol()] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return IfCondition.Term(asts[0] as Expression)
     }
 }
@@ -2355,7 +2355,7 @@ class IfStatementSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var cond = asts[1] as IfCondition
         var body = (asts[2] as? Statements)?.value
         if let e = asts[3] as? OptionalParts {
@@ -2370,7 +2370,7 @@ class BranchStatementSymbol : NonTerminalSymbol {
         super.init({ tp in [ IfStatementSymbol() ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2398,7 +2398,7 @@ class LabelNameSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2411,7 +2411,7 @@ class StatementLabelSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2421,7 +2421,7 @@ class LabeledStatementSymbol : NonTerminalSymbol {
         super.init({ tp in [StatementLabelSymbol(), LoopStatementSymbol()] });
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var l = asts[0] as Identifier
         switch asts[1] as Statement {
         case let .For(c, b, _):
@@ -2449,7 +2449,7 @@ class BreakStatementSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if let l = asts[1] as? OptionalParts {
             return Statement.Break(nil)
         }
@@ -2465,7 +2465,7 @@ class ContinueStatementSymbol : NonTerminalSymbol {
         ]})
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if let l = asts[1] as? OptionalParts {
             return Statement.Continue(nil)
         }
@@ -2488,7 +2488,7 @@ class ReturnStatementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         if asts.count < 2 {
             return Statement.Return(nil)
         }
@@ -2512,7 +2512,7 @@ class ControlTransferStatementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         return asts[0]
     }
 }
@@ -2545,7 +2545,7 @@ class StatementSymbol : NonTerminalSymbol {
         })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         switch asts[0] {
         case let s as Expression:
             return Statement.Term(s)
@@ -2574,7 +2574,7 @@ class StatementsSymbol : NonTerminalSymbol {
         }, isOptional: isOptional)
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var head = asts[0] as Statement
         if let tail = asts[1] as? Statements {
             tail.value.insert(head, atIndex: 0)
@@ -2592,7 +2592,7 @@ class TopLevelDeclarationSymbol : NonTerminalSymbol {
         super.init({ tp in [StatementsSymbol(isOptional: true)] })
     }
 
-    override func generateAST(asts: [ASTParts]) -> ASTParts {
+    override func generateAST(asts: [AST]) -> AST {
         var ss = asts[0] as? Statements
         return TopLevelDeclaration(ss?.value)
     }
@@ -2610,7 +2610,7 @@ public class Parser {
 
     public func parse() -> ParseResult {
         var errors: [Error] = []
-        var asts: [ASTParts] = []
+        var asts: [AST] = []
         let stack: [Symbol] = [
             TopLevelDeclarationSymbol(),
             TerminalSymbol([.EndOfFile],

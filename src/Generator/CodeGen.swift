@@ -1,5 +1,7 @@
+import Parser
+
 public class Generator {
-    public class func generate(moduleID: String) -> Module {
+    public class func generate(ast: AST, moduleID: String) -> Module {
         var module = Module(moduleID: moduleID)
 
         var zero = ConstantInt.get(module.getContext(), APInt(numBits: 32, "0", 10))
