@@ -94,12 +94,13 @@ code-block -> LeftBrace statements? RightBrace
 #### Constant declaration, Variable declaration
 
 ```
-constant-declaration -> Let pattern-initializer pattern-initializer-tail?
+constant-declaration -> Let pattern-initializer-list
 
-variable-declaration      -> variable-declaration-head pattern-initializer pattern-initializer-tail
+variable-declaration      -> variable-declaration-head pattern-initializer-list
 variable-declaration-head -> Var
 
-pattern-initializer-tail -> Comma pattern-initializer pattern-initializer-tail?
+pattern-initializer-list -> pattern-initializer pattern-initializer-tail?
+pattern-initializer-tail -> Comma pattern-initializer-list
 pattern-initializer      -> pattern initializer?
 initializer              -> AssignmentOperator expression
 ```
@@ -231,7 +232,7 @@ postfix-expression-tail    -> PostfixOperator postfix-expression-tail?
                             | explicit-member-expression postfix-expression-tail?
                             | subscript-expression postfix-expression-tail?
 function-call-expression   -> parenthesized-expression trailing-closure?
-                            | trailing-closure
+                            /* | trailing-closure */
 explicit-member-expression -> Dot DecimalDigits
                             | Dot Identifier
 subscript-expression       -> LeftBracket expression-list RightBracket
@@ -259,7 +260,8 @@ closure-type-clause  -> parameter-clause function-result?
 identifier-list      -> Identifier identifier-list-tail?
 identifier-list-tail  | Comma identifier-list
 capture-clause       -> LeftBracket capture-list RightBracket
-capture-list         -> capture-specifier? expression
+capture-list         -> capture-specifier? expression capture-list-tail?
+capture-list-tail    -> Comma capture-list
 capture-specifier    -> Weak | Unowned
 
 parenthesized-expression      -> LeftParenthesis expression-element-list? RightParenthesis
