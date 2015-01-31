@@ -138,6 +138,11 @@
     return raw;
 }
 
++(Type *)getVoidTy: (LLVMContext *)c {
+    llvm::Type *raw = llvm::Type::getVoidTy(*c.raw);
+    return [[Type alloc] initWithRawObject: raw];
+}
+
 @end
 
 
@@ -363,6 +368,31 @@
 @end
 
 
+@implementation FunctionArgIterator {
+    llvm::Function::arg_iterator raw;
+};
+
+-(id)initWithRawObject: (llvm::Function::arg_iterator)a {
+    self = [super init];
+    raw = a;
+    return self;
+}
+
+-(void)next {
+    raw++;
+}
+
+-(void)setName: (const char *)name {
+    raw->setName(llvm::Twine(name));
+}
+
+-(llvm::Function::arg_iterator)raw {
+    return raw;
+}
+
+@end
+
+
 @implementation Function {
     llvm::Function *raw;
 };
@@ -388,6 +418,11 @@
 
 -(void) setCallingConv: (CallingConv)cc {
     raw->setCallingConv((llvm::CallingConv::ID)cc);
+}
+
+-(FunctionArgIterator *)argBegin {
+    llvm::Function::arg_iterator a = raw->arg_begin();
+    return [[FunctionArgIterator alloc] initWithRawObject: a];
 }
 
 -(llvm::Function *)raw {
@@ -473,6 +508,15 @@
     llvm::ReturnInst *raw = llvm::ReturnInst::Create(
         *c.raw,
         retVal.raw,
+        insertAtEnd.raw
+    );
+    return [[ReturnInst alloc] initWithRawObject: raw];
+}
+
++(ReturnInst *)create: (LLVMContext *)c
+                     : (BasicBlock *)insertAtEnd {
+    llvm::ReturnInst *raw = llvm::ReturnInst::Create(
+        *c.raw,
         insertAtEnd.raw
     );
     return [[ReturnInst alloc] initWithRawObject: raw];

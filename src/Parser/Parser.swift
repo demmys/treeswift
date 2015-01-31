@@ -57,21 +57,11 @@ class TerminalSymbol : Symbol {
             for kind in kinds {
                 if kind == .LineFeed {
                     input.next()
-                    /* */
-                    if let s = inputToken.info.source {
-                        println("\(s)")
-                    }
-                    /* */
                     return .Success(generateAST(inputToken))
                 } else if self.skipLineFeed {
                     inputToken = input.look(1)
                     if kind == inputToken.kind {
                         input.next(n: 2)
-                        /* */
-                        if let s = inputToken.info.source {
-                            println("\(s)")
-                        }
-                        /* */
                         return .Success(generateAST(inputToken))
                     }
                 }
@@ -80,15 +70,11 @@ class TerminalSymbol : Symbol {
             for kind in kinds {
                 if inputToken.kind == kind {
                     input.next()
-                    if let s = inputToken.info.source {
-                        println("\(s)")
-                    }
                     return .Success(generateAST(inputToken))
                 }
             }
         }
         if isOptional {
-            println("\t(optional)")
             return .Success(OptionalParts())
         }
 
@@ -165,7 +151,6 @@ class NonTerminalSymbol : Symbol {
     }
 
     func parse(input: TokenStream) -> ParseResult {
-        println("\(reflect(self).summary)")
         switch input.look().kind {
         case let .Error(e):
             return .Failure([(e, input.look().info)])
@@ -189,7 +174,6 @@ class NonTerminalSymbol : Symbol {
                 return .Success(generateAST(asts))
             }
         } else if isOptional {
-            println("\t(optional)")
             return .Success(OptionalParts())
         }
         return .Failure([(.UnexpectedSymbol, input.look().info)])

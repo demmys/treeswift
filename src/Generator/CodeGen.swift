@@ -1,33 +1,51 @@
 import Parser
 
-public class Generator {
-    public class func generate(ast: AST, moduleID: String) -> Module {
-        var module = Module(moduleID: moduleID)
+public class Generator : ASTVisitor {
+    var module: Module
 
-        var zero = ConstantInt.get(module.getContext(), APInt(numBits: 32, "0", 10))
+    public init(moduleID: String) {
+        module = Module(moduleID: moduleID)
+    }
 
+    public func visit(ast: TopLevelDeclaration) {
         /*
-         *  global variable
+         * top_level_code function
          */
-        var msg = GlobalVariable(
-            module: module,
-            ArrayType.get(IntegerType.get(module.getContext(), 8), 14),
-            true,
-            .PrivateLinkage,
-            ConstantDataArray.getString(module.getContext(), "Hello, World!", true),
-            "msg",
-            nil,
-            .NotThreadLocal,
-            .Generic,
+        var topLevelCodeType = FunctionType.get(
+            Type.getVoidTy(module.getContext()),
+            [],
             false
         )
+        var topLevelCode = Function.create(
+            topLevelCodeType,
+            .InternalLinkage,
+            "top_level_code",
+            module
+        )
+        topLevelCode.setCallingConv(.C)
+        var topLevelCodeBlock = BasicBlock.create(
+            module.getContext(),
+            "entry", 
+            topLevelCode,
+            nil
+        )
+        // return void
+        ReturnInst.create(module.getContext(), topLevelCodeBlock)
 
         /*
          *  main function
          */
+        var argcType = IntegerType.get(module.getContext(), 32)
+        var argvType = PointerType.get(
+            PointerType.get(
+                IntegerType.get(module.getContext(), 8),
+                .Generic
+            ),
+            .Generic
+        )
         var mainType = FunctionType.get(
             IntegerType.get(module.getContext(), 32),
-            [],
+            [argcType, argvType],
             false
         )
         var main = Function.create(
@@ -37,33 +55,19 @@ public class Generator {
             module
         )
         main.setCallingConv(.C)
-        var main_block = BasicBlock.create(module.getContext(), "entry", main, nil)
-
-        // call puts
-        var putsType = FunctionType.get(
-            IntegerType.get(module.getContext(), 32),
-            [PointerType.get(IntegerType.get(module.getContext(), 8), .Generic)],
-            false
-        )
-        var puts = Function.create(
-            putsType,
-            .ExternalLinkage,
-            "puts",
-            module
-        )
-        puts.setCallingConv(.C)
-
-        var msg_ptr = ConstantExpr.getGetElementPtr(msg, [zero, zero], true)
-
-        var call = CallInst.create(puts, [msg_ptr], "", main_block)
-
+        var arg = main.argBegin()
+        arg.setName("argc")
+        arg.next()
+        arg.setName("argv")
+        var mainBlock = BasicBlock.create(module.getContext(), "entry", main, nil)
+        // call top_level_code
+        var call = CallInst.create(topLevelCode, [], "", mainBlock)
         // return 0
-        ReturnInst.create(module.getContext(), zero, main_block)
-
-        return module
+        var zero = ConstantInt.get(module.getContext(), APInt(numBits: 32, "0", 10))
+        ReturnInst.create(module.getContext(), zero, mainBlock)
     }
 
-    public class func print(module: Module, fileName: String) {
+    public func print(fileName: String) {
         var err = UnsafePointer<CChar>()
         var os = RawFDOStream(fileName: fileName, &err, .None)
 

@@ -96,6 +96,7 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
 @end
 
 @interface Type : NSObject
++(Type *)getVoidTy: (LLVMContext *)c;
 @end
 
 @interface IntegerType : Type
@@ -148,12 +149,18 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
                    : (bool)isExternallyInitialized;
 @end
 
+@interface FunctionArgIterator : NSObject
+-(void)next;
+-(void)setName: (const char *)name;
+@end
+
 @interface Function : Value
 +(Function *)create: (FunctionType *)ty
                    : (LinkageTypes)linkage
                    : (const char *)n
                    : (Module *)m;
 -(void) setCallingConv: (CallingConv)cc;
+-(FunctionArgIterator *)argBegin;
 @end
 
 @interface BasicBlock : NSObject
@@ -173,6 +180,8 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
 @interface ReturnInst : NSObject
 +(ReturnInst *)create: (LLVMContext *)c
                      : (Value *)retVal
+                     : (BasicBlock *)insertAtEnd;
++(ReturnInst *)create: (LLVMContext *)c
                      : (BasicBlock *)insertAtEnd;
 @end
 

@@ -10,10 +10,9 @@ if Process.arguments.count < 2 {
         if let parser = Parser(f) {
             switch parser.parse() {
             case let .Success(ast):
-                Generator.print(
-                    Generator.generate(ast, moduleID: "-"),
-                    fileName: f.baseName + ".ll"
-                )
+                var generator = Generator(moduleID: "-")
+                ast.accept(generator)
+                generator.print(f.baseName + ".ll")
             case let .Failure(errors):
                 for (message, info) in errors {
                     message.print(f.name, info: info)
