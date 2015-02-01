@@ -95,24 +95,24 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
 -(LLVMContext *) getContext;
 @end
 
-@interface Type : NSObject
-+(Type *)getVoidTy: (LLVMContext *)c;
+@interface LLVMType : NSObject
++(LLVMType *)getVoidTy: (LLVMContext *)c;
 @end
 
-@interface IntegerType : Type
+@interface IntegerType : LLVMType
 +(IntegerType *)get: (LLVMContext *)c : (unsigned int)numBits;
 @end
 
-@interface PointerType : Type
-+(PointerType *)get: (Type *)elementType : (AddressSpace)addressSpace;
+@interface PointerType : LLVMType
++(PointerType *)get: (LLVMType *)elementType : (AddressSpace)addressSpace;
 @end
 
-@interface ArrayType : Type
-+(ArrayType *)get: (Type *)elementType : (unsigned long)numElements;
+@interface ArrayType : LLVMType
++(ArrayType *)get: (LLVMType *)elementType : (unsigned long)numElements;
 @end
 
-@interface FunctionType : Type
-+(FunctionType *)get: (Type *)result : (NSArray *)params : (bool)isVarArg;
+@interface FunctionType : LLVMType
++(FunctionType *)get: (LLVMType *)result : (NSArray *)params : (bool)isVarArg;
 @end
 
 @interface Value : NSObject
@@ -138,7 +138,7 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
 
 @interface GlobalVariable : Constant
 -(id)initWithModule: (Module *)m
-                   : (Type *)ty
+                   : (LLVMType *)ty
                    : (bool)isConstant
                    : (LinkageTypes)linkage
                    : (Constant *)initializer

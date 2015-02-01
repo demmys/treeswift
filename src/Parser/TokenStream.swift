@@ -358,7 +358,7 @@ class TokenStream : TokenPeeper {
                     WordLiteralComposer("if", .If),
                     WordLiteralComposer("infix", .Infix),
                     WordLiteralComposer("in", .In),
-                    WordLiteralComposer("inout", .Inout),
+                    WordLiteralComposer("inout", .InOut),
                     WordLiteralComposer("is", .Is)
                 ]
             case "l":

@@ -23,7 +23,7 @@ public enum TokenKind : Equatable {
     case IntegerLiteral(Int, decimalDigits: Bool)
     case BooleanLiteral(Bool)
     case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
-    case In, Inout, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
+    case In, InOut, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
     case Precedence, Return, Right, Typealias, Unowned, Var, Weak, While
 }
 
@@ -234,9 +234,9 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         case .In: return true
         default: return false
         }
-    case .Inout:
+    case .InOut:
         switch rhs {
-        case .Inout: return true
+        case .InOut: return true
         default: return false
         }
     case .Is:

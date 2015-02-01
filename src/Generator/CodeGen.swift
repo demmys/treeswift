@@ -1,70 +1,88 @@
 import Parser
 
 public class Generator : ASTVisitor {
-    var module: Module
+    let module: Module
+    let global: Context
+    var local: Context
 
     public init(moduleID: String) {
         module = Module(moduleID: moduleID)
+        global = Context(module: module)
+        local = global
     }
 
-    public func visit(ast: TopLevelDeclaration) {
-        /*
-         * top_level_code function
-         */
-        var topLevelCodeType = FunctionType.get(
-            Type.getVoidTy(module.getContext()),
-            [],
-            false
-        )
-        var topLevelCode = Function.create(
-            topLevelCodeType,
-            .InternalLinkage,
-            "top_level_code",
-            module
-        )
-        topLevelCode.setCallingConv(.C)
-        var topLevelCodeBlock = BasicBlock.create(
-            module.getContext(),
-            "entry", 
-            topLevelCode,
-            nil
-        )
-        // return void
-        ReturnInst.create(module.getContext(), topLevelCodeBlock)
+    public func visit(expression: Expression) {
+        switch expression {
+        case let .InOut(id):
+            break
+        case let .Term(pre, bins):
+            break
+        }
+    }
 
-        /*
-         *  main function
-         */
-        var argcType = IntegerType.get(module.getContext(), 32)
-        var argvType = PointerType.get(
-            PointerType.get(
-                IntegerType.get(module.getContext(), 8),
-                .Generic
-            ),
-            .Generic
+    public func visit(declaration: Declaration) {
+        switch declaration {
+        case let .Constant(inits):
+            break
+        case let .Variable(inits):
+            break
+        case let .Typealias(id, ty):
+            break
+        case let .Function(id, params, ty, stms):
+            break
+        case let .OperatorFunction(name, params, ty, stms):
+            break
+        case let .PrefixOperator(name):
+            break
+        case let .PostfixOperator(name):
+            break
+        case let .InfixOperator(name, pre, ass):
+            break
+        }
+    }
+
+    public func visit(statement: Statement) {
+        switch statement {
+        case let .Term(exp):
+            exp.accept(self)
+        case let .Definition(dec):
+            dec.accept(self)
+        case let .For(cond, stms, id):
+            break
+        case let .ForIn(pat, exp, stms, id):
+            break
+        case let .While(cond, stms, id):
+            break
+        case let .DoWhile(cond, stms, id):
+            break
+        case let .If(cond, stms, els):
+            break
+        case let .Break(id):
+            break
+        case let .Continue(id):
+            break
+        case let .Return(exp):
+            break
+        }
+    }
+
+    public func visit(topLevelDeclaration: TopLevelDeclaration) {
+        let tlc = "top_level_code"
+        if let ctx = local.createFunction(tlc, clauses: [], ret: nil) {
+            if let ctx = local.createFunction("main", clauses: [], ret: "Int") {
+                ctx.addInst(.Call(tlc, []))
+                ctx.addInst(.Return(getConstantInt(32, value: 0)))
+            }
+            local = ctx
+            ctx.addInst(.Return(nil))
+        }
+    }
+
+    private func getConstantInt(bits: UInt32, value: Int) -> ConstantInt {
+        return ConstantInt.get(
+            module.getContext(),
+            APInt(numBits: bits, String(value), 10)
         )
-        var mainType = FunctionType.get(
-            IntegerType.get(module.getContext(), 32),
-            [argcType, argvType],
-            false
-        )
-        var main = Function.create(
-            mainType,
-            .ExternalLinkage,
-            "main",
-            module
-        )
-        main.setCallingConv(.C)
-        var arg = main.argBegin()
-        arg.setName("argc")
-        arg.next()
-        arg.setName("argv")
-        var mainBlock = BasicBlock.create(module.getContext(), "entry", main, nil)
-        // call top_level_code
-        var call = CallInst.create(topLevelCode, [], "", mainBlock)
-        // return 0
-        var zero = ConstantInt.get(module.getContext(), APInt(numBits: 32, "0", 10))
-        ReturnInst.create(module.getContext(), zero, mainBlock)
     }
 
     public func print(fileName: String) {

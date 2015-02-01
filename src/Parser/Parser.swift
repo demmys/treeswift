@@ -87,7 +87,14 @@ class TerminalSymbol : Symbol {
     func generateAST(token: Token) -> AST {
         switch token.kind {
         case let .Identifier(k):
-            return Identifier(k)
+            switch k {
+            case let .Identifier(s):
+                return Identifier(s)
+            case let .QuotedIdentifier(s):
+                return Identifier(s)
+            case let .ImplicitParameter(n):
+                assert(false, "Unexpected syntax error")
+            }
         case let .IntegerLiteral(n, _):
             return IntegerLiteral(n)
         case let .BooleanLiteral(b):
@@ -113,8 +120,8 @@ class TerminalSymbol : Symbol {
             return TypeCastingOperator.Is
         case .As:
             return TypeCastingOperator.As
-        case .Inout:
-            return Inout()
+        case .InOut:
+            return InOut()
         case .Var:
             return ValueClass.Var
         case .Let:
@@ -1016,7 +1023,7 @@ class FunctionTypeSymbol : NonTerminalSymbol {
     }
 
     override func generateAST(asts: [AST]) -> AST {
-        return Type.Function(FunctionType(asts[0] as Type, asts[2] as Type))
+        return Type.Function(ArrowType(asts[0] as Type, asts[2] as Type))
     }
 }
 
@@ -1033,12 +1040,12 @@ class ElementNameSymbol : NonTerminalSymbol {
 class TupleTypeElementSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in
-            var ahead = tp.look().kind == .Inout ? 1 : 0
+            var ahead = tp.look().kind == .InOut ? 1 : 0
             switch tp.look(ahead).kind {
             case .Identifier:
                 if tp.look(ahead + 1).kind == .Colon {
                     return [
-                        TerminalSymbol([.Inout], isOptional: true),
+                        TerminalSymbol([.InOut], isOptional: true),
                         TerminalSymbol(
                             [identifier],
                             errorGenerator: { [(.ExpectedIdentifier, $0)] }
@@ -1050,22 +1057,22 @@ class TupleTypeElementSymbol : NonTerminalSymbol {
                 break
             }
             return [
-                TerminalSymbol([.Inout], isOptional: true),
+                TerminalSymbol([.InOut], isOptional: true),
                 TypeSymbol()
             ]
         })
     }
 
     override func generateAST(asts: [AST]) -> AST {
-        var isInout = (asts[0] as? Inout) != nil
+        var isInOut = (asts[0] as? InOut) != nil
         if asts.count > 2 {
             return TupleTypeElement(
-                isInout,
+                isInOut,
                 (asts[1] as Identifier).value,
                 asts[2] as Type
             )
         }
-        return TupleTypeElement(isInout, nil, asts[1] as Type)
+        return TupleTypeElement(isInOut, nil, asts[1] as Type)
     }
 }
 
@@ -1626,7 +1633,7 @@ class ExternalParameterNameSymbol : NonTerminalSymbol {
 class ParameterSymbol : NonTerminalSymbol {
     init() {
         super.init({ tp in [
-            TerminalSymbol([.Inout], isOptional: true),
+            TerminalSymbol([.InOut], isOptional: true),
             TerminalSymbol([.Let, .Var], isOptional: true),
             TerminalSymbol([.Hash], isOptional: true),
             ExternalParameterNameSymbol(isOptional: true),
@@ -1645,8 +1652,8 @@ class ParameterSymbol : NonTerminalSymbol {
             asts[5] as Type,
             asts[6] as? Expression
         )
-        if let io = asts[0] as? Inout {
-            p.isInout = true
+        if let io = asts[0] as? InOut {
+            p.isInOut = true
         }
         if let v = asts[1] as? ValueClass {
             switch v {

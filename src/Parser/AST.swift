@@ -1,6 +1,9 @@
 import Util
 
 public protocol ASTVisitor {
+    func visit(Expression)
+    func visit(Declaration)
+    func visit(Statement)
     func visit(TopLevelDeclaration)
 }
 
@@ -19,8 +22,8 @@ class Terminal : AST {
 }
 
 class Identifier : AST {
-    var value: IdentifierKind
-    init(_ v: IdentifierKind) {
+    var value: String
+    init(_ v: String) {
         value = v
     }
     func accept(_: ASTVisitor) {}
@@ -68,7 +71,7 @@ class Underscore : AST {
     func accept(_: ASTVisitor) {}
 }
 
-class Inout : AST {
+class InOut : AST {
     init() {}
     func accept(_: ASTVisitor) {}
 }
@@ -88,7 +91,7 @@ enum ValueClass : AST {
  */
 public enum ExpressionElement : AST {
     case Unnamed(Expression)
-    case Named(IdentifierKind, Expression)
+    case Named(String, Expression)
     public func accept(_: ASTVisitor) {}
 }
 
@@ -101,8 +104,8 @@ class ExpressionElements : AST {
 }
 
 class Identifiers : AST {
-    var value: [IdentifierKind]
-    init(_ v: [IdentifierKind]) {
+    var value: [String]
+    init(_ v: [String]) {
         value = v
     }
     func accept(_: ASTVisitor) {}
@@ -110,18 +113,18 @@ class Identifiers : AST {
 
 public enum ClosureTypeClause : AST {
     case Typed(ParameterClause, Type?)
-    case Untyped([IdentifierKind], Type?)
+    case Untyped([String], Type?)
     public func accept(_: ASTVisitor) {}
 }
 
-enum CaptureSpecifier : AST {
+public enum CaptureSpecifier : AST {
     case Weak, Unowned
-    func accept(_: ASTVisitor) {}
+    public func accept(_: ASTVisitor) {}
 }
 
 public class CaptureElement : AST {
-    var specifier: CaptureSpecifier
-    var element: Expression
+    public var specifier: CaptureSpecifier
+    public var element: Expression
     init(_ s: CaptureSpecifier, _ e: Expression) {
         specifier = s
         element = e
@@ -148,9 +151,9 @@ class ClosureSignature : AST {
 }
 
 public class ClosureExpression : AST {
-    var capture: [CaptureElement]?
-    var type: ClosureTypeClause?
-    var body: [Statement]
+    public var capture: [CaptureElement]?
+    public var type: ClosureTypeClause?
+    public var body: [Statement]
     init(_ c: [CaptureElement]?, _ t: ClosureTypeClause?, _ b: [Statement]) {
         capture = c
         type = t
@@ -167,7 +170,7 @@ public enum LiteralExpression : AST {
 }
 
 public enum PrimaryExpression : AST {
-    case Reference(IdentifierKind)
+    case Reference(String)
     case Value(LiteralExpression)
     case Closure(ClosureExpression)
     case Parenthesized([ExpressionElement])
@@ -176,7 +179,7 @@ public enum PrimaryExpression : AST {
 }
 
 public enum MemberExpression {
-    case Named(IdentifierKind)
+    case Named(String)
     case Unnamed(Int)
 }
 
@@ -197,9 +200,9 @@ class PostfixExpressions : AST {
 }
 
 public class PrefixExpression : AST {
-    var op: String?
-    var head: PrimaryExpression
-    var tail: [PostfixExpression]?
+    public var op: String?
+    public var head: PrimaryExpression
+    public var tail: [PostfixExpression]?
     init(_ o: String?, _ h: PrimaryExpression, _ t: [PostfixExpression]?) {
         op = o
         head = h
@@ -232,9 +235,9 @@ class BinaryExpressions : AST {
 }
 
 public enum Expression : AST {
-    case InOut(IdentifierKind)
+    case InOut(String)
     case Term(PrefixExpression, [BinaryExpression]?)
-    public func accept(_: ASTVisitor) {}
+    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 class Expressions : AST {
@@ -249,16 +252,16 @@ class Expressions : AST {
  * Types
  */
 public class ArrayType {
-    var value: Type
+    public var value: Type
     init(_ v: Type) {
         value = v
     }
     public func accept(_: ASTVisitor) {}
 }
 
-public class FunctionType {
-    var left: Type
-    var right: Type
+public class ArrowType {
+    public var left: Type
+    public var right: Type
     init(_ l: Type, _ r: Type) {
         left = l
         right = r
@@ -267,11 +270,11 @@ public class FunctionType {
 }
 
 public class TupleTypeElement : AST {
-    var isInout: Bool
-    var name: IdentifierKind?
-    var type: Type
-    init(_ i: Bool, _ n: IdentifierKind?, _ t: Type) {
-        isInout = i
+    public var isInOut: Bool
+    public var name: String?
+    public var type: Type
+    init(_ i: Bool, _ n: String?, _ t: Type) {
+        isInOut = i
         name = n
         type = t
     }
@@ -287,9 +290,9 @@ class TupleTypeElements : AST {
 }
 
 public enum Type : AST {
-    case Single(IdentifierKind)
+    case Single(String)
     case Tuple([TupleTypeElement]?)
-    case Function(FunctionType)
+    case Function(ArrowType)
     case Array(ArrayType)
     public func accept(_: ASTVisitor) {}
 }
@@ -306,7 +309,7 @@ class TuplePatternElements : AST {
 }
 
 public class PatternWrapper {
-    var value: Pattern
+    public var value: Pattern
     init(_ value: Pattern) {
         self.value = value
     }
@@ -321,7 +324,7 @@ public enum BindingPattern : AST {
 
 public enum Pattern : AST {
     case Wildcard(Type?)
-    case Variable(IdentifierKind, Type?)
+    case Variable(String, Type?)
     case ValueBinding(BindingPattern)
     case Tuple([Pattern]?, Type?)
     public func accept(_: ASTVisitor) {}
@@ -346,23 +349,23 @@ class InfixOperatorAttributes : AST {
 }
 
 class ParameterName : AST {
-    var value: IdentifierKind?
-    init(_ v: IdentifierKind?) {
+    var value: String?
+    init(_ v: String?) {
         value = v
     }
     func accept(_: ASTVisitor) {}
 }
 
 public class Parameter : AST {
-    var isInout: Bool
-    var isConstant: Bool
-    var externalName: IdentifierKind?
-    var localName: IdentifierKind?
-    var type: Type
-    var defaultArgument: Expression?
-    init(_ i: Bool, _ c: Bool, _ e: IdentifierKind?,
-         _ l: IdentifierKind?, _ t: Type, _ d: Expression?) {
-        isInout = i
+    public var isInOut: Bool
+    public var isConstant: Bool
+    public var externalName: String?
+    public var localName: String?
+    public var type: Type
+    public var defaultArgument: Expression?
+    init(_ i: Bool, _ c: Bool, _ e: String?,
+         _ l: String?, _ t: Type, _ d: Expression?) {
+        isInOut = i
         isConstant = c
         externalName = e
         localName = l
@@ -381,7 +384,7 @@ class Parameters : AST {
 }
 
 public class ParameterClause : AST {
-    var value: [Parameter]?
+    public var value: [Parameter]?
     init(_ v: [Parameter]?) {
         value = v
     }
@@ -407,14 +410,14 @@ class FunctionSignature : AST {
 }
 
 enum FunctionName : AST {
-    case Function(IdentifierKind)
+    case Function(String)
     case Operator(String)
     func accept(_: ASTVisitor) {}
 }
 
 public class PatternInitializer : AST {
-    var pattern: Pattern
-    var initializer: Expression?
+    public var pattern: Pattern
+    public var initializer: Expression?
     init(_ p: Pattern, _ i: Expression?) {
         pattern = p
         initializer = i
@@ -433,13 +436,13 @@ class PatternInitializers : AST {
 public enum Declaration : AST {
     case Constant([PatternInitializer])
     case Variable([PatternInitializer])
-    case Typealias(IdentifierKind, Type)
-    case Function(IdentifierKind, [ParameterClause], Type?, [Statement]?)
+    case Typealias(String, Type)
+    case Function(String, [ParameterClause], Type?, [Statement]?)
     case OperatorFunction(String, [ParameterClause], Type?, [Statement]?)
     case PrefixOperator(String)
     case PostfixOperator(String)
     case InfixOperator(String, Int?, Associativity?)
-    public func accept(_: ASTVisitor) {}
+    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 /*
@@ -447,7 +450,7 @@ public enum Declaration : AST {
  */
 
 public class StatementWrapper {
-    var value: Statement
+    public var value: Statement
     init(_ value: Statement) {
         self.value = value
     }
@@ -470,39 +473,39 @@ public enum WhileCondition : AST {
     public func accept(_: ASTVisitor) {}
 }
 
-enum ForInit : AST {
+public enum ForInit : AST {
     case VariableDeclaration(Declaration)
     case Terms([Expression])
-    func accept(_: ASTVisitor) {}
-}
-
-public enum Statement : AST {
-    case Term(Expression)
-    case Definition(Declaration)
-    // loop-statement, labeled-statement
-    case For(ForCondition, [Statement]?, IdentifierKind?)
-    case ForIn(Pattern, Expression, [Statement]?, IdentifierKind?)
-    case While(WhileCondition, [Statement]?, IdentifierKind?)
-    case DoWhile(WhileCondition, [Statement]?, IdentifierKind?)
-    // branch-statement
-    case If(IfCondition, [Statement]?, ElseClause?)
-    // control-transfer-statement
-    case Break(IdentifierKind?)
-    case Continue(IdentifierKind?)
-    case Return(Expression?)
     public func accept(_: ASTVisitor) {}
 }
 
 public class ForCondition : AST {
-    var initial: ForInit?
-    var condition: Expression?
-    var finalize: Expression?
+    public var initial: ForInit?
+    public var condition: Expression?
+    public var finalize: Expression?
     init(_ i: ForInit?, _ c: Expression?, _ f: Expression?) {
         initial = i
         condition = c
         finalize = f
     }
     public func accept(_: ASTVisitor) {}
+}
+
+public enum Statement : AST {
+    case Term(Expression)
+    case Definition(Declaration)
+    // loop-statement, labeled-statement
+    case For(ForCondition, [Statement]?, String?)
+    case ForIn(Pattern, Expression, [Statement]?, String?)
+    case While(WhileCondition, [Statement]?, String?)
+    case DoWhile(WhileCondition, [Statement]?, String?)
+    // branch-statement
+    case If(IfCondition, [Statement]?, ElseClause?)
+    // control-transfer-statement
+    case Break(String?)
+    case Continue(String?)
+    case Return(Expression?)
+    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 class Statements : AST {
@@ -517,11 +520,9 @@ class Statements : AST {
  * Top level declaration
  */
 public class TopLevelDeclaration : AST {
-    var value: [Statement]?
+    public var value: [Statement]?
     init(_ v: [Statement]?) {
         value = v
     }
-    public func accept(visitor: ASTVisitor) {
-        visitor.visit(self)
-    }
+    public func accept(v: ASTVisitor) { v.visit(self) }
 }

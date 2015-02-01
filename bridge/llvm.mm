@@ -124,7 +124,7 @@
 @end
 
 
-@implementation Type {
+@implementation LLVMType {
     llvm::Type *raw;
 };
 
@@ -138,9 +138,9 @@
     return raw;
 }
 
-+(Type *)getVoidTy: (LLVMContext *)c {
++(LLVMType *)getVoidTy: (LLVMContext *)c {
     llvm::Type *raw = llvm::Type::getVoidTy(*c.raw);
-    return [[Type alloc] initWithRawObject: raw];
+    return [[LLVMType alloc] initWithRawObject: raw];
 }
 
 @end
@@ -174,7 +174,7 @@
     return self;
 }
 
-+(PointerType *)get: (Type *)elementType : (AddressSpace)addressSpace {
++(PointerType *)get: (LLVMType *)elementType : (AddressSpace)addressSpace {
     llvm::PointerType *raw = llvm::PointerType::get(elementType.raw, addressSpace);
     return [[PointerType alloc] initWithRawObject: raw];
 }
@@ -192,7 +192,7 @@
     return self;
 }
 
-+(ArrayType *)get: (Type *)elementType : (unsigned long)numElements {
++(ArrayType *)get: (LLVMType *)elementType : (unsigned long)numElements {
     llvm::ArrayType *raw = llvm::ArrayType::get(elementType.raw, numElements);
     return [[ArrayType alloc] initWithRawObject: raw];
 }
@@ -210,9 +210,9 @@
     return self;
 }
 
-+(FunctionType *)get: (Type *)result : (NSArray *)params : (bool)isVarArg {
++(FunctionType *)get: (LLVMType *)result : (NSArray *)params : (bool)isVarArg {
     std::vector<llvm::Type *> p;
-    for(Type *t in params) {
+    for(LLVMType *t in params) {
         p.push_back(t.raw);
     }
     llvm::FunctionType *raw = llvm::FunctionType::get(
@@ -335,7 +335,7 @@
 }
 
 -(id)initWithModule: (Module *)m
-                   : (Type *)ty
+                   : (LLVMType *)ty
                    : (bool)isConstant
                    : (LinkageTypes)linkage
                    : (Constant *)initializer
