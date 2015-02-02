@@ -1,6 +1,8 @@
 import Util
 
 public protocol ASTVisitor {
+    func visit(LiteralExpression)
+    func visit(PrefixExpression)
     func visit(Expression)
     func visit(Declaration)
     func visit(Statement)
@@ -87,7 +89,7 @@ enum ValueClass : AST {
 }
 
 /*
- * Expression
+ * Expressions
  */
 public enum ExpressionElement : AST {
     case Unnamed(Expression)
@@ -166,7 +168,7 @@ public enum LiteralExpression : AST {
     case Integer(Int)
     case True, False, Nil
     case Array([Expression]?)
-    public func accept(_: ASTVisitor) {}
+    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 public enum PrimaryExpression : AST {
@@ -208,7 +210,7 @@ public class PrefixExpression : AST {
         head = h
         tail = t
     }
-    public func accept(_: ASTVisitor) {}
+    public func accept(v: ASTVisitor) { v.visit(self) }
 }
 
 enum TypeCastingOperator : AST {
@@ -331,7 +333,7 @@ public enum Pattern : AST {
 }
 
 /*
- * Declaration
+ * Declarations
  */
 public enum Associativity : AST {
     case Left, Right, None

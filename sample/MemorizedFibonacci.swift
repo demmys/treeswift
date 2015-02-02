@@ -9,7 +9,7 @@ func memorizedFibonacci(n: Int) -> Int {
     return b
 }
 
-println(memorizedFibonacci(45))
+memorizedFibonacci(45)
 for var i: Int = 0; i < 10000000; ++i {
     memorizedFibonacci(45)
 }

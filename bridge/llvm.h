@@ -77,17 +77,13 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
 -(void)close;
 @end
 
-@interface IRBuilder : NSObject
--(id)init;
+@interface LLVMContext : NSObject
 @end
 
 @interface APInt : NSObject
 -(id)initWithNumBits: (unsigned int)numBits
                     : (const char *)str
                     : (unsigned char)radix;
-@end
-
-@interface LLVMContext : NSObject
 @end
 
 @interface Module : NSObject
@@ -149,6 +145,12 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
                    : (bool)isExternallyInitialized;
 @end
 
+@interface ValueSymbolTable : NSObject
+-(Value *)lookup: (const char *)name;
+@end
+
+@class BasicBlock;
+
 @interface FunctionArgIterator : NSObject
 -(void)next;
 -(void)setName: (const char *)name;
@@ -161,6 +163,7 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
                    : (Module *)m;
 -(void) setCallingConv: (CallingConv)cc;
 -(FunctionArgIterator *)argBegin;
+-(ValueSymbolTable *)getValueSymbolTable;
 @end
 
 @interface BasicBlock : NSObject
@@ -168,21 +171,51 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
                      : (const char *)name
                      : (Function *)parent
                      : (BasicBlock *)insertBefore;
++(BasicBlock *)create: (LLVMContext *)context
+                     : (const char *)name
+                     : (Function *)parent
+                     : (BasicBlock *)insertBefore;
+-(ValueSymbolTable *)getValueSymbolTable;
 @end
 
-@interface CallInst : NSObject
+@interface LLVMInstruction : Value
+@end
+
+@interface AllocaInst : LLVMInstruction
+-(id)initWithType: (LLVMType *)ty
+                 : (Value *)arraySize
+                 : (const char *)name
+                 : (BasicBlock *)insertAtEnd;
+@end
+
+@interface LoadInst : LLVMInstruction
+-(id)initWithValue: (Value *)ptr
+                  : (const char *)nameStr
+                  : (BasicBlock *)insertAtEnd;
+@end
+
+@interface StoreInst : LLVMInstruction
+-(id)initWithVal: (Value *)val
+                 : (Value *)ptr
+                 : (BasicBlock *)insertAtEnd;
+@end
+
+@interface CallInst : LLVMInstruction
 +(CallInst *) create: (Value *)func
                     : (NSArray *)args
                     : (const char *)nameStr
                     : (BasicBlock *)insertAtEnd;
 @end
 
-@interface ReturnInst : NSObject
+@interface ReturnInst : LLVMInstruction
 +(ReturnInst *)create: (LLVMContext *)c
                      : (Value *)retVal
                      : (BasicBlock *)insertAtEnd;
 +(ReturnInst *)create: (LLVMContext *)c
                      : (BasicBlock *)insertAtEnd;
+@end
+
+@interface BranchInst : LLVMInstruction
 @end
 
 @interface Pass : NSObject
@@ -196,6 +229,24 @@ typedef NS_ENUM(NSInteger, ThreadLocalMode) {
 -(id)init;
 -(void)add: (Pass *)p;
 -(bool)run: (Module *)m;
+@end
+
+@interface IRBuilder : NSObject
+-(id)initWithC: (LLVMContext *)c;
+-(void)setInsertPoint: (BasicBlock *)theBB;
+-(Value *)createAdd: (Value *)lhs
+                   : (Value *)rhs
+                   : (const char *)name;
+-(Value *)createSub: (Value *)lhs
+                   : (Value *)rhs
+                   : (const char *)name;
+-(Value *)createICmpSLT: (Value *)lhs
+                       : (Value *)rhs
+                       : (const char *)name;
+-(Value *)createBr: (BasicBlock *)dest;
+-(Value *)createCondBr: (Value *)cond
+                      : (BasicBlock *)thenBlock
+                      : (BasicBlock *)elseBlock;
 @end
 
 #endif

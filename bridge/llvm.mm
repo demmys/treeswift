@@ -23,58 +23,11 @@
     return self;
 }
 
--(void)dealloc {
-    delete(raw);
-    [super dealloc];
-}
-
 -(void)close {
     raw->close();
 }
 
 -(llvm::raw_fd_ostream *)raw {
-    return raw;
-}
-
-@end
-
-
-@implementation IRBuilder {
-    llvm::IRBuilder<> *raw;
-};
-
--(id)init {
-    self = [super init];
-    raw = new llvm::IRBuilder<>(llvm::getGlobalContext());
-    return self;
-}
-
--(void)dealloc {
-    delete(raw);
-    [super dealloc];
-}
-
-@end
-
-
-@implementation APInt {
-    llvm::APInt *raw;
-};
-
--(id)initWithNumBits: (unsigned int)numBits
-                    : (const char *)str
-                    : (unsigned char)radix {
-    self = [super init];
-    raw = new llvm::APInt(numBits, llvm::StringRef(str), radix);
-    return self;
-}
-
--(void)dealloc {
-    delete(raw);
-    [super dealloc];
-}
-
--(llvm::APInt *)raw {
     return raw;
 }
 
@@ -98,6 +51,25 @@
 @end
 
 
+@implementation APInt {
+    llvm::APInt *raw;
+};
+
+-(id)initWithNumBits: (unsigned int)numBits
+                    : (const char *)str
+                    : (unsigned char)radix {
+    self = [super init];
+    raw = new llvm::APInt(numBits, llvm::StringRef(str), radix);
+    return self;
+}
+
+-(llvm::APInt *)raw {
+    return raw;
+}
+
+@end
+
+
 @implementation Module {
     llvm::Module *raw;
 };
@@ -106,11 +78,6 @@
     self = [super init];
     raw = new llvm::Module(llvm::StringRef(moduleID), llvm::getGlobalContext());
     return self;
-}
-
--(void)dealloc {
-    delete(raw);
-    [super dealloc];
 }
 
 -(llvm::Module *)raw {
@@ -368,6 +335,28 @@
 @end
 
 
+@implementation ValueSymbolTable {
+    llvm::ValueSymbolTable *raw;
+};
+
+-(id)initWithRawObject: (llvm::ValueSymbolTable *)v {
+    self = [super init];
+    raw = v;
+    return self;
+}
+
+-(llvm::ValueSymbolTable *)raw {
+    return raw;
+}
+
+-(Value *)lookup: (const char *)name {
+    llvm::Value *v = raw->lookup(llvm::StringRef(name));
+    return [[Value alloc] initWithRawObject: v];
+}
+
+@end
+
+
 @implementation FunctionArgIterator {
     llvm::Function::arg_iterator raw;
 };
@@ -425,6 +414,11 @@
     return [[FunctionArgIterator alloc] initWithRawObject: a];
 }
 
+-(ValueSymbolTable *)getValueSymbolTable {
+    llvm::ValueSymbolTable *t = &(raw->getValueSymbolTable());
+    return [[ValueSymbolTable alloc] initWithRawObject: t];
+}
+
 -(llvm::Function *)raw {
     return raw;
 }
@@ -459,6 +453,96 @@
     return raw;
 }
 
+-(ValueSymbolTable *)getValueSymbolTable {
+    llvm::ValueSymbolTable *t = raw->getValueSymbolTable();
+    return [[ValueSymbolTable alloc] initWithRawObject: t];
+}
+
+@end
+
+
+@implementation LLVMInstruction {
+    llvm::Instruction *raw;
+};
+
+-(id)initWithRawObject: (llvm::Instruction *)i {
+    self = [super initWithRawObject: i];
+    raw = i;
+    return self;
+}
+
+-(llvm::Instruction *)raw {
+    return raw;
+}
+
+@end
+
+
+@implementation AllocaInst {
+    llvm::AllocaInst *raw;
+};
+
+-(id)initWithType: (LLVMType *)ty
+                 : (Value *)arraySize
+                 : (const char *)name
+                 : (BasicBlock *)insertAtEnd {
+    llvm::AllocaInst *a = new llvm::AllocaInst(
+        ty.raw,
+        arraySize.raw,
+        llvm::Twine(name),
+        insertAtEnd.raw
+    );
+    self = [super initWithRawObject: a];
+    raw = a;
+    return self;
+}
+
+-(llvm::AllocaInst *)raw {
+    return raw;
+}
+
+@end
+
+
+@implementation LoadInst {
+    llvm::LoadInst *raw;
+};
+
+-(id)initWithValue: (Value *)ptr
+                  : (const char *)nameStr
+                  : (BasicBlock *)insertAtEnd {
+    llvm::LoadInst *l = new llvm::LoadInst(ptr.raw,
+                                           llvm::Twine(nameStr),
+                                           insertAtEnd.raw);
+    self = [super initWithRawObject: l];
+    raw = l;
+    return self;
+}
+
+-(llvm::LoadInst *)raw {
+    return raw;
+}
+
+@end
+
+
+@implementation StoreInst {
+    llvm::StoreInst *raw;
+};
+
+-(id)initWithVal: (Value *)val
+                : (Value *)ptr
+                : (BasicBlock *)insertAtEnd {
+    llvm::StoreInst *s = new llvm::StoreInst(val.raw, ptr.raw, insertAtEnd.raw);
+    self = [super initWithRawObject: s];
+    raw = s;
+    return self;
+}
+
+-(llvm::StoreInst *)raw {
+    return raw;
+}
+
 @end
 
 
@@ -467,7 +551,7 @@
 };
 
 -(id)initWithRawObject: (llvm::CallInst *)c {
-    self = [super init];
+    self = [super initWithRawObject: c];
     raw = c;
     return self;
 }
@@ -497,7 +581,7 @@
 };
 
 -(id)initWithRawObject: (llvm::ReturnInst *)r {
-    self = [super init];
+    self = [super initWithRawObject: r];
     raw = r;
     return self;
 }
@@ -520,6 +604,19 @@
         insertAtEnd.raw
     );
     return [[ReturnInst alloc] initWithRawObject: raw];
+}
+
+@end
+
+
+@implementation BranchInst {
+    llvm::BranchInst *raw;
+};
+
+-(id)initWithRawObject: (llvm::BranchInst *)b {
+    self = [super initWithRawObject: b];
+    raw = b;
+    return self;
 }
 
 @end
@@ -574,17 +671,62 @@
     return self;
 }
 
--(void)dealloc {
-    delete(raw);
-    [super dealloc];
-}
-
 -(void)add: (Pass *)p {
     raw->add(p.raw);
 }
 
 -(bool)run: (Module *)m {
     return raw->run(*m.raw);
+}
+
+@end
+
+
+@implementation IRBuilder {
+    llvm::IRBuilder<> *raw;
+};
+
+-(id)initWithC: (LLVMContext *)c {
+    self = [super init];
+    raw = new llvm::IRBuilder<>(*c.raw);
+    return self;
+}
+
+-(void)setInsertPoint: (BasicBlock *)theBB {
+    raw->SetInsertPoint(theBB.raw);
+}
+
+-(Value *)createAdd: (Value *)lhs
+                   : (Value *)rhs
+                   : (const char *)name {
+    llvm::Value *v = raw->CreateAdd(lhs.raw, rhs.raw, llvm::Twine(name));
+    return [[Value alloc] initWithRawObject: v];
+}
+
+-(Value *)createSub: (Value *)lhs
+                   : (Value *)rhs
+                   : (const char *)name {
+    llvm::Value *v = raw->CreateSub(lhs.raw, rhs.raw, llvm::Twine(name));
+    return [[Value alloc] initWithRawObject: v];
+}
+
+-(Value *)createICmpSLT: (Value *)lhs
+                       : (Value *)rhs
+                       : (const char *)name {
+    llvm::Value *v = raw->CreateICmpSLT(lhs.raw, rhs.raw, llvm::Twine(name));
+    return [[Value alloc] initWithRawObject: v];
+}
+
+-(BranchInst *)createBr: (BasicBlock *)dest {
+    llvm::BranchInst *b = raw->CreateBr(dest.raw);
+    return [[BranchInst alloc] initWithRawObject: b];
+}
+
+-(BranchInst *)createCondBr: (Value *)cond
+                      : (BasicBlock *)thenBlock
+                      : (BasicBlock *)elseBlock {
+    llvm::BranchInst *b = raw->CreateCondBr(cond.raw, thenBlock.raw, elseBlock.raw);
+    return [[BranchInst alloc] initWithRawObject: b];
 }
 
 @end
