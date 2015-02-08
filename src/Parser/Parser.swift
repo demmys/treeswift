@@ -82,6 +82,7 @@ class TerminalSymbol : Symbol {
             return .Failure(eg(inputToken.info))
         }
         assert(false, "Unexpected syntax error")
+        return .Failure([])
     }
 
     func generateAST(token: Token) -> AST {
@@ -139,6 +140,7 @@ class TerminalSymbol : Symbol {
         default:
             return Terminal()
         }
+        return OptionalParts()
     }
 }
 
@@ -188,6 +190,7 @@ class NonTerminalSymbol : Symbol {
 
     func generateAST(asts: [AST]) -> AST {
         assert(false, "Unimplemented AST generation")
+        return OptionalParts()
     }
 }
 
@@ -452,6 +455,7 @@ class ClosureTypeClauseSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 
@@ -687,6 +691,7 @@ class ExplicitMemberExpressionSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 
@@ -1345,6 +1350,7 @@ class PatternSymbol : NonTerminalSymbol {
             default:
                 assert(false, "Unexpected syntax error")
             }
+            return nil
         })
     }
 
@@ -1363,6 +1369,7 @@ class PatternSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 
@@ -1826,6 +1833,7 @@ class FunctionNameSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 
@@ -2097,6 +2105,7 @@ class ForInitSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 
@@ -2234,6 +2243,7 @@ class WhileConditionSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 
@@ -2426,6 +2436,7 @@ class LabeledStatementSymbol : NonTerminalSymbol {
         default:
             assert(false, "Unexpected syntax error")
         }
+        return OptionalParts()
     }
 }
 

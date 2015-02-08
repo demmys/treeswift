@@ -1,5 +1,5 @@
 SWIFTC = swiftc
-FLAGS = -I /usr/include -I $(CURDIR)/$(INC_DIR) -import-objc-header $(CURDIR)/$(BRIDGING_HEADER) -F /System/Library/Frameworks -g
+FLAGS = -I /usr/include -I $(CURDIR)/$(INC_DIR) -import-objc-header $(CURDIR)/$(BRIDGING_HEADER) -F /System/Library/Frameworks -O
 LD = swiftc
 LDFLAGS = -module-name TreeSwift
 
@@ -19,7 +19,7 @@ BRIDGE_DIR = bridge
 BRIDGING_HEADER = $(BRIDGE_DIR)/TreeSwift-Bridging-Header.h
 
 OBJCXX = clang++
-OBJCXX_FLAGS = -Wall `llvm-config --cxxflags --libs --ldflags --system-libs` -stdlib=libc++ -framework Foundation -g
+OBJCXX_FLAGS = -Wall `llvm-config --cxxflags --libs --ldflags --system-libs` -stdlib=libc++ -framework Foundation -O2
 
 OBJCXX_SRCS = $(shell find $(BRIDGE_DIR) -name '*.mm')
 OBJCXX_LIB = $(LIB_DIR)/libllvmBridge.dylib

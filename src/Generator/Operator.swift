@@ -15,10 +15,12 @@ class Operator {
 
     func apply(c: Context, x: Value) -> Value {
         assert(false, "Unimplemented operator")
+        return x
     }
 
     func apply(c: Context, a: Value, b: Value) -> Value {
         assert(false, "Unimplemented operator")
+        return a
     }
 }
 
