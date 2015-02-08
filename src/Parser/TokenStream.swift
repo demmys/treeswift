@@ -38,7 +38,7 @@ class TokenStream : TokenPeeper {
         var cs: CharacterStream
         var source: String? = nil
         // set `CharacterClass.LineFeed` to `prev`
-        // in order to remove linefeed in the head of file
+        // in order to remove line feed in the head of the file
         var prev: CharacterClass = .LineFeed
         var exprev: CharacterClass = .LineFeed
 
@@ -123,7 +123,7 @@ class TokenStream : TokenPeeper {
         case .LineFeed:
             switch ctx.prev {
             case .Space:
-                // ignore line composed by space or block comment only
+                // ignore line which is composed of the only spaces or block comments
                 if ctx.exprev == .LineFeed {
                     fallthrough
                 }
@@ -211,9 +211,8 @@ class TokenStream : TokenPeeper {
                 case .LineFeed, .EndOfFile:
                     // a comment produces nothing
                     ctx.reset()
-                    // duplicated linefeed will be ignored
-                    // because of the ignoring operation in
-                    // linefeed lexical analyzation
+                    // duplicative line feeds will be ignored
+                    // in the lexical analyzation of line feed
                     return load(classified: cc)
                 default:
                     // ignore comment characters
@@ -234,7 +233,7 @@ class TokenStream : TokenPeeper {
                         // consume like a scape
                         ctx.consume(consumed: .Space, n: 2)
                     } else {
-                        // avoid duplicated space consumption
+                        // avoid duplicative space consumption
                         ctx.consume(n: 2)
                     }
                     --depth
