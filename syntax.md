@@ -1,4 +1,10 @@
-# Non terminal symbol
+Syntax of TreeSwift
+=====
+
+Below are the syntax of TreeSwift.  
+Described in the original format like cross between EBNF and Regular expression.
+
+## Non terminal symbol
 
 ### Top level declaration
 
@@ -30,7 +36,7 @@ loop-statement -> for-statement
 
 for-statement    -> For for-condition code-block
                   | For LeftParenthesis for-condition RightParenthesis code-block
-for-condition    -> for-init? Semicolon for-confirmation? Semicolon for-execute-post?
+for-condition    -> for-init? Semicolon for-confirmation? Semicolon for-finalize?
 for-init         -> variable-declaration
                   | expression-list
 for-confirmation -> expression \ze ^Semicolon
@@ -42,7 +48,7 @@ while-statement -> While while-condition code-block
 while-condition -> expression
                  | declaration
 
-do-while-statement -> Do code-block while while-condition
+do-while-statement -> Do code-block While while-condition
 ```
 
 #### Branch statement
@@ -284,7 +290,7 @@ literal -> IntegerLiteral
 ```
 
 
-# Terminal symbol
+## Terminal symbol
 
 ### IgnoredSymbol
 
