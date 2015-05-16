@@ -8,6 +8,7 @@ Described in the original format like cross between EBNF and Regular expression.
 
 * [Top level declaration and Statements](top_level_declaration_and_statements.md)
 * [Declarations](declarations.md)
+* [Patterns](patterns.md)
 * [Types](types.md)
 * [Expressions and Literals](expressions_and_literals.md)
 
