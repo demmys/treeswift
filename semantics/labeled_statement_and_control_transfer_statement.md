@@ -41,6 +41,6 @@ return-statement (-> Return) =
 
 return-statement (-> Return expression) =
 ```llvm
-  ; %0 = expression($0)...
-  ret typeof(%0) %0
+  %0 = \(expression($0)...)
+  ret \(typeof(%0)) %0
 ```

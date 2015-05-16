@@ -13,7 +13,7 @@ for-statement (-> For LeftParenthesis? for-init? Semicolon expression Semicolon 
   br label %0
 
 ; <label>:0
-  ; %1 = expression($0)...
+  %1 = \(expression($0)...)
   br i1 %1, label %2, label %4
 
 ; <label>:2
@@ -64,7 +64,7 @@ while-statement (-> While expression code-block) =
   br label %0
 
 ; <label>:0
-  ; %1 = expression($0)...
+  %1 = \(expression($0)...)
   br i1 %1, label %2, label %3
 
 ; <label>:2
@@ -87,7 +87,7 @@ do-while-statement (-> Do code-block While expression) =
 
 ; <label>:0
   ; code-block($0)...
-  ; %1 = expression($0)...
+  %1 = \(expression($0)...)
   br i1 %1, label %0, label %2
 
 ; <label>:2

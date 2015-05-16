@@ -7,7 +7,7 @@ branch-statement (-> *) =
 
 if-statement (-> If expression code-block else-clause) =
 ```llvm
-  ; %0 = expression($0)...
+  %0 = \(expression($0)...)
   br i1 %0, label %1, label %2
 
 ; <label>:1
@@ -23,7 +23,7 @@ if-statement (-> If expression code-block else-clause) =
 
 if-statement (-> If expression code-block) =
 ```llvm
-  ; %0 = expression($0)...
+  %0 = \(expression($0)...)
   br i1 %0, label %1, label %2
 
 ; <label>:1
