@@ -46,8 +46,8 @@ var c: Context?
 * [Loop statement](loop_statement.md)
 * [Branch statement](branch_statement.md)
 * [Labeled statement and Control transfer statement](labeled_statement_and_control_transfer_statement.md)
-* Declarations
-* Constant declaration, Variable declaration
+* [Declarations](declarations.md)
+* [Constant declaration, Variable declaration](constant_declaration_variable_declaration.md)
 * Type alias declaration
 * Function declaration
 * Operator declaration
