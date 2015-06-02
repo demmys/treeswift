@@ -51,7 +51,13 @@ func functionNaming(Identifier,
 ```swift
 func functionReturnTyping(_ remainedParameterClauses: [Parameters],
                           function-result(-> Arrow type)?) -> String {
-    return remainedParameterClauses.count > 0 ? "%treeswift.function" : typeof(type)
+    if remainedParameterClauses.count > 0 {
+        return "%treeswift.function"
+    }
+    if let t = type {
+        return typeof(t)
+    }
+    return "void"
 }
 ```
 
@@ -66,9 +72,25 @@ func functionParameterTyping(_ curriedParameterClauses: [Parameters],
 }
 ```
 
+### Curried context theories
+
+```swift
+func sizeOfContext(_ parameterClauses: [Parameters]) -> Int {
+    return parameterClauses.reduce(0, combine: {
+        $1.reduce($0, combine: { $0 + sizeof($1.1) })
+    })
+}
+```
+
+```swift
+func structOfContext(_ parameterClauses: [Parameters]) -> String {
+    return "{ " + ", ".join(parameterClauses.flatMap({ $0.map({ typeof($0) }))) + " }"
+}
+```
+
 ### Function declaration
 
-function-declaration (-> Func Identifier parameter-clauses(-> parameter-clause parameter-clauses') function-result code-block) =
+function-declaration (-> Func Identifier parameter-clauses(-> parameter-clause parameter-clauses') function-result(-> Arrow type)? code-block) =
 ```llvm
 %treeswift.function = type { i8*, i8* }
 
@@ -86,25 +108,82 @@ declare void @free(i8*)
     ; let returnType = functionReturnTyping(remained, function-result)
     ; let parameterType = functionParameterTyping(curried, given)
 
-    ; if curried.count > 0 {
-
-define internal \(returnType) \(name)(\(parameterType)) {
+    ; if curried.count == 0 { [*1]
+        ; for var i = 0; i < given.count; ++i {
+            ; if let defaultExpression = given[i].2 {
+define hidden \(typeof(given[i].1)) @\(name)_A\(i)() {
 entry:
-  ; code-block($0)... [*1]
+  %0 = \(defaultExpression(Context(parent: $0.getGlobal()))...) [*2]
 }
-
+            ; }
+        ; }
+    ; }
+    ; if remained.count > 0 { [*3]
+        ; let size = sizeOfContext(parameterClauses)
+        ; let struct = structOfContext(parameterClauses)
+        ; var n = given.count + 1
+define hidden %treeswift.function @\(name)(\(parameterType)) {
+entry:
+        ; if curried.count == 0 {
+  %\(n) = call i8* @malloc(i32 \(size))
+                ; ++n
+        ; }
+  %\(n) = bitcast i8* %\(n) to \(struct)*
+        ; var i = 0
+        ; var j = curried.count == 0 ? 0 : curried.flatMap({ $0 }).count
+        ; for ; i < given.count; ++i, ++j {
+  %\(n + i) = getelementptr inbounds \(struct)* %\(n), i32 0, i32 \(j)
+  store \(typeof(given[i].1)) %\(i), \(typeof(given[i].1))* %\(n + i)
+        ; }
+        ; let nextCurried = [].join([curried, [given]])
+        ; let nextGiven = remained[0]
+        ; let nextRemained = remained[1..<remained.count]
+        ; let nextName = functionNaming(Identifier, nextCurried, nextGiven,
+                                      ; nextRemained, function-result)
+        ; let nextReturnType = functionReturnTyping(nextRemained, function-result)
+        ; let nextParameterType = functionParameterTyping(nextCurried, nextGiven)
+  %\(n + i) = bitcast \(nextReturnType) (\(nextParameterType))* @\(nextName) to i8*
+  %\(n + i + 1) = insertvalue %treeswift.function { i8* undef, i8* undef }, i8* %\(n + i), 0
+  %\(n + i + 2) = insertvalue %treeswift.function %\(n + i + 1), i8* %\(n - 1), 1
+  ret %treeswift.function %\(n + i + 2)
+}
     ; } else {
-
-define linkonce_odr hidden \(returnType) \(name)(\(parameterType)) {
+        ; if curried.count == 0 { [*4]
+define hidden \(returnType) @\(name)(\(parameterType)) {
 entry:
-  ; code-block($0)... [*1]
+  ; code-block(Context(parent: $0.getGlobal()))... [*3] [*5]
 }
-
+        ; } else { [*6]
+        ; let struct = structOfContext(parameterClauses)
+        ; var n = given.count + 1
+define internal \(returnType) @\(name)(\(parameterType)) {
+entry:
+  %\(n) = bitcast i8* %\(n - 1) to \(struct)*
+        ; let contexts = curried.flatMap({ $0 })
+        ; var i = 0
+        ; for ; i < contexts.count; ++i {
+  %\(n + 2 * i - 1) = getelementptr inbounds \(struct)* %\(n), i32 0, i32 \(i)
+  %\(n + 2 * i) = load \(typeof(contexts[i].1)) %\(n + 2 * i - 1)
+        ; }
+  call void @free(i8* %\(n - 1))
+  ; code-block(Context(parent: $0.getGlobal()))... [*3] [*5]
+}
+        ; }
     ; }
 ; }
 ```
 
-[*1] Parameters should be associated with its internal name before the expansion.
+[*1] Only not curried functions can have a default value.
+
+[*2] Nested function is not considered yet.
+
+[*3] Represents swift curried function
+
+[*4] Normal function
+
+[*5] Parameters should be associated with its internal name before the expansion.
+
+[*6] Represents end point of Swift curried function
 
 parameter-clauses (-> parameter-clause) =
 ```llvm
@@ -143,7 +222,6 @@ parameter-list-tail (-> Comma parameter-list) =
 
 parameter (-> (Let | Var)? Hash? external-parameter-name? local-parameter-name type-annotation default-argument-clause(-> AssignmentOperator expression)?) =
 ```llvm
-  ; TODO use Hash? and local-parameter-name for compile following code-block
   ; return (external-parameter-name?..., type-annotation, expression?)
 ```
 

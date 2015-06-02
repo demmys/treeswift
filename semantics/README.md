@@ -36,6 +36,17 @@ class Context {
         }
         return parent?.findNamedBreakLabel(labelName)
     }
+
+    func isGlobal() -> Bool {
+        return parent == nil
+    }
+
+    func getGlobal() -> Context {
+        if let p = parent {
+            return p.getGlobal()
+        }
+        return self
+    }
 }
 var c: Context?
 ```
