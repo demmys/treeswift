@@ -17,43 +17,39 @@ variable-declaration (-> Var pattern-initializer pattern-initializer-tail?) =
 pattern-initializer (-> identifier-pattern(-> Identifier) Colon type) =
 ```llvm
 ; if $0.isGlobal() {
-
-; TODO
-
+@\(Identifier) = global \(typeof(type($0)))
 ; } else {
-
   %\(Identifier) = alloca \(typeof(type($0)))
-
 ; }
 ```
 
 pattern-initializer (-> identifier-pattern(-> Identifier) AssignmentOperator expression) =
 ```llvm
 ; if $0.isGlobal() {
-
-; TODO
-
+; let type = typeof(expression($0))
+@\(Identifier) = global \(type) zeroinitializer
+  %0 = \(expression($0)...)
+  %1 = getelementptr inbounds \(type) @\(Identifier), i32 0
+  store \(type) %0, \(type)* %1
 ; } else {
-
   %0 = \(expression($0)...)
   %\(Identifier) = alloca \(typeof(expression($0)))
   store \(typeof(expression($0))) %0, \(typeof(expression($0)))* %\(Identifier)
-
 ; }
 ```
 
 pattern-initializer (-> identifier-pattern(-> Identifier) Colon type AssignmentOperator expression) =
 ```llvm
+; let t = typeof(type($0))
 ; if $0.isGlobal() {
-
-; TODO
-
-; } else {
-
+@\(Identifier) = global \(t) zeroinitializer
   %0 = \(expression($0)...)
-  %\(Identifier) = alloca \(typeof(type($0)))
-  store \(typeof(type($0))) %0, \(typeof(type($0)))* %\(Identifier)
-
+  %1 = getelementptr inbounds \(t) @\(Identifier), i32 0
+  store \(t) %0, \(t)* %1
+; } else {
+  %0 = \(expression($0)...)
+  %\(Identifier) = alloca \(t))
+  store \(t) %0, \(t)* %\(Identifier)
 ; }
 ```
 
