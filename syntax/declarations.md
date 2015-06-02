@@ -46,13 +46,13 @@ function-body      -> code-block
 
 parameter-clauses       -> parameter-clause parameter-clauses?
 parameter-clause        -> LeftParenthesis RightParenthesis
-                         | Leftparenthesis parameter-list RightParenthesis
+                         | LeftParenthesis parameter-list RightParenthesis
 parameter-list          -> parameter parameter-list-tail?
 parameter-list-tail     -> Comma parameter-list
 parameter               -> Inout? (Let | Var)? Hash? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
 external-parameter-name -> Identifier | Underscore
 local-parameter-name    -> Identifier | Underscore
-default-argument-clause -> Assignmentoperator expression
+default-argument-clause -> AssignmentOperator expression
 ```
 
 #### Operator declaration

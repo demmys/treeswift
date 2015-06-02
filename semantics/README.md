@@ -49,7 +49,7 @@ var c: Context?
 * [Declarations](declarations.md)
 * [Constant declaration, Variable declaration](constant_declaration_variable_declaration.md)
 * Type alias declaration
-* Function declaration
+* [Function declaration](function_declaration.md)
 * Operator declaration
 * Patterns
 * Types
