@@ -7,6 +7,24 @@
 * So, we should declare LLVM functions with the full parametered name (even though it is for curring), and parameter clauses are separated with the "f" or "F" character. The character "F" represents that following clause is not considered in the declared LLVM function yet (function name represents that "When "f"ed clauses are given, it will return function with "F"ed clauses").
 
 ```swift
+func nameof(function-name(-> Identifier)) {
+    return "F" + Identifier
+}
+
+func nameof(function-name(-> PrefixOperator)) {
+    return "O" + encode(PrefixOperator)
+}
+
+func nameof(function-name(-> PostfixOperator)) {
+    return "O" + encode(PostfixOperator)
+}
+
+func nameof(function-name(-> BinaryOperator)) {
+    return "O" + encode(BinaryOperator)
+}
+```
+
+```swift
 typealias Parameters = [(String?, type, expression?)]
 
 functionNaming(
@@ -16,12 +34,12 @@ functionNaming(
     [[("param4", Int, nil)]],
     (Arrow Int)
 )
-// -> "function_IntFloat_fparam3String_Fparam4Int_Int"
+// -> "Ffunction_IntFloat_fparam3String_Fparam4Int_Int"
 
 functionNaming("function", [], [[]], [], nil)
-// -> "function__Void"
+// -> "Ffunction__Void"
 
-func functionNaming(Identifier,
+func functionNaming(function-name,
                     _ curriedParameterClauses: [Parameters],
                     _ givenParameters: Parameters,
                     _ remainedParameterClauses: [Parameters],
@@ -30,7 +48,7 @@ func functionNaming(Identifier,
         ps.reduce("", combine: { $0 + ($1.0 ?? "") + nameof($1.1) })
     }
     let curriedName = curriedParameterClauses.reduce(
-        Identifier,
+        nameof(function-name),
         combine: { $0 + "_" + parametersNaming($1) }
     )
     let givenName = "_f" + parametersNaming(givenParameters)
@@ -90,7 +108,7 @@ func structOfContext(_ parameterClauses: [Parameters]) -> String {
 
 ### Function declaration
 
-function-declaration (-> Func Identifier parameter-clauses(-> parameter-clause parameter-clauses') function-result(-> Arrow type)? code-block) =
+function-declaration (-> Func function-name parameter-clauses function-result? code-block) =
 ```llvm
 %treeswift.function = type { i8*, i8* }
 
@@ -104,7 +122,7 @@ declare void @free(i8*)
     ; let curried = parameterClauses[0..<i]
     ; let given = parameterClauses[i]
     ; let remained = parameterClauses[i + 1..<parameterClauses.count]
-    ; let name = functionNaming(Identifier, curried, given, remained, function-result)
+    ; let name = functionNaming(function-name, curried, given, remained, function-result)
     ; let returnType = functionReturnTyping(remained, function-result)
     ; let parameterType = functionParameterTyping(curried, given)
 
@@ -138,7 +156,7 @@ entry:
         ; let nextCurried = [].join([curried, [given]])
         ; let nextGiven = remained[0]
         ; let nextRemained = remained[1..<remained.count]
-        ; let nextName = functionNaming(Identifier, nextCurried, nextGiven,
+        ; let nextName = functionNaming(function-name, nextCurried, nextGiven,
                                       ; nextRemained, function-result)
         ; let nextReturnType = functionReturnTyping(nextRemained, function-result)
         ; let nextParameterType = functionParameterTyping(nextCurried, nextGiven)
