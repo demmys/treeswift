@@ -12,11 +12,14 @@ To understand whole step of evaluation, you need to check out the [document of L
 Context will be given from parent scope and expected to be used as the context of child scope.
 
 ```swift
+typealias Function = (String, type)
+
 class Context {
     let parent: Context?
     var labelName: String?
     var breakLabel: Label?
     var continueLabel: Label?
+    var stack: [LLVMValueRef] = []
 
     init(parent: Context? = nil, labelName: String? = nil) {
         self.parent = parent
@@ -37,6 +40,12 @@ class Context {
         return parent?.findNamedBreakLabel(labelName)
     }
 
+    func findPrefixOperatorFunction(operator: String) -> Function? {}
+
+    func findBinaryOperatorFunction(operator: String) -> Function? {}
+
+    func findPostfixOperatorFunction(operator: String) -> Function? {}
+
     func isGlobal() -> Bool {
         return parent == nil
     }
@@ -47,6 +56,10 @@ class Context {
         }
         return self
     }
+
+    func push(v: LLVMValue) {}
+
+    func pop() -> LLVMValue? {}
 }
 var c: Context?
 ```
