@@ -97,7 +97,7 @@ class TokenStream : TokenPeeper {
                 queue.append(load())
             }
         }
-        var top = queue[index + ahead]
+        let top = queue[index + ahead]
         if skipLineFeed && top.kind == .LineFeed {
             return look(ahead + 1, skipLineFeed: false)
         }
@@ -136,13 +136,13 @@ class TokenStream : TokenPeeper {
                         ctx.consume()
                     } else {
                         ctx.reset()
-                        return load(classified: cc)
+                        return load(cc)
                     }
                 }
             default:
                 break
             }
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.LineFeed)
         case .Space:
             if ctx.prev == .Space {
@@ -154,54 +154,54 @@ class TokenStream : TokenPeeper {
                         ctx.consume()
                     } else {
                         ctx.reset()
-                        return load(classified: cc)
+                        return load(cc)
                     }
                 }
             } else {
-                ctx.consume(consumed: head)
+                ctx.consume(head)
                 return load()
             }
         case .Semicolon:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.Semicolon)
         case .Colon:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.Colon)
         case .Comma:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.Comma)
         case .Arrow:
-            ctx.consume(consumed: head, n: 2)
+            ctx.consume(head, n: 2)
             return produce(.Arrow)
         case .Hash:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.Hash)
         case .Underscore:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.Underscore)
         case .Dot:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.Dot)
         case .AssignmentOperator:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.AssignmentOperator)
         case .LeftParenthesis:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.LeftParenthesis)
         case .RightParenthesis:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.RightParenthesis)
         case .LeftBrace:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.LeftBrace)
         case .RightBrace:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.RightBrace)
         case .LeftBracket:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.LeftBracket)
         case .RightBracket:
-            ctx.consume(consumed: head)
+            ctx.consume(head)
             return produce(.RightBracket)
         case .LineCommentHead:
             ctx.consume(n: 2)
@@ -213,7 +213,7 @@ class TokenStream : TokenPeeper {
                     ctx.reset()
                     // duplicative line feeds will be ignored
                     // in the lexical analyzation of line feed
-                    return load(classified: cc)
+                    return load(cc)
                 default:
                     // ignore comment characters
                     ctx.consume()
@@ -231,7 +231,7 @@ class TokenStream : TokenPeeper {
                 case .BlockCommentTail:
                     if ctx.prev != .Space {
                         // consume like a scape
-                        ctx.consume(consumed: .Space, n: 2)
+                        ctx.consume(.Space, n: 2)
                     } else {
                         // avoid duplicative space consumption
                         ctx.consume(n: 2)
@@ -402,12 +402,12 @@ class TokenStream : TokenPeeper {
             }
             var follow = head
             var endOfToken = false
-            do {
+            repeat {
                 composer.put(follow, ctx.cp.look()!)
                 reservedWords = reservedWords?.filter({
                     $0.put(follow, self.ctx.cp.look()!)
                 })
-                ctx.consume(consumed: follow)
+                ctx.consume(follow)
                 follow = classify()
                 switch follow {
                 case .IdentifierHead, .IdentifierFollow, .Digit, .Underscore:
@@ -437,11 +437,11 @@ class TokenStream : TokenPeeper {
                                isEndOfToken: CharacterClass -> Bool) -> TokenKind {
         var follow = head
         var endOfToken = false
-        do {
+        repeat {
             if !composer.put(follow, ctx.cp.look()!) {
                 return .Error(.InvalidToken)
             }
-            ctx.consume(consumed: follow)
+            ctx.consume(follow)
             follow = classify()
             if isEndOfToken(follow) {
                 endOfToken = true

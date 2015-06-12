@@ -21,7 +21,7 @@ public class File {
     public init?(name: String, mode: String) {
         self.name = name
         fp = fopen(name, mode)
-        if fp == FilePointer.null() {
+        if fp == FilePointer(nilLiteral: ()) {
             return nil
         }
     }
@@ -36,7 +36,7 @@ public class File {
 
     public func readString(size: Int) -> String? {
         var buffer = [CChar](count: size, repeatedValue: 0)
-        let ret = fread(&buffer, UInt(sizeof(CChar)), UInt(size - 1), fp)
+        let ret = fread(&buffer, sizeof(CChar), size - 1, fp)
         if ret != 0 {
             if let str = String.fromCString(&buffer) {
                 return str

@@ -108,7 +108,7 @@ class IdentifierComposer : TokenComposer {
         case .ImplicitParameterDigit:
             switch cc {
             case .Digit:
-                intValue = intValue! * 10 + String(c).toInt()!
+                intValue = intValue! * 10 + Int(String(c))!
                 return true
             default:
                 stringValue = nil
@@ -151,10 +151,10 @@ class IntegerLiteralComposer : TokenComposer {
         case HexadecimalDigit = 16
     }
 
-    private let capitalA: UInt32 = 65
-    private let capitalF: UInt32 = 70
-    private let smallA: UInt32 = 97
-    private let smallF: UInt32  = 102
+    private let capitalA: Int = 65
+    private let capitalF: Int = 70
+    private let smallA: Int = 97
+    private let smallF: Int  = 102
 
     private var state = State.Head
     private var value: Int?
@@ -171,7 +171,7 @@ class IntegerLiteralComposer : TokenComposer {
                     value = 0
                     state = .BaseSpecifier
                 case "1"..."9":
-                    value = String(c).toInt()
+                    value = Int(String(c))
                     state = .DecimalDigit
                 default:
                     value = nil
@@ -225,7 +225,7 @@ class IntegerLiteralComposer : TokenComposer {
             let base = state.rawValue
             value = v * base
             let s = String(c)
-            if let x = s.toInt() {
+            if let x = Int(s) {
                 if x < base {
                     value = value! + x
                     return true
@@ -234,7 +234,7 @@ class IntegerLiteralComposer : TokenComposer {
                 return false
             } else if base > 10 {
                 let xs = s.unicodeScalars
-                let x = xs[xs.startIndex].value
+                let x = Int(xs[xs.startIndex].value)
                 if (capitalA <= x) && (x <= capitalF) {
                     value = value! + x - capitalA + 10
                     return true
@@ -385,10 +385,10 @@ class OperatorComposer : TokenComposer {
         return nil
     }
 
-    private func createKind(#prev: CharacterClass, value: String,
+    private func createKind(prev prev: CharacterClass, value: String,
                             follow: CharacterClass) -> TokenKind {
-        var headSeparated = isSeparator(prev, isPrev: true)
-        var tailSeparated = isSeparator(follow, isPrev: false)
+        let headSeparated = isSeparator(prev, isPrev: true)
+        let tailSeparated = isSeparator(follow, isPrev: false)
         if headSeparated {
             if tailSeparated {
                 return .BinaryOperator(value)

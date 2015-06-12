@@ -51,10 +51,10 @@ public enum ErrorMessage: String {
         if let i = info {
             message = "\(target):\(i.lineNo):\(i.charNo) \(message)"
             if let s = i.source {
-                message = "\(message)\n\t\(s)\n"
+                message = "\(message)\n\t\(s)"
             }
         }
-        printStderr(message)
+        printStderr(message + "\n")
     }
 
     private func printStderr(message: String) {
