@@ -7,7 +7,9 @@ Described in the original format like cross between EBNF and Regular expression.
 ## Non terminal symbol
 
 * [Top level declaration and Statements](top_level_declaration_and_statements.md)
+* [Generics](generics.md)
 * [Declarations](declarations.md)
+* [Attributes](attributes.md)
 * [Patterns](patterns.md)
 * [Types](types.md)
 * [Expressions and Literals](expressions_and_literals.md)
@@ -18,5 +20,6 @@ Described in the original format like cross between EBNF and Regular expression.
 * [Symbols and Brackets](symbols_and_brackets.md)
 * [Words](words.md)
 * [Identifier](identifier.md)
-* [IntegerLiteral](integer_literal.md)
+* [Numeric literal](numeric_literal.md)
+* [String literal](string_literal.md)
 * [Operators](operators.md)

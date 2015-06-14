@@ -5,7 +5,7 @@ expression-list -> expression Comma expression-list
 ; TODO
 ```
 
-expression -> Ampersand Identifier
+expression -> PrefixAmpersand Identifier
 ```llvm
 ; TODO
 ```

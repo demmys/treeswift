@@ -4,51 +4,91 @@
 expression-list      -> expression expression-list-tail
 expression-list-tail -> Comma expression-list
 
-expression -> prefix-expression binary-expressions?
-            | in-out-expression
+expression -> try-operator? prefix-expression binary-expressions?
 
-in-out-expression -> Ampersand Identifier
+try-operator -> Try | Try PostfixExclamation
 
 binary-expressions -> binary-expression binary-expressions?
 binary-expression  -> BinaryOperator prefix-expression
-                    | AssignmentOperator prefix-expression
-                    | conditional-operator prefix-expression
+                    | BinaryEqual try-operator? prefix-expression
+                    | conditional-operator try-operator? prefix-expression
                     | type-casting-operator
 
 conditional-operator -> BinaryQuestion expression Colon
 
 type-casting-operator -> Is type
                        | As type
-                       | As BinaryQuestion type
+                       | As PostfixQuestion type
+                       | As PostfixExclamation type
 
 prefix-expression -> PrefixOperator? postfix-expression
+                   | in-out-expression
+in-out-expression -> PrefixAmpersand Identifier
 
-postfix-expression         -> primary-expression postfix-expression-tail?
-postfix-expression-tail    -> PostfixOperator postfix-expression-tail?
-                            | function-call-expression postfix-expression-tail?
-                            | explicit-member-expression postfix-expression-tail?
-                            | subscript-expression postfix-expression-tail?
-function-call-expression   -> parenthesized-expression trailing-closure?
-                            /* | trailing-closure */
+postfix-expression           -> primary-expression postfix-expression-tail?
+postfix-expression-tail      -> postfix-expression-tail-body postfix-expression-tail?
+postfix-expression-tail-body -> PostfixOperator
+                              | function-call-expression
+                              | initializer-expression
+                              | explicit-member-expression
+                              | postfix-self-expression
+                              | dynamic-type-expression
+                              | subscript-expression
+                              | forced-value-expression
+                              | optional-chaining-expression
+
+function-call-expression -> parenthesized-expression closure-expression?
+                          // | closure-expression
+
+initializer-expression -> Dot Init
+
 explicit-member-expression -> Dot DecimalDigits
-                            | Dot Identifier
-subscript-expression       -> LeftBracket expression-list RightBracket
+                            | Dot Identifier generic-argument-clause?
 
-primary-expression -> Identifier
+postfix-self-expression -> Dot Self
+
+dynamic-type-expression -> Dot DynamicType
+
+subscript-expression -> LeftBracket expression-list RightBracket
+
+forced-value-expression -> PostfixExclamation
+
+optional-chaining-expression -> PostfixQuestion
+
+primary-expression -> Identifier generic-argument-clause?
                     | literal-expression
+                    | self-expression
+                    | superclass-expression
                     | closure-expression
                     | parenthesized-expression
+                    | implicit-member-expression
                     | wildcard-expression
 
 literal-expression -> literal
                     | array-literal
+                    | dictionaly-literal
+                    | FILE | LINE | COLUMN | FUNCTION
 
 array-literal            -> LeftBracket array-literal-items? RightBracket
 array-literal-items      -> array-literal-item array-literal-items-tail? Comma?
 array-literal-items-tail -> Comma array-literal-items
 array-literal-item       -> expression
 
-trailing-closure     -> closure-expression
+dictionaly-literal            -> LeftBracket dictionaly-literal-items RightBracket
+                               | LeftBracket Colon RightBracket
+dictionaly-literal-items      -> dictionaly-literal-item dictionaly-literal-items-tail? Comma?
+dictionaly-literal-items-tail -> Comma dictionaly-literal-items
+dictionaly-literal-item       -> expression Colon expression
+
+self-expression -> Self
+                 | Self Dot Identifier
+                 | Self LeftBracket expression RightBracket
+                 | Self Dot Init
+
+superclass-expression -> Super Dot Identifier
+                       | Super LeftBracket expression RightBracket
+                       | Super Dot Init
+
 closure-expression   -> LeftBrace closure-signature? statements RightBrace
 closure-signature    -> capture-clause closure-type-clause? In
                       | closure-type-clause In
@@ -60,6 +100,10 @@ capture-clause       -> LeftBracket capture-list RightBracket
 capture-list         -> capture-specifier? expression capture-list-tail?
 capture-list-tail    -> Comma capture-list
 capture-specifier    -> Weak | Unowned
+                      | Unowned LeftParenthesis Safe RightParenthesis
+                      | Unowned LeftParenthesis Unsafe RightParenthesis
+
+implicit-member-expression -> Dot Identifier
 
 parenthesized-expression      -> LeftParenthesis expression-element-list? RightParenthesis
 expression-element-list       -> expression-element expression-element-list-tail?
@@ -74,7 +118,8 @@ wildcard-expression -> Underscore
 ### Literals
 
 ```
-literal -> IntegerLiteral
+literal -> numeric-literal
+         | IntegerLiteral
          | True
          | False
          | Nil

@@ -7,19 +7,37 @@ Colon -> ':'
 
 Comma -> ','
 
+Dot -> '.'
+
 Arrow -> '->'
 
 Hash -> '#'
 
 Underscore -> '_'
 
-Ampersand -> '&'
+Atmark -> '@'
+
+PrefixAmpersand -> '&'
 
 PrefixQuestion -> '?'
 BinaryQuestion -> '?'
 PostfixQuestion -> '?'
 
+PostfixExclamation -> '!'
+
 Dollar -> '$'
+
+PrefixGraterThan -> '<'
+
+PostfixLessThan -> '>'
+
+BinaryEqual -> '='
+
+BinaryDoubleEqual -> '=='
+
+PrefixHyphen -> '-'
+
+VariableSymbol -> '...'
 ```
 
 ### Brackets
