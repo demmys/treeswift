@@ -2,24 +2,22 @@ import Util
 import Parser
 import Generator
 
-if Process.arguments.count < 2 {
+let arguments = Process.arguments
+if arguments.count < 2 {
     ErrorMessage.NoInputFile.print(Process.arguments[0])
 } else {
-    let file = File(name: Process.arguments[1], mode: "r")
-    if let f = file {
-        if let parser = Parser(f) {
-            switch parser.parse() {
-            case let .Success(ast):
-                var generator = Generator(moduleID: "-")
-                ast.accept(generator)
-                generator.print(f.baseName + ".ll")
-            case let .Failure(errors):
-                for (message, info) in errors {
-                    message.print(f.name, info: info)
-                }
+    let parser = Parser(Array(arguments[1..<arguments.count]))
+    switch parser.parse() {
+    case let .TokensOfFiles(result):
+        for (fileName, tokens) in result {
+            print("----- \(fileName) -----")
+            for token in tokens {
+                print(token.kind)
             }
         }
-    } else {
-        ErrorMessage.FileNotFound.print(Process.arguments[0])
+    case let .Error(errors):
+        for error in errors {
+            print(error)
+        }
     }
 }

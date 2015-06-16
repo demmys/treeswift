@@ -75,7 +75,7 @@ class TokenStream : TokenPeeper {
     private var index: Int!
     private var ctx: Context!
 
-    init?(_ file: File) {
+    init?(file: File) {
         if let cs = CharacterStream(file) {
             ctx = Context(cs: cs)
             queue = [load()]
@@ -330,7 +330,7 @@ class TokenStream : TokenPeeper {
                 }
             ))
         case .IdentifierHead:
-            var composer = IdentifierComposer()
+            let composer = IdentifierComposer()
             var reservedWords: [WordLiteralComposer]?
             switch ctx.cp.look()! {
             case "a":
