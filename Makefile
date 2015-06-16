@@ -1,57 +1,65 @@
-SWIFTC = swiftc
-FLAGS = -I /usr/include -I $(CURDIR)/$(INC_DIR) -import-objc-header $(CURDIR)/$(BRIDGING_HEADER) -F /System/Library/Frameworks -O
-LD = swiftc
-LDFLAGS = -module-name TreeSwift
+COMPILER = $(shell xcrun -f swiftc)
+LD = $(COMPILER)
+LLVM_PATH = $(shell brew --prefix llvm)
+LLVM_CONFIG = $(LLVM_PATH)/bin/llvm-config
 
 SRC_DIR = src
-INC_DIR = include
 OBJ_DIR = obj
-LIB_DIR = lib
+INC_DIR = include
 BIN_DIR = bin
 
-MOD_DEPS = Util Parser Generator
-MODS = $(addprefix $(INC_DIR)/,$(addsuffix .swiftmodule,$(MOD_DEPS)))
-SRCS = $(shell find $(SRC_DIR) -name '*.swift')
+BRIDGING_HEADER = $(CURDIR)/$(SRC_DIR)/llvm_bridging_header.h
+
+CFLAGS = -enable-testing -I$(CURDIR)/$(INC_DIR) -I/usr/include -import-objc-header $(BRIDGING_HEADER) -Xcc -I$(LLVM_PATH)/include -Xcc -D__STDC_CONSTANT_MACROS -Xcc -D__STDC_FORMAT_MACROS -Xcc -D__STDC_LIMIT_MACROS
+LDFLAGS = -lc++ -L$(LLVM_PATH)/lib $(shell $(LLVM_CONFIG) --libs --system-libs)
+
+SRCS = $(shell find $(SRC_DIR) -name '*.swift' | sed -e 's/.*main.swift//g')
 OBJS = $(subst $(SRC_DIR),$(OBJ_DIR),$(SRCS:.swift=.o))
-DEPS = $(OBJS:.o=.d)
-
-BRIDGE_DIR = bridge
-BRIDGING_HEADER = $(BRIDGE_DIR)/TreeSwift-Bridging-Header.h
-
-OBJCXX = clang++
-OBJCXX_FLAGS = -Wall `llvm-config --cxxflags --libs --ldflags --system-libs` -stdlib=libc++ -framework Foundation -O2
-
-OBJCXX_SRCS = $(shell find $(BRIDGE_DIR) -name '*.mm')
-OBJCXX_LIB = $(LIB_DIR)/libllvmBridge.dylib
-OBJCXX_DEPS = $(OBJCXX_LIB:.dylib=.d)
-
+MODS = Util Parser Generator
+MODS_INC = $(addprefix $(INC_DIR)/,$(addsuffix .swiftmodule,$(MODS)))
 MODULE_NAME = $(word 2,$(subst /, ,$@))
 
 TARGET = $(BIN_DIR)/treeswift
 
-.PHONY: all clean
+TESTOBJ_DIR = $(OBJ_DIR)/test
+TESTBIN_DIR = $(BIN_DIR)/test
+TESTLIB_DIR = lib/PureSwiftUnit
+TEST_DIR = test
+TEST_SRCS = $(shell find $(TEST_DIR) -name '*.swift')
+TEST_OBJS = $(subst $(TEST_DIR),$(TESTOBJ_DIR),$(TEST_SRCS:.swift=.o))
+TEST_MODULE_NAME = Test
+TEST_TARGET = $(TESTBIN_DIR)/treeswift-test
 
-$(TARGET): $(OBJCXX_LIB) $(OBJS)
+.PHONY: all test clean
+
+$(TARGET): $(OBJS) $(OBJ_DIR)/main.o
 	@[ -d $(BIN_DIR) ] || mkdir -p $(BIN_DIR)
 	$(LD) $(LDFLAGS) -o $@ $^
 
 $(INC_DIR)/%.swiftmodule: $(SRC_DIR)/%/*.swift
 	@[ -d $(INC_DIR) ] || mkdir -p $(INC_DIR)
-	cd $(INC_DIR); $(SWIFTC) $(FLAGS) -module-name $(basename $(notdir $@)) -emit-module $(addprefix ../,$^)
+	cd $(INC_DIR); $(COMPILER) $(CFLAGS) -module-name $(basename $(notdir $@)) -emit-module $(addprefix ../,$^)
 
-$(OBJCXX_LIB): $(OBJCXX_SRCS)
-	@[ -d $(LIB_DIR) ] || mkdir -p $(LIB_DIR)
-	$(OBJCXX) $(OBJCXX_FLAGS) -dynamiclib -o $@ $^
-
-$(OBJ_DIR)/main.o: $(MODS)
+$(OBJ_DIR)/main.o: $(MODS_INC)
 	@[ -d $(OBJ_DIR) ] || mkdir -p $(OBJ_DIR)
-	cd $(OBJ_DIR); $(SWIFTC) $(FLAGS) -module-name TreeSwift -c ../$(SRC_DIR)/main.swift
+	cd $(OBJ_DIR); $(COMPILER) $(CFLAGS) -module-name TreeSwift -c ../$(SRC_DIR)/main.swift
 
-$(OBJ_DIR)/%.o: $(MODS)
+$(OBJS): $(MODS_INC)
 	@[ -d $(OBJ_DIR)/$(MODULE_NAME) ] || mkdir -p $(OBJ_DIR)/$(MODULE_NAME)
-	cd $(OBJ_DIR)/$(MODULE_NAME); $(SWIFTC) $(FLAGS) -module-name $(MODULE_NAME) -emit-library -emit-object ../../$(SRC_DIR)/$(MODULE_NAME)/*.swift
+	cd $(OBJ_DIR)/$(MODULE_NAME); $(COMPILER) $(CFLAGS) -module-name $(MODULE_NAME) -emit-library -emit-object ../../$(SRC_DIR)/$(MODULE_NAME)/*.swift
 
 all: clean $(TARGET)
 
+test: $(TEST_TARGET)
+	@./$(TEST_TARGET)
+
+$(TEST_TARGET): $(TEST_OBJS) $(OBJS)
+	@[ -d $(TESTBIN_DIR) ] || mkdir -p $(TESTBIN_DIR)
+	$(COMPILER) $(shell cd $(TESTLIB_DIR); make libs) $(LDFLAGS) -o $@ $^
+
+$(TEST_OBJS): $(MODS_INC) $(TEST_SRCS)
+	@[ -d $(TESTOBJ_DIR) ] || mkdir -p $(TESTOBJ_DIR)
+	cd $(TESTOBJ_DIR); $(COMPILER) $(shell cd $(TESTLIB_DIR); make includes) $(CFLAGS) -module-name $(TEST_MODULE_NAME) -emit-object $(addprefix ../../,$(TEST_SRCS))
+
 clean:
-	rm -rf $(INC_DIR) $(OBJ_DIR) $(LIB_DIR) $(BIN_DIR)
+	rm -rf $(INC_DIR) $(OBJ_DIR) $(BIN_DIR)
