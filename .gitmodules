@@ -1,0 +1,3 @@
+[submodule "lib/PureSwiftUnit"]
+	path = lib/PureSwiftUnit
+	url = git@github.com:demmys/PureSwiftUnit.git
