@@ -25,18 +25,13 @@ class CharacterStreamTest : TestUnit {
         remove(testFileName)
     }
 
-    private func canReadFile() -> TestResult {
-        if let cs = CharacterStream(fp) {
-            if let c = cs.look() {
-                if c == "t" {
-                    return .Success
-                }
-                return TestResult.buildFailure(
-                    "read character", expected: "t", actual: String(c)
-                )
-            }
-            return .Failure("Came across to the end of file.")
+    private func canReadFile() throws {
+        guard let cs = CharacterStream(fp) else {
+            throw FailureReason.Text("Could not instantiate with provided file pointer.")
         }
-        return .Failure("Could not instantiate with provided file pointer.")
+        guard let c = cs.look() else {
+            throw FailureReason.Text("Came across to the end of file.")
+        }
+        try equals("read character", c, "t")
     }
 }

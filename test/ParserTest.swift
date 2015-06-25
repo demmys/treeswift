@@ -9,13 +9,10 @@ class ParserTest : TestUnit {
         ])
     }
 
-    private func inexistentFile() -> TestResult {
+    private func inexistentFile() throws {
         let parser = Parser(["inexistentfile"])
-        switch parser.parse() {
-        case .TokensOfFiles:
-            return .Failure("Parser returns some tokens.")
-        case .Error:
-            return .Success
+        if case .TokensOfFiles = parser.parse() {
+            throw FailureReason.Text("Parser returns some tokens.")
         }
     }
 }
