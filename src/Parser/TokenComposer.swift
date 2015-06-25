@@ -120,7 +120,7 @@ class IdentifierComposer : TokenComposer {
         }
     }
 
-    func compose(follow: CharacterClass) -> TokenKind? {
+    func compose(CharacterClass) -> TokenKind? {
         switch state {
         case .IdentifierCharacter:
             if let v = stringValue {
@@ -205,7 +205,7 @@ class IntegerLiteralComposer : TokenComposer {
         }
     }
 
-    func compose(follow: CharacterClass) -> TokenKind? {
+    func compose(CharacterClass) -> TokenKind? {
         if let v = value {
             switch state {
             case .DecimalDigit:
