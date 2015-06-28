@@ -35,19 +35,22 @@ protocol TokenPeeper {
 
 class TokenStream : TokenPeeper {
     private struct Context {
-        var cs: CharacterStream
         var source: String? = nil
         // set `CharacterClass.LineFeed` to `prev`
         // in order to remove line feed in the head of the file
         var prev: CharacterClass = .LineFeed
         var exprev: CharacterClass = .LineFeed
 
-        var lineNo: Int { get { return cs.lineNo } }
-        var charNo: Int { get { return cs.charNo } }
-        var cp: CharacterPeeper { get { return cs } }
+        let cp: CharacterPeeper
+        let lineNo: () -> Int
+        let charNo: () -> Int
+        let _consume: () -> ()
 
         init(cs: CharacterStream) {
-            self.cs = cs
+            cp = cs
+            lineNo = { cs.lineNo }
+            charNo = { cs.charNo }
+            _consume = { cs.consume() }
         }
 
         mutating func reset() {
@@ -60,13 +63,13 @@ class TokenStream : TokenPeeper {
                 prev = cc
             }
             for var i = 0; i < n; ++i {
-                let c = cs.look()!
+                let c = cp.look()!
                 if source == nil {
                     source = String(c)
                 } else {
                     source!.append(c)
                 }
-                cs.consume()
+                _consume()
             }
         }
     }
@@ -109,7 +112,7 @@ class TokenStream : TokenPeeper {
     }
 
     private func load(classified: CharacterClass? = nil) -> Token {
-        var info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
+        var info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
         func produce(kind: TokenKind) -> Token {
             info.source = ctx.source
             ctx.reset()
@@ -238,7 +241,7 @@ class TokenStream : TokenPeeper {
                     }
                     --depth
                 case .EndOfFile:
-                    info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
+                    info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
                     return produce(.Error(.UnexpectedEOF))
                 default:
                     // ignore comment characters
@@ -249,11 +252,11 @@ class TokenStream : TokenPeeper {
             ctx.reset()
             return load()
         case .BlockCommentTail:
-            info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
+            info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
             ctx.consume(n: 2)
             return produce(.Error(.ReservedToken))
         case .OperatorFollow, .IdentifierFollow, .Others:
-            info = SourceInfo(lineNo: ctx.lineNo, charNo: ctx.charNo)
+            info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
             ctx.consume()
             return produce(.Error(.InvalidToken))
         case .LessThan, .GraterThan, .Ampersand, .Question, .Exclamation:
