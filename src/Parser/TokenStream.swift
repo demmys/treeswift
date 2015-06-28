@@ -2,17 +2,20 @@ import Util
 
 enum CharacterClass {
     case EndOfFile, LineFeed, Space
-    case Semicolon, Colon, Comma, Arrow, Hash, Underscore, Dot
-    case AssignmentOperator
+    case Semicolon, Colon, Comma, Hash, Underscore, Atmark
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
     case LeftBracket, RightBracket
-    // context depended classes
-    case LessThan, GraterThan
-    case Ampersand, Question, Exclamation, Dollar, BackQuote
+    // belows may be a part of word
+    case Arrow
+    case Dot, Equal, Digit
+    case DoubleQuote, BackSlash
+    case Dollar, BackQuote, IdentifierHead, IdentifierFollow
     case OperatorHead, DotOperatorHead, OperatorFollow
-    case IdentifierHead, IdentifierFollow, Digit
-    // meaningless classes
+    // belows may be a reserved word
+    case LessThan, GraterThan
+    case Ampersand, Question, Exclamation
+    // meaningless characters
     case LineCommentHead, BlockCommentHead, BlockCommentTail
     case Others
 }
@@ -185,9 +188,12 @@ class TokenStream : TokenPeeper {
         case .Dot:
             ctx.consume(head)
             return produce(.Dot)
-        case .AssignmentOperator:
+        case .Equal:
             ctx.consume(head)
             return produce(.AssignmentOperator)
+        case .Atmark:
+            ctx.consume(head)
+            return produce(.Atmark)
         case .LeftParenthesis:
             ctx.consume(head)
             return produce(.LeftParenthesis)
@@ -255,7 +261,7 @@ class TokenStream : TokenPeeper {
             info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
             ctx.consume(n: 2)
             return produce(.Error(.ReservedToken))
-        case .OperatorFollow, .IdentifierFollow, .Others:
+        case .OperatorFollow, .IdentifierFollow, .BackSlash, .Others:
             info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
             ctx.consume()
             return produce(.Error(.InvalidToken))
@@ -273,7 +279,7 @@ class TokenStream : TokenPeeper {
                     switch follow {
                     case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
                          .Ampersand, .Question, .Exclamation,
-                         .AssignmentOperator, .Arrow,
+                         .Equal, .Arrow,
                          .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
                         return false
                     case .DotOperatorHead, .Dot:
@@ -489,6 +495,12 @@ class TokenStream : TokenPeeper {
                 return .Hash
             case "$":
                 return .Dollar
+            case "@":
+                return .Atmark
+            case "\"":
+                return .DoubleQuote
+            case "\\":
+                return .BackSlash
             case "=":
                 // token "=" cannot become a custom operator
                 if let succ = ctx.cp.lookAhead() {
@@ -496,7 +508,7 @@ class TokenStream : TokenPeeper {
                         return .OperatorHead
                     }
                 }
-                return .AssignmentOperator
+                return .Equal
             case "&":
                 // token "&" will be distinguished from other operators
                 // by the fact that of prefix operator is reserved

@@ -17,6 +17,16 @@ Underscore -> '_'
 
 Atmark -> '@'
 
+Dollar -> '$'
+
+BackQuote -> '`'
+
+Minus -> '-'
+
+DoubleQuote -> '"'
+
+BackSlash -> '\'
+
 PrefixAmpersand -> '&'
 
 PrefixQuestion -> '?'
@@ -25,19 +35,13 @@ PostfixQuestion -> '?'
 
 PostfixExclamation -> '!'
 
-Dollar -> '$'
-
 PrefixGraterThan -> '<'
 
 PostfixLessThan -> '>'
 
-BinaryEqual -> '='
-
 BinaryDoubleEqual -> '=='
 
-PrefixHyphen -> '-'
-
-VariableSymbol -> '...'
+VariadicSymbol -> '...'
 ```
 
 ### Brackets

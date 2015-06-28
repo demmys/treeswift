@@ -10,7 +10,7 @@ try-operator -> Try | Try PostfixExclamation
 
 binary-expressions -> binary-expression binary-expressions?
 binary-expression  -> BinaryOperator prefix-expression
-                    | BinaryEqual try-operator? prefix-expression
+                    | AssignmentOperator try-operator? prefix-expression
                     | conditional-operator try-operator? prefix-expression
                     | type-casting-operator
 

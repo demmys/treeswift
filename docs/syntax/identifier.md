@@ -2,7 +2,7 @@
 
 ```
 Identifier -> identifier-head identifier-character*
-            | '`' identifier-head identifier-character* '`'
+            | BackQuote identifier-head identifier-character* BackQuote
             | implicit-parameter-name
 
 implicit-parameter-name -> Dollar '[0-9]+'

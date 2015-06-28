@@ -9,11 +9,11 @@ public enum IdentifierKind {
 public enum TokenKind : Equatable {
     case Error(ErrorMessage)
     case EndOfFile, LineFeed
-    case Semicolon, Colon, Comma, Arrow, Hash, Underscore, Dot
-    case AssignmentOperator
+    case Semicolon, Colon, Comma, Hash, Underscore, Atmark
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
     case LeftBracket, RightBracket
+    case AssignmentOperator, Dot, Arrow
     case PrefixLessThan, PostfixGraterThan
     case PrefixAmpersand
     case PrefixQuestion, BinaryQuestion, PostfixQuestion
@@ -74,6 +74,11 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         case .Underscore: return true
         default: return false
         }
+    case .Atmark:
+        switch rhs {
+        case .Atmark: return true
+        default: return false
+    }
     case .Dot:
         switch rhs {
         case .Dot: return true

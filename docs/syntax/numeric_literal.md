@@ -1,8 +1,8 @@
 ### Numeric literal
 
 ```
-numeric-literal -> PrefixHyphen? IntegerLiteral
-                 | PrefixHyphen? FloatingPointLiteral
+numeric-literal -> Minus? IntegerLiteral
+                 | Minus? FloatingPointLiteral
 
 DecimalDigits -> '[0-9]+'
 HexadecimalDigits -> '[0-9a-f]+'

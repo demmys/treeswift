@@ -1,6 +1,8 @@
 ### Operators
 
 ```
+AssignmentOperator -> '='
+
 BinaryOperator -> front-separator \zs operator \ze back-separator
                 | [^front-separator] \zs operator \ze [^back-separator]
                 | dot-front-separator \zs dot-operator \ze dot-back-separator

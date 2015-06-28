@@ -71,7 +71,7 @@ didSet-clause        -> attributes? DidSet setter-name? code-block
 pattern-initializer-list -> pattern-initializer pattern-initializer-tail?
 pattern-initializer-tail -> Comma pattern-initializer-list
 pattern-initializer      -> pattern initializer?
-initializer              -> BinaryEqual expression
+initializer              -> AssignmentOperator expression
 ```
 
 #### Typealias declaration
@@ -80,7 +80,7 @@ initializer              -> BinaryEqual expression
 typealias-declaration -> typealias-head typealias-assignment
 typealias-head        -> attributes? access-level-modifier? Typealias typealias-name
 typealias-name        -> Identifier
-typealias-assignment  -> BinaryEqual type
+typealias-assignment  -> AssignmentOperator type
 ```
 
 #### Function declaration
@@ -96,14 +96,14 @@ function-body      -> code-block
 
 parameter-clauses       -> parameter-clause parameter-clauses?
 parameter-clause        -> LeftParenthesis RightParenthesis
-                         | LeftParenthesis parameter-list RightParenthesis
+                         | LeftParenthesis parameter-list VariadicSymbol? RightParenthesis
 parameter-list          -> parameter parameter-list-tail?
 parameter-list-tail     -> Comma parameter-list
 parameter               -> Inout? (Let | Var)? Hash? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
                          | attributes? type
 external-parameter-name -> Identifier | Underscore
 local-parameter-name    -> Identifier | Underscore
-default-argument-clause -> BinaryEqual expression
+default-argument-clause -> AssignmentOperator expression
 ```
 
 #### Enum declaration
@@ -132,7 +132,7 @@ raw-value-style-enum-case-clause -> attributes? Case raw-value-style-enum-case-l
 raw-value-style-enum-case-list   -> raw-value-style-enum-case raw-value-style-enum-case-tail?
 raw-value-style-enum-case-tail   -> Comma raw-value-style-enum-case-list
 raw-value-style-enum-case        -> enum-case-name raw-value-assignment?
-raw-value-assignment             -> BinaryEqual raw-value-literal
+raw-value-assignment             -> AssignmentOperator raw-value-literal
 raw-value-literal                -> numeric-literal
                                   | StringLiteral
 
