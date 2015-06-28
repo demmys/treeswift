@@ -141,7 +141,7 @@ class IdentifierComposer : TokenComposer {
     }
 }
 
-class IntegerLiteralComposer : TokenComposer {
+class NumericLiteralComposer : TokenComposer {
     private enum State: Int {
         case Head
         case BaseSpecifier
@@ -151,13 +151,13 @@ class IntegerLiteralComposer : TokenComposer {
         case HexadecimalDigit = 16
     }
 
-    private let capitalA: Int = 65
-    private let capitalF: Int = 70
-    private let smallA: Int = 97
-    private let smallF: Int  = 102
+    private let capitalA: Int64 = 65
+    private let capitalF: Int64 = 70
+    private let smallA: Int64 = 97
+    private let smallF: Int64  = 102
 
     private var state = State.Head
-    private var value: Int?
+    private var value: Int64?
 
     init() {}
 
@@ -171,7 +171,7 @@ class IntegerLiteralComposer : TokenComposer {
                     value = 0
                     state = .BaseSpecifier
                 case "1"..."9":
-                    value = Int(String(c))
+                    value = Int64(String(c))
                     state = .DecimalDigit
                 default:
                     value = nil
@@ -222,10 +222,10 @@ class IntegerLiteralComposer : TokenComposer {
             return true
         }
         if let v = value {
-            let base = state.rawValue
+            let base = Int64(state.rawValue)
             value = v * base
             let s = String(c)
-            if let x = Int(s) {
+            if let x = Int64(s) {
                 if x < base {
                     value = value! + x
                     return true
@@ -234,7 +234,7 @@ class IntegerLiteralComposer : TokenComposer {
                 return false
             } else if base > 10 {
                 let xs = s.unicodeScalars
-                let x = Int(xs[xs.startIndex].value)
+                let x = Int64(xs[xs.startIndex].value)
                 if (capitalA <= x) && (x <= capitalF) {
                     value = value! + x - capitalA + 10
                     return true

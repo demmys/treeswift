@@ -328,10 +328,10 @@ class TokenStream : TokenPeeper {
         case .Digit:
             return produce(composerParse(
                 head,
-                composer: IntegerLiteralComposer(),
+                composer: NumericLiteralComposer(),
                 isEndOfToken: { (follow) in
                     switch follow {
-                    case .Digit, .IdentifierHead:
+                    case .Digit, .IdentifierHead, .Dot, .OperatorHead:
                         return false
                     default:
                         return true

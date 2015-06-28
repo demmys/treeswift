@@ -20,7 +20,8 @@ public enum TokenKind : Equatable {
     case PostfixExclamation
     case PrefixOperator(String), BinaryOperator(String), PostfixOperator(String)
     case Identifier(IdentifierKind)
-    case IntegerLiteral(Int, decimalDigits: Bool)
+    case IntegerLiteral(Int64, decimalDigits: Bool)
+    case FloatingPointLiteral(Double)
     case BooleanLiteral(Bool)
     case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
     case In, InOut, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
@@ -177,6 +178,11 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
     case .IntegerLiteral:
         switch rhs {
         case .IntegerLiteral: return true
+        default: return false
+        }
+    case .FloatingPointLiteral:
+        switch rhs {
+        case .FloatingPointLiteral: return true
         default: return false
         }
     case .BooleanLiteral:
