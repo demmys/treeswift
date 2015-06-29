@@ -320,6 +320,38 @@ class TokenStream : TokenPeeper {
                     }
                 }
             ))
+        case .DoubleQuote:
+            var escaped = false
+            var interpolationNest = 0
+            return produce(composerParse(
+                head,
+                composer: StringLiteralComposer(),
+                isEndOfToken: { (follow) in
+                    switch follow {
+                    case .DoubleQuote:
+                        if !escaped && interpolationNest == 0{
+                            return true
+                        }
+                        escaped = false
+                    case .BackSlash:
+                        escaped = true
+                    case .LeftParenthesis:
+                        if interpolationNest > 0 {
+                            ++interpolationNest
+                        } else if escaped {
+                            interpolationNest = 1
+                            escaped = false
+                        }
+                    case .RightParenthesis:
+                        if interpolationNest > 0 {
+                            --interpolationNest
+                        }
+                    default:
+                        escaped = false
+                    }
+                    return false
+                }
+            ))
         case .IdentifierHead:
             let composer = IdentifierComposer()
             var reservedWords: [WordLiteralComposer]?
