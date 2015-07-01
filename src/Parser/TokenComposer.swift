@@ -142,13 +142,18 @@ class IdentifierComposer : TokenComposer {
 }
 
 class NumericLiteralComposer : TokenComposer {
-    private enum State: Int {
+    private enum AccumlatePosition {
+        case Integral
+        case Fraction
+        case Exponent
+    }
+    private enum State {
         case Head
         case BaseSpecifier
-        case BinaryDigit = 2
-        case OctalDigit = 8
-        case DecimalDigit = 10
-        case HexadecimalDigit = 16
+        case HeadDigit(Int, AccumlatePosition)
+        case FollowingDigit(Int, AccumlatePosition)
+        case ExponentHead(Int)
+        case Failed
     }
 
     private let capitalA: Int64 = 65
@@ -157,97 +162,208 @@ class NumericLiteralComposer : TokenComposer {
     private let smallF: Int64  = 102
 
     private var state = State.Head
-    private var value: Int64?
+    private var integralPart: Int64 = 0
+    private var fractionPart: Int64?
+    private var exponentPart: Int64?
 
     init() {}
 
     func put(cc: CharacterClass, _ c: Character) -> Bool {
         switch cc {
-        case .Digit, .IdentifierHead:
+        case .Digit, .IdentifierHead, .Dot, .OperatorHead:
             switch state {
             case .Head:
                 switch c {
                 case "0":
-                    value = 0
                     state = .BaseSpecifier
                 case "1"..."9":
-                    value = Int64(String(c))
-                    state = .DecimalDigit
+                    integralPart = Int64(String(c))!
+                    state = .FollowingDigit(10, .Integral)
                 default:
-                    value = nil
+                    state = .Failed
                     return false
                 }
             case .BaseSpecifier:
                 switch c {
                 case "b":
-                    value = nil
-                    state = .BinaryDigit
+                    state = .HeadDigit(2, .Integral)
                 case "o":
-                    value = nil
-                    state = .OctalDigit
+                    state = .HeadDigit(8, .Integral)
                 case "x":
-                    value = nil
-                    state = .HexadecimalDigit
+                    state = .HeadDigit(16, .Integral)
+                case "1"..."9":
+                    integralPart = Int64(String(c))!
+                    state = .FollowingDigit(10, .Integral)
+                case "_", "0":
+                    state = .FollowingDigit(10, .Integral)
+                case ".":
+                    state = .HeadDigit(10, .Fraction)
+                case "e", "E":
+                    state = .ExponentHead(10)
                 default:
-                    state = .DecimalDigit
-                    return accumulate(c)
+                    state = .Failed
+                    return false
                 }
-            default:
-                if value == nil {
-                    value = 0
+            case let .HeadDigit(base, pos):
+                switch c {
+                case "0"..."9", "a"..."f", "A"..."F":
+                    if accumulate(base, pos, c) {
+                        state = .FollowingDigit(base, pos)
+                    } else {
+                        state = .Failed
+                        return false
+                    }
+                default:
+                    state = .Failed
+                    return false
                 }
-                return accumulate(c)
+            case let .FollowingDigit(base, pos):
+                switch c {
+                case "0"..."9", "a"..."d", "f", "A"..."D", "F":
+                    guard accumulate(base, pos, c) else {
+                        state = .Failed
+                        return false
+                    }
+                case "_":
+                    break
+                case ".":
+                    guard base >= 10 && pos == .Integral else {
+                        state = .Failed
+                        return false
+                    }
+                    state = .HeadDigit(base, .Fraction)
+                case "e", "E":
+                    if base == 10 && pos != .Exponent {
+                        state = .ExponentHead(base)
+                    } else if base == 16 {
+                        add(16, pos, 14)
+                    } else {
+                        state = .Failed
+                        return false
+                    }
+                case "p", "P":
+                    guard base == 16 && pos != .Exponent else {
+                        state = .Failed
+                        return false
+                    }
+                    state = .ExponentHead(base)
+                default:
+                    state = .Failed
+                    return false
+                }
+            case let .ExponentHead(base):
+                switch c {
+                case "0"..."9", "a"..."f", "A"..."F":
+                    if accumulate(base, .Exponent, c) {
+                        state = .FollowingDigit(base, .Exponent)
+                    } else {
+                        state = .Failed
+                        return false
+                    }
+                case "+":
+                    exponentPart = 1
+                    state = .HeadDigit(base, .Exponent)
+                case "-":
+                    exponentPart = -1
+                    state = .HeadDigit(base, .Exponent)
+                default:
+                    state = .Failed
+                    return false
+                }
+            case .Failed:
+                return false
             }
             return true
         default:
-            value = nil
+            state = .Failed
             return false
         }
     }
 
-    func compose(CharacterClass) -> TokenKind? {
-        if let v = value {
-            switch state {
-            case .DecimalDigit:
-                return .IntegerLiteral(v, decimalDigits: true)
-            default:
-                return .IntegerLiteral(v, decimalDigits: false)
+    private func accumulate(
+        base: Int, _ pos: AccumlatePosition, _ c: Character
+    ) -> Bool {
+        if base == 16 {
+            if let v = hex(c) {
+                add(16, pos, v)
+                return true
             }
-        }
-        return nil
-    }
-
-    private func accumulate(c: Character) -> Bool {
-        if c == "_" {
+        } else if let v = Int64(String(c)) {
+            add(base, pos, v)
             return true
         }
-        if let v = value {
-            let base = Int64(state.rawValue)
-            value = v * base
-            let s = String(c)
-            if let x = Int64(s) {
-                if x < base {
-                    value = value! + x
-                    return true
-                }
-                value = nil
-                return false
-            } else if base > 10 {
-                let xs = s.unicodeScalars
-                let x = Int64(xs[xs.startIndex].value)
-                if (capitalA <= x) && (x <= capitalF) {
-                    value = value! + x - capitalA + 10
-                    return true
-                }
-                if (smallA <= x) && (x <= smallF) {
-                    value = value! + x - smallA + 10
-                    return true
-                }
-                value = nil
-                return false
+        return false
+    }
+
+    private func hex(c: Character) -> Int64? {
+        let s = String(c)
+        guard let v = Int64(s) else {
+            let xs = s.unicodeScalars
+            let x = Int64(xs[xs.startIndex].value)
+            if (capitalA <= x) && (x <= capitalF) {
+                return x - capitalA + 10
+            }
+            if (smallA <= x) && (x <= smallF) {
+                return x - smallA + 10
+            }
+            return nil
+        }
+        return v
+    }
+
+    private func add(base: Int, _ pos: AccumlatePosition, _ v: Int64) {
+        switch pos {
+        case .Integral:
+            integralPart = integralPart * Int64(base) + v
+        case .Fraction:
+            if let f = fractionPart {
+                fractionPart = f * Int64(base) + v 
+            } else {
+                fractionPart = v
+            }
+        case .Exponent:
+            if let e = exponentPart {
+                exponentPart = e * Int64(base) + v
+            } else {
+                exponentPart = v
             }
         }
-        return false
+    }
+
+    func compose(CharacterClass) -> TokenKind? {
+        switch state {
+        case .BaseSpecifier:
+            return TokenKind.IntegerLiteral(integralPart, decimalDigits: true)
+        case let .FollowingDigit(base, pos):
+            if pos == .Integral {
+                return TokenKind.IntegerLiteral(
+                    integralPart, decimalDigits: base == 10
+                )
+            }
+            var value: Double = Double(integralPart)
+            let b = Double(base)
+            if let fp = fractionPart {
+                var f = Double(fp)
+                while f > 1 {
+                    f /= b
+                }
+                value += f
+            }
+            if let e = exponentPart {
+                if e > 0 {
+                    for _ in 0..<e {
+                        value *= b
+                    }
+                } else {
+                    for _ in e..<0 {
+                        value /= b
+                    }
+                }
+            }
+            return TokenKind.FloatingPointLiteral(value)
+        default:
+            return nil
+        }
     }
 }
 

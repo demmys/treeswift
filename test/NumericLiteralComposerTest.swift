@@ -37,12 +37,14 @@ class NumericLiteralComposerTest : TestUnit {
             switch c {
             case "0"..."9":
                 try isTrue("put digit \(c)", nc.put(.Digit, c))
-            case "a"..."z", "A"..."Z":
+            case "a"..."z", "A"..."Z", "p", "P":
                 try isTrue("put character \(c)", nc.put(.IdentifierHead, c))
             case "+", "-":
                 try isTrue("put symbol \(c)", nc.put(.OperatorHead, c))
             case "_":
-                try isTrue("put underscore", nc.put(.Underscore, c))
+                try isTrue("put underscore", nc.put(.IdentifierHead, c))
+            case ".":
+                try isTrue("put dot", nc.put(.Dot, c))
             default:
                 try isTrue("put \(c)", nc.put(.Others, c))
             }
@@ -111,10 +113,10 @@ class NumericLiteralComposerTest : TestUnit {
     }
 
     private func analyzeLargePHexExponent() throws {
-        try putStringAndCompose("fe.dcbP12")
+        try putStringAndCompose("0xfe.dcbP12")
     }
 
     private func analyzeSmallPHexExponent() throws {
-        try putStringAndCompose("fe.dcbp12")
+        try putStringAndCompose("0xfe.dcbp12")
     }
 }
