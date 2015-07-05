@@ -11,17 +11,21 @@ class NumericLiteralComposerTest : TokenComposerTest {
             ("analyze octal integer", analyzeOctalInteger),
             ("analyze hex integer", analyzeHexInteger),
             ("analyze underscore separated integer", analyzeUnderscoreSeparatedInteger),
-            ("analyze decimal fraction", analyzeDecimalFraction),
-            ("analyze decimal fraction start with zero", analyzeDecimalFractionStartWithZero),
-            ("analyze hex decimal fraction", analyzeHexFraction),
-            ("analyze underscore separated decimal fraction", analyzeUnderscoreSeparatedDecimalFraction),
-            ("analyze underscore separated hex fraction", analyzeUnderscoreSeparatedHexFraction),
+
             ("analyze decimal exponent specified with 'E'", analyzeLargeEExponent),
             ("analyze decimal exponent specified with 'e'", analyzeSmallEExponent),
             ("analyze positive exponent", analyzePositiveExponent),
             ("analyze negative exponent", analyzeNegativeExponent),
+
             ("analyze hex exponent specified with 'P'", analyzeLargePHexExponent),
-            ("analyze hex exponent specified with 'p'", analyzeSmallPHexExponent)
+            ("analyze hex exponent specified with 'p'", analyzeSmallPHexExponent),
+            ("not analyze exponent with hex exponent part", notAnalyzeExponentHexExponentPart),
+
+            ("analyze decimal fraction", analyzeDecimalFraction),
+            ("analyze decimal fraction start with zero", analyzeDecimalFractionStartWithZero),
+            ("analyze underscore separated decimal fraction", analyzeUnderscoreSeparatedDecimalFraction),
+            ("not analyze hex decimal fraction without exponent", notAnalyzeHexFractionWithoutExponent),
+            ("analyze hex fraction with exponent", analyzeHexFractionWithExponent)
         ])
     }
 
@@ -30,8 +34,8 @@ class NumericLiteralComposerTest : TokenComposerTest {
     ) throws {
         switch try putStringAndCompose(literal) {
         case let .IntegerLiteral(n, decimalDigits: d):
-            try equals("isdecimalDigits flag", d, isDecimalDigits)
-            try equals("parsed number", n, expected)
+            try equals("isdecimalDigits flag", isDecimalDigits, d)
+            try equals("parsed number", expected, n)
         default:
             throw FailureReason.Text("expected composed result to IntegerLiteral but actual is not IntegerLiteral.")
         }
@@ -40,7 +44,7 @@ class NumericLiteralComposerTest : TokenComposerTest {
     private func isFloatingPointLiteral(literal: String, _ expected: Double) throws {
         switch try putStringAndCompose(literal) {
         case let .FloatingPointLiteral(r):
-            try equals("parsed number", r, expected)
+            try equals("parsed number", expected, r)
         default:
             throw FailureReason.Text("expected composed result to FloatingPointLiteral but actual is not FloatingPointLiteral.")
         }
@@ -51,7 +55,7 @@ class NumericLiteralComposerTest : TokenComposerTest {
     }
 
     private func analyzeIntegerStartWithZero() throws {
-        try isIntegerLiteral("0123", 123, true)
+        try isIntegerLiteral("0123", 0123, true)
     }
 
     private func analyzeBinaryInteger() throws {
@@ -67,7 +71,36 @@ class NumericLiteralComposerTest : TokenComposerTest {
     }
 
     private func analyzeUnderscoreSeparatedInteger() throws {
-        try isIntegerLiteral("9_87_654", 987654, true)
+        try isIntegerLiteral("9_87_654", 9_87_654, true)
+    }
+
+    private func analyzeLargeEExponent() throws {
+        try isFloatingPointLiteral("98E12", 98E12)
+    }
+
+    private func analyzeSmallEExponent() throws {
+        try isFloatingPointLiteral("98e12", 98e12)
+    }
+
+    private func analyzePositiveExponent() throws {
+        try isFloatingPointLiteral("98e+12", 98e+12)
+    }
+
+    private func analyzeNegativeExponent() throws {
+        try isFloatingPointLiteral("98e-12", 98e-12)
+    }
+
+    private func notAnalyzeExponentHexExponentPart() throws {
+        try putString("0xfep")
+        try putFail("a")
+    }
+
+    private func analyzeLargePHexExponent() throws {
+        try isFloatingPointLiteral("0xfeP12", 0xfeP12)
+    }
+
+    private func analyzeSmallPHexExponent() throws {
+        try isFloatingPointLiteral("0xfep12", 0xfep12)
     }
 
     private func analyzeDecimalFraction() throws {
@@ -75,42 +108,19 @@ class NumericLiteralComposerTest : TokenComposerTest {
     }
 
     private func analyzeDecimalFractionStartWithZero() throws {
-        try isFloatingPointLiteral("01.2345", 1.2345)
-    }
-
-    private func analyzeHexFraction() throws {
-        try isFloatingPointLiteral("0xfe.dcba", 0xfe.dcbap1)
+        try isFloatingPointLiteral("01.2345", 01.2345)
     }
 
     private func analyzeUnderscoreSeparatedDecimalFraction() throws {
-        try isFloatingPointLiteral("9.87_654", 9.87654)
+        try isFloatingPointLiteral("9.87_654", 9.87_654)
     }
 
-    private func analyzeUnderscoreSeparatedHexFraction() throws {
-        try isFloatingPointLiteral("0xf.ed_cba", 0xf.ed_cbap1)
+    private func notAnalyzeHexFractionWithoutExponent() throws {
+        try putString("0xfe.dcba")
+        try composeNil()
     }
 
-    private func analyzeLargeEExponent() throws {
-        try isFloatingPointLiteral("98.765E12", 98.765e12)
-    }
-
-    private func analyzeSmallEExponent() throws {
-        try isFloatingPointLiteral("98.765e12", 98.765e12)
-    }
-
-    private func analyzePositiveExponent() throws {
-        try isFloatingPointLiteral("98.765e+12", 98.765e12)
-    }
-
-    private func analyzeNegativeExponent() throws {
-        try isFloatingPointLiteral("98.765e-12", 98.765e-12)
-    }
-
-    private func analyzeLargePHexExponent() throws {
-        try isFloatingPointLiteral("0xfe.dcbP12", 0xfe.dcbp12)
-    }
-
-    private func analyzeSmallPHexExponent() throws {
-        try isFloatingPointLiteral("0xfe.dcbp12", 0xfe.dcbp12)
+    private func analyzeHexFractionWithExponent() throws {
+        try isFloatingPointLiteral("0xfe.dcbap12", 0xfe.dcbap12)
     }
 }

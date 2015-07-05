@@ -165,6 +165,7 @@ class NumericLiteralComposer : TokenComposer {
     private var integralPart: Int64 = 0
     private var fractionPart: Int64?
     private var exponentPart: Int64?
+    private var negativeExponent = false
 
     init() {}
 
@@ -219,7 +220,13 @@ class NumericLiteralComposer : TokenComposer {
                 }
             case let .FollowingDigit(base, pos):
                 switch c {
-                case "0"..."9", "a"..."d", "f", "A"..."D", "F":
+                case "a"..."d", "f", "A"..."D", "F":
+                    if case .Exponent = pos {
+                        state = .Failed
+                        return false
+                    }
+                    fallthrough
+                case "0"..."9":
                     guard accumulate(base, pos, c) else {
                         state = .Failed
                         return false
@@ -253,7 +260,7 @@ class NumericLiteralComposer : TokenComposer {
                 }
             case let .ExponentHead(base):
                 switch c {
-                case "0"..."9", "a"..."f", "A"..."F":
+                case "0"..."9":
                     if accumulate(base, .Exponent, c) {
                         state = .FollowingDigit(base, .Exponent)
                     } else {
@@ -261,10 +268,9 @@ class NumericLiteralComposer : TokenComposer {
                         return false
                     }
                 case "+":
-                    exponentPart = 1
                     state = .HeadDigit(base, .Exponent)
                 case "-":
-                    exponentPart = -1
+                    negativeExponent = true
                     state = .HeadDigit(base, .Exponent)
                 default:
                     state = .Failed
@@ -323,7 +329,7 @@ class NumericLiteralComposer : TokenComposer {
             }
         case .Exponent:
             if let e = exponentPart {
-                exponentPart = e * Int64(base) + v
+                exponentPart = e * 10 + v
             } else {
                 exponentPart = v
             }
@@ -335,13 +341,16 @@ class NumericLiteralComposer : TokenComposer {
         case .BaseSpecifier:
             return TokenKind.IntegerLiteral(integralPart, decimalDigits: true)
         case let .FollowingDigit(base, pos):
+            if base == 16 && fractionPart != nil && exponentPart == nil {
+                return nil
+            }
             if pos == .Integral {
                 return TokenKind.IntegerLiteral(
                     integralPart, decimalDigits: base == 10
                 )
             }
             var value: Double = Double(integralPart)
-            let b = Double(base)
+            let b: Double = base == 10 ? 10 : 2
             if let fp = fractionPart {
                 var f = Double(fp)
                 while f > 1 {
@@ -350,13 +359,13 @@ class NumericLiteralComposer : TokenComposer {
                 value += f
             }
             if let e = exponentPart {
-                if e > 0 {
+                if negativeExponent {
                     for _ in 0..<e {
-                        value *= b
+                        value /= b
                     }
                 } else {
-                    for _ in e..<0 {
-                        value /= b
+                    for _ in 0..<e {
+                        value *= b
                     }
                 }
             }

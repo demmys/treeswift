@@ -44,13 +44,27 @@ class TokenComposerTest : TestUnit {
         tc = provider()
     }
 
-    func putStringAndCompose(s: String) throws -> TokenKind {
+    func putString(s: String) throws {
         let scp = StringCharacterPeeper(s)
         let classifier = CharacterClassifier(cp: scp)
         while let c = scp.look() {
             try isTrue("put character \"\(c)\"", tc.put(classifier.classify(), c))
             scp.consume()
         }
+    }
+
+    func putFail(c: Character) throws {
+        let scp = StringCharacterPeeper(String(c))
+        let classifier = CharacterClassifier(cp: scp)
+        try isFalse("put character \"\(c)\"", tc.put(classifier.classify(), c))
+    }
+
+    func composeNil() throws {
+        try isNil("composed result", tc.compose(.EndOfFile))
+    }
+
+    func putStringAndCompose(s: String) throws -> TokenKind {
+        try putString(s)
         if let kind = tc.compose(.EndOfFile) {
             return kind
         } else {
