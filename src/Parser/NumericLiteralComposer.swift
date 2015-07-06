@@ -13,11 +13,6 @@ class NumericLiteralComposer : TokenComposer {
         case Failed
     }
 
-    private let capitalA: Int64 = 65
-    private let capitalF: Int64 = 70
-    private let smallA: Int64 = 97
-    private let smallF: Int64  = 102
-
     private var state = State.Head
     private var integralPart: Int64 = 0
     private var fractionPart: Int64?
@@ -148,7 +143,7 @@ class NumericLiteralComposer : TokenComposer {
     ) -> Bool {
         if base == 16 {
             if let v = hex(c) {
-                add(16, pos, v)
+                add(16, pos, Int64(v))
                 return true
             }
         } else if let v = Int64(String(c)) {
@@ -156,22 +151,6 @@ class NumericLiteralComposer : TokenComposer {
             return true
         }
         return false
-    }
-
-    private func hex(c: Character) -> Int64? {
-        let s = String(c)
-        guard let v = Int64(s) else {
-            let xs = s.unicodeScalars
-            let x = Int64(xs[xs.startIndex].value)
-            if (capitalA <= x) && (x <= capitalF) {
-                return x - capitalA + 10
-            }
-            if (smallA <= x) && (x <= smallF) {
-                return x - smallA + 10
-            }
-            return nil
-        }
-        return v
     }
 
     private func add(base: Int, _ pos: AccumlatePosition, _ v: Int64) {

@@ -1,5 +1,5 @@
 enum CharacterClass {
-    case EndOfFile, LineFeed, Space
+    case EndOfFile, LineFeed, CarriageReturn, Space
     case Semicolon, Colon, Comma, Hash, Underscore, Atmark
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
@@ -31,6 +31,8 @@ class CharacterClassifier {
             switch c {
             case "\n":
                 return .LineFeed
+            case "\r":
+                return .CarriageReturn
             case ";":
                 return .Semicolon
             case ":":

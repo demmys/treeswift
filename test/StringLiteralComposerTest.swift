@@ -7,7 +7,7 @@ class StringLiteralComposerTest : TokenComposerTest {
         setTestCases([
             ("analyze string literal", analyzeStringLiteral),
             ("analyze escaped characters", analyzeEscapedCharacters),
-            ("not analyze unescaped double qote", notAnalyzeUnescapedDoubleQuote),
+            ("can analyze empty string", analyzeEmptyString),
             ("not analyze unescaped line feed", notAnalyzeUnescapedLineFeed),
             ("not analyze unescaped carriage return", notAnalyzeUnescapedCarriageReturn),
         ])
@@ -30,9 +30,8 @@ class StringLiteralComposerTest : TokenComposerTest {
         try isStringLiteral("\"\\0, \\\\, \\t, \\n, \\r, \\\", \\', \\u{1f363}\"", "\0, \\, \t, \n, \r, \", \', \u{1f363}")
     }
 
-    private func notAnalyzeUnescapedDoubleQuote() throws {
-        try putString("\"")
-        try putFail("\"")
+    private func analyzeEmptyString() throws {
+        try isStringLiteral("\"\"", "")
     }
 
     private func notAnalyzeUnescapedLineFeed() throws {

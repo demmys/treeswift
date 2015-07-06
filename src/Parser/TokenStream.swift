@@ -106,6 +106,10 @@ class TokenStream : TokenPeeper {
 
         let head = classified ?? classifier.classify()
         switch head {
+        case .CarriageReturn:
+            // ignore
+            ctx.consume()
+            return load()
         case .EndOfFile:
             return produce(.EndOfFile)
         case .LineFeed:
