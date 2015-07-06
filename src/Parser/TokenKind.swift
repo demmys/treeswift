@@ -1,9 +1,27 @@
 import Util
 
-public enum IdentifierKind {
+public enum IdentifierKind : Equatable {
     case Identifier(String)
     case QuotedIdentifier(String)
     case ImplicitParameter(Int)
+}
+
+public func ==(lhs: IdentifierKind, rhs: IdentifierKind) -> Bool {
+    switch lhs {
+    case let .Identifier(s):
+        if case .Identifier(s) = rhs {
+            return true
+        }
+    case let .QuotedIdentifier(s):
+        if case .QuotedIdentifier(s) = rhs {
+            return true
+        }
+    case let .ImplicitParameter(i):
+        if case .ImplicitParameter(i) = rhs {
+            return true
+        }
+    }
+    return false
 }
 
 public enum TokenKind : Equatable {
@@ -32,313 +50,249 @@ public enum TokenKind : Equatable {
 public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
     switch lhs {
     case .Error:
-        switch rhs {
-        case .Error: return true
-        default: return false
+        if case .Error = rhs {
+            return true
         }
     case .EndOfFile:
-        switch rhs {
-        case .EndOfFile: return true
-        default: return false
+        if case .EndOfFile = rhs {
+            return true
         }
     case .LineFeed:
-        switch rhs {
-        case .LineFeed: return true
-        default: return false
+        if case .LineFeed = rhs {
+            return true
         }
     case .Semicolon:
-        switch rhs {
-        case .Semicolon: return true
-        default: return false
+        if case .Semicolon = rhs {
+            return true
         }
     case .Colon:
-        switch rhs {
-        case .Colon: return true
-        default: return false
+        if case .Colon = rhs {
+            return true
         }
     case .Comma:
-        switch rhs {
-        case .Comma: return true
-        default: return false
+        if case .Comma = rhs {
+            return true
         }
     case .Arrow:
-        switch rhs {
-        case .Arrow: return true
-        default: return false
+        if case .Arrow = rhs {
+            return true
         }
     case .Hash:
-        switch rhs {
-        case .Hash: return true
-        default: return false
+        if case .Hash = rhs {
+            return true
         }
     case .Underscore:
-        switch rhs {
-        case .Underscore: return true
-        default: return false
+        if case .Underscore = rhs {
+            return true
         }
     case .Atmark:
-        switch rhs {
-        case .Atmark: return true
-        default: return false
+        if case .Atmark = rhs {
+            return true
     }
     case .Dot:
-        switch rhs {
-        case .Dot: return true
-        default: return false
+        if case .Dot = rhs {
+            return true
         }
     case .AssignmentOperator:
-        switch rhs {
-        case .AssignmentOperator: return true
-        default: return false
+        if case .AssignmentOperator = rhs {
+            return true
         }
     case .LeftParenthesis:
-        switch rhs {
-        case .LeftParenthesis: return true
-        default: return false
+        if case .LeftParenthesis = rhs {
+            return true
         }
     case .RightParenthesis:
-        switch rhs {
-        case .RightParenthesis: return true
-        default: return false
+        if case .RightParenthesis = rhs {
+            return true
         }
     case .LeftBrace:
-        switch rhs {
-        case .LeftBrace: return true
-        default: return false
+        if case .LeftBrace = rhs {
+            return true
         }
     case .RightBrace:
-        switch rhs {
-        case .RightBrace: return true
-        default: return false
+        if case .RightBrace = rhs {
+            return true
         }
     case .LeftBracket:
-        switch rhs {
-        case .LeftBracket: return true
-        default: return false
+        if case .LeftBracket = rhs {
+            return true
         }
     case .RightBracket:
-        switch rhs {
-        case .RightBracket: return true
-        default: return false
+        if case .RightBracket = rhs {
+            return true
         }
     case .PrefixLessThan:
-        switch rhs {
-        case .PrefixLessThan: return true
-        default: return false
+        if case .PrefixLessThan = rhs {
+            return true
         }
     case .PostfixGraterThan:
-        switch rhs {
-        case .PostfixGraterThan: return true
-        default: return false
+        if case .PostfixGraterThan = rhs {
+            return true
         }
     case .PrefixAmpersand:
-        switch rhs {
-        case .PrefixAmpersand: return true
-        default: return false
+        if case .PrefixAmpersand = rhs {
+            return true
         }
     case .PrefixQuestion:
-        switch rhs {
-        case .PrefixQuestion: return true
-        default: return false
+        if case .PrefixQuestion = rhs {
+            return true
         }
     case .BinaryQuestion:
-        switch rhs {
-        case .BinaryQuestion: return true
-        default: return false
+        if case .BinaryQuestion = rhs {
+            return true
         }
     case .PostfixQuestion:
-        switch rhs {
-        case .PostfixQuestion: return true
-        default: return false
+        if case .PostfixQuestion = rhs {
+            return true
         }
     case .PostfixExclamation:
-        switch rhs {
-        case .PostfixExclamation: return true
-        default: return false
+        if case .PostfixExclamation = rhs {
+            return true
         }
     case .PrefixOperator:
-        switch rhs {
-        case .PrefixOperator: return true
-        default: return false
+        if case .PrefixOperator = rhs {
+            return true
         }
     case .BinaryOperator:
-        switch rhs {
-        case .BinaryOperator: return true
-        default: return false
+        if case .BinaryOperator = rhs {
+            return true
         }
     case .PostfixOperator:
-        switch rhs {
-        case .PostfixOperator: return true
-        default: return false
+        if case .PostfixOperator = rhs {
+            return true
         }
     case .Identifier:
-        switch rhs {
-        case .Identifier: return true
-        default: return false
+        if case .Identifier = rhs {
+            return true
         }
     case .IntegerLiteral:
-        switch rhs {
-        case .IntegerLiteral: return true
-        default: return false
+        if case .IntegerLiteral = rhs {
+            return true
         }
     case .FloatingPointLiteral:
-        switch rhs {
-        case .FloatingPointLiteral: return true
-        default: return false
+        if case .FloatingPointLiteral = rhs {
+            return true
         }
     case .StringLiteral:
-        switch rhs {
-        case .StringLiteral: return true
-        default: return false
+        if case .StringLiteral = rhs {
+            return true
         }
     case .BooleanLiteral:
-        switch rhs {
-        case .BooleanLiteral: return true
-        default: return false
+        if case .BooleanLiteral = rhs {
+            return true
         }
     case .As:
-        switch rhs {
-        case .As: return true
-        default: return false
+        if case .As = rhs {
+            return true
         }
     case .Associativity:
-        switch rhs {
-        case .Associativity: return true
-        default: return false
+        if case .Associativity = rhs {
+            return true
         }
     case .Break:
-        switch rhs {
-        case .Break: return true
-        default: return false
+        if case .Break = rhs {
+            return true
         }
     case .Continue:
-        switch rhs {
-        case .Continue: return true
-        default: return false
+        if case .Continue = rhs {
+            return true
         }
     case .Do:
-        switch rhs {
-        case .Do: return true
-        default: return false
+        if case .Do = rhs {
+            return true
         }
     case .Else:
-        switch rhs {
-        case .Else: return true
-        default: return false
+        if case .Else = rhs {
+            return true
         }
     case .For:
-        switch rhs {
-        case .For: return true
-        default: return false
+        if case .For = rhs {
+            return true
         }
     case .Func:
-        switch rhs {
-        case .Func: return true
-        default: return false
+        if case .Func = rhs {
+            return true
         }
     case .If:
-        switch rhs {
-        case .If: return true
-        default: return false
+        if case .If = rhs {
+            return true
         }
     case .Infix:
-        switch rhs {
-        case .Infix: return true
-        default: return false
+        if case .Infix = rhs {
+            return true
         }
     case .In:
-        switch rhs {
-        case .In: return true
-        default: return false
+        if case .In = rhs {
+            return true
         }
     case .InOut:
-        switch rhs {
-        case .InOut: return true
-        default: return false
+        if case .InOut = rhs {
+            return true
         }
     case .Is:
-        switch rhs {
-        case .Is: return true
-        default: return false
+        if case .Is = rhs {
+            return true
         }
     case .Let:
-        switch rhs {
-        case .Let: return true
-        default: return false
+        if case .Let = rhs {
+            return true
         }
     case .Left:
-        switch rhs {
-        case .Left: return true
-        default: return false
+        if case .Left = rhs {
+            return true
         }
     case .Nil:
-        switch rhs {
-        case .Nil: return true
-        default: return false
+        if case .Nil = rhs {
+            return true
         }
     case .None:
-        switch rhs {
-        case .None: return true
-        default: return false
+        if case .None = rhs {
+            return true
         }
     case .Operator:
-        switch rhs {
-        case .Operator: return true
-        default: return false
+        if case .Operator = rhs {
+            return true
         }
     case .Prefix:
-        switch rhs {
-        case .Prefix: return true
-        default: return false
+        if case .Prefix = rhs {
+            return true
         }
     case .Postfix:
-        switch rhs {
-        case .Postfix: return true
-        default: return false
+        if case .Postfix = rhs {
+            return true
         }
     case .Precedence:
-        switch rhs {
-        case .Precedence: return true
-        default: return false
+        if case .Precedence = rhs {
+            return true
         }
     case .Return:
-        switch rhs {
-        case .Return: return true
-        default: return false
+        if case .Return = rhs {
+            return true
         }
     case .Var:
-        switch rhs {
-        case .Var: return true
-        default: return false
+        if case .Var = rhs {
+            return true
         }
     case .Right:
-        switch rhs {
-        case .Right: return true
-        default: return false
+        if case .Right = rhs {
+            return true
         }
     case .Typealias:
-        switch rhs {
-        case .Typealias: return true
-        default: return false
+        if case .Typealias = rhs {
+            return true
         }
     case .While:
-        switch rhs {
-        case .While: return true
-        default: return false
+        if case .While = rhs {
+            return true
         }
     case .Weak:
-        switch rhs {
-        case .Weak: return true
-        default: return false
+        if case .Weak = rhs {
+            return true
         }
     case .Unowned:
-        switch rhs {
-        case .Unowned: return true
-        default: return false
+        if case .Unowned = rhs {
+            return true
         }
     }
-}
-
-func !=(a: TokenKind, b: TokenKind) -> Bool {
-    return !(a == b)
+    return false
 }
