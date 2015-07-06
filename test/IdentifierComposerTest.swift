@@ -1,38 +1,34 @@
 import PureSwiftUnit
 @testable import Parser
 
-class IdentifierComposerTest : TestUnit {
-    private var c: IdentifierComposer!
-
+class IdentifierComposerTest : TokenComposerTest {
     init() {
-        super.init("IdentifierComposer class")
+        super.init("IdentifierComposer class can", { IdentifierComposer() })
         setTestCases([
-            ("can analyze normal identifier", analyzeNormalIdentifier),
-            ("can analyze quoted identifier", analyzeQuotedIdentifier),
-            ("can analyze implicit parameter", analyzeImplicitParameter)
+            ("analyze normal identifier", analyzeNormalIdentifier),
+            ("analyze quoted identifier", analyzeQuotedIdentifier),
+            ("analyze implicit parameter", analyzeImplicitParameter)
         ])
     }
 
-    override func beforeCase() {
-        c = IdentifierComposer()
+    private func isIdentifier(literal: String, _ expected: IdentifierKind) throws {
+        switch try putStringAndCompose(literal) {
+        case let .Identifier(k):
+            try equals("parsed identifier", k, expected)
+        default:
+            throw FailureReason.Text("expected composed result to Identifier but actual is not Identifier.")
+        }
     }
 
     private func analyzeNormalIdentifier() throws {
-        try isTrue("put first character", c.put(.IdentifierHead, "i"))
-        try isTrue("put second character", c.put(.IdentifierHead, "d"))
-        try isNotNil("composed result", c.compose(.IdentifierHead))
+        try isIdentifier("id", .Identifier("id"))
     }
 
     private func analyzeQuotedIdentifier() throws {
-        try isTrue("put back quote", c.put(.BackQuote, "`"))
-        try isTrue("put first character", c.put(.IdentifierHead, "i"))
-        try isTrue("put back quote", c.put(.BackQuote, "`"))
-        try isNotNil("composed result", c.compose(.IdentifierHead))
+        try isIdentifier("`if`", .QuotedIdentifier("if"))
     }
 
     private func analyzeImplicitParameter() throws {
-        try isTrue("put dollar", c.put(.Dollar, "$"))
-        try isTrue("put first character", c.put(.Digit, "0"))
-        try isNotNil("composed result", c.compose(.IdentifierHead))
+        try isIdentifier("$0", .ImplicitParameter(0))
     }
 }

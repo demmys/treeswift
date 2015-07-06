@@ -1,37 +1,29 @@
 import PureSwiftUnit
 @testable import Parser
 
-class OperatorComposerTest : TestUnit {
-    private var c: OperatorComposer!
-
+class OperatorComposerTest : TokenComposerTest {
     init() {
-        super.init("OperatorComposer class")
+        super.init("OperatorComposer class", { OperatorComposer(prev: .Space) })
         setTestCases([
             ("can analyze operator", analyzeOperator),
-            ("can analyze dot operator", analyzeDotOperator),
-            ("can analyze reserved operator", analyzeReservedOperator)
+            ("can analyze dot operator", analyzeDotOperator)
         ])
     }
 
-    override func beforeCase() {
-        c = OperatorComposer(prev: .LeftParenthesis)
+    private func isOperator(literal: String, _ expected: String) throws {
+        switch try putStringAndCompose(literal) {
+        case let .BinaryOperator(s):
+            try equals("parsed operator", s, expected)
+        default:
+            throw FailureReason.Text("expected composed result to BinaryOperator but actual is not BinaryOperator")
+        }
     }
 
     private func analyzeOperator() throws {
-        try isTrue("put first operator character", c.put(.OperatorHead, "+"))
-        try isTrue("put second operator character", c.put(.OperatorHead, "+"))
-        try isNotNil("composed result", c.compose(.RightParenthesis))
+        try isOperator("++", "++")
     }
 
     private func analyzeDotOperator() throws {
-        try isTrue("put dot", c.put(.DotOperatorHead, "."))
-        try isTrue("put following dot", c.put(.Dot, "."))
-        try isTrue("put operator character", c.put(.Dot, "+"))
-        try isNotNil("composed result", c.compose(.RightParenthesis))
-    }
-
-    private func analyzeReservedOperator() throws {
-        try isTrue("put reserved operator", c.put(.Question, "?"))
-        try isNotNil("composed result", c.compose(.RightParenthesis))
+        try isOperator("..+", "..+")
     }
 }

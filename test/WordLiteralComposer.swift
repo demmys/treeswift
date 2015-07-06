@@ -1,11 +1,9 @@
 import PureSwiftUnit
 @testable import Parser
 
-class WordLiteralComposerTest : TestUnit {
-    private var c: WordLiteralComposer!
-
+class WordLiteralComposerTest : TokenComposerTest {
     init() {
-        super.init("WordLiteralComposer class")
+        super.init("WordLiteralComposer class", { WordLiteralComposer("if", .If) })
         setTestCases([
             ("returns false when put a incorrect character", putIncorrectCharacter),
             ("not succeeds if the length of put word exceeds set word length", putExceededLength),
@@ -13,24 +11,20 @@ class WordLiteralComposerTest : TestUnit {
         ])
     }
 
-    override func beforeCase() {
-        c = WordLiteralComposer("if", .If)
+    private func isExpectedToken(literal: String, _ expected: TokenKind) throws {
+        try equals("parsed token", expected, try putStringAndCompose(literal))
     }
 
     private func putIncorrectCharacter() throws {
-        try isFalse("put result", c.put(.IdentifierHead, "j"))
+        try putFail("j")
     }
 
     private func putExceededLength() throws {
-        c.put(.IdentifierHead, "i")
-        c.put(.IdentifierHead, "f")
-        try isFalse("put result", c.put(.IdentifierHead, "g"))
-        try isNil("composed kind", c.compose(.IdentifierHead))
+        try putString("if")
+        try putFail("g")
     }
 
     private func putExpectedWord() throws {
-        c.put(.IdentifierHead, "i")
-        try isTrue("put result", c.put(.IdentifierHead, "f"))
-        try isNotNil("composed kind", c.compose(.IdentifierHead))
+        try isExpectedToken("if", .If)
     }
 }
