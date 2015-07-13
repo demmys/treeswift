@@ -1,5 +1,13 @@
 import Util
 
+public enum ModifierKind {
+    case Class, Convenience, Dynamic, Final, Infix, Lazy, Mutating, Nonmutating
+    case Optional, Override, Postfix, Prefix, Required, Static
+    case Unowned, UnownedSafe, UnownedUnsafe, Weak
+    case Internal, Private, Public
+    case InternalSet, PrivateSet, PublicSet
+}
+
 public enum IdentifierKind : Equatable {
     case Identifier(String)
     case QuotedIdentifier(String)
@@ -42,6 +50,8 @@ public enum TokenKind : Equatable {
     case FloatingPointLiteral(Double)
     case StringLiteral(String)
     case BooleanLiteral(Bool)
+    case Modifier(ModifierKind)
+    case Attribute(String)
     case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
     case In, InOut, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
     case Precedence, Return, Right, Typealias, Unowned, Var, Weak, While
@@ -179,6 +189,14 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         }
     case .BooleanLiteral:
         if case .BooleanLiteral = rhs {
+            return true
+        }
+    case .Modifier:
+        if case .Modifier = rhs {
+            return true
+        }
+    case .Attribute:
+        if case .Attribute = rhs {
             return true
         }
     case .As:

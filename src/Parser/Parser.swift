@@ -1,37 +1,41 @@
 import Util
 
-private enum ParserError : ErrorType {
+enum ParserError : ErrorType {
     case FileNotFound(String)
     case FileCanNotRead(String)
+    case Error(String, SourceInfo)
 }
 
 public enum ParseResult {
-    case TokensOfFiles([String:[Token]])
-    case Error([String])
+    case Succeeded(TopLevelDeclaration)
+    case Failed([Error])
 }
 
 public class Parser {
     private let fileNames: [String]
+    private var ts: TokenStream!
 
     public init(_ fileNames: [String]) {
         self.fileNames = fileNames
     }
 
     public func parse() -> ParseResult {
-        var result: [String:[Token]] = [:]
+        var result: [String:TopLevelDeclaration] = [:]
         for fileName in fileNames {
             do {
-                let ts = try createStream(fileName)
-                result[fileName] = parseTokens(ts)
+                ts = try createStream(fileName)
+                result[fileName] = try topLevelDeclaration()
             } catch ParserError.FileNotFound(let name) {
-                return .Error(["No such a file: \(name)"])
+                return .Failed([("No such a file: \(name)", nil)])
             } catch ParserError.FileCanNotRead(let name) {
-                return .Error(["File cannot read: \(name)"])
+                return .Failed([("File cannot read: \(name)", nil)])
+            } catch ParserError.Error(let s, let i) {
+                return .Failed([(s, i)])
             } catch let e {
-                return .Error(["Unexpected error: \(e)"])
+                return .Failed([("Unexpected error: \(e)", nil)])
             }
         }
-        return .TokensOfFiles(result)
+        return .Succeeded(mergeAST(result))
     }
 
     private func createStream(fileName: String) throws -> TokenStream {
@@ -44,12 +48,17 @@ public class Parser {
         return ts
     }
 
-    private func parseTokens(ts: TokenStream) -> [Token] {
-        var tokens: [Token] = []
-        repeat {
-            tokens.append(ts.look())
-            ts.next()
-        } while tokens.last!.kind != .EndOfFile
-        return tokens
+    private func mergeAST(tlds: [TopLevelDeclaration]) throws -> TopLevelDeclaration {
+        // TODO
+    }
+
+
+    private func topLevelDeclaration() throws -> TopLevelDeclaration {
+        let sp = StatementParser(ts)
+        let b = TopLevelDeclarationBuilder()
+        while ts.look.kind() != .EndOfFile {
+            b.add(try sp.statement())
+        }
+        return b.build()
     }
 }

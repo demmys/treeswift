@@ -61,8 +61,8 @@ switch-statement -> Switch expression LeftBrace switch-cases? RightBrace
 switch-cases -> switch-case switch-cases?
 switch-case -> case-label statements
              | default-label statements
-             // | case-label Semicolon
-             // | default-label Semicolon
+             | case-label Semicolon
+             | default-label Semicolon
 
 case-label -> Case case-item-list Colon
 case-item-list -> pattern where-clause? case-item-list-tail?
@@ -112,7 +112,7 @@ label-name        -> Identifier
 ```
 control-transfer-statement -> break-statement
                             | continue-statement
-                            | falthrough-statement
+                            | fallthrough-statement
                             | return-statement
                             | throw-statement
 
@@ -120,13 +120,17 @@ break-statement -> Break label-name?
 
 continue-statement -> Continue label-name?
 
-falthrough-statement -> Fallthrough
+fallthrough-statement -> Fallthrough
 
 return-statement -> Return
                   | Return expression
 
 throw-statement -> Throw expression
+```
 
+#### Defer statement
+
+```
 defer-statement -> Defer code-block
 ```
 

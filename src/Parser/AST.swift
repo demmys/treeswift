@@ -1,18 +1,5 @@
 import Util
 
-public protocol ASTVisitor {
-    func visit(LiteralExpression)
-    func visit(PrefixExpression)
-    func visit(Expression)
-    func visit(Declaration)
-    func visit(Statement)
-    func visit(TopLevelDeclaration)
-}
-
-public protocol AST {
-    func accept(ASTVisitor)
-}
-
 class OptionalParts : AST {
     init() {}
     func accept(_: ASTVisitor) {}
@@ -493,9 +480,18 @@ public class ForCondition : AST {
     public func accept(_: ASTVisitor) {}
 }
 
-public enum Statement : AST {
-    case Term(Expression)
-    case Definition(Declaration)
+enum Condition {
+    enum BindingType {
+        case Let, Var
+    }
+
+    case Case(Pattern, Expression, Expression?)
+    case Optional([(BindingType?, Pattern, Expression)], Expression?)
+}
+
+public enum Statement {
+    case Expression(Expression)
+    case Declaration(Declaration)
     // loop-statement, labeled-statement
     case For(ForCondition, [Statement]?, String?)
     case ForIn(Pattern, Expression, [Statement]?, String?)
@@ -504,27 +500,21 @@ public enum Statement : AST {
     // branch-statement
     case If(IfCondition, [Statement]?, ElseClause?)
     // control-transfer-statement
-    case Break(String?)
-    case Continue(String?)
+    case Break(IdentifierKind?)
+    case Continue(IdentifierKind?)
+    case Fallthrough
     case Return(Expression?)
-    public func accept(v: ASTVisitor) { v.visit(self) }
-}
-
-class Statements : AST {
-    var value: [Statement]
-    init(_ v: [Statement]) {
-        value = v
-    }
-    func accept(_: ASTVisitor) {}
+    case Throw(Expression?)
+    // defer-statement
+    case Defer([Statement]?)
+    // do-statement
+    case Do()
 }
 
 /*
  * Top level declaration
  */
-public class TopLevelDeclaration : AST {
-    public var value: [Statement]?
-    init(_ v: [Statement]?) {
-        value = v
-    }
-    public func accept(v: ASTVisitor) { v.visit(self) }
+public struct TopLevelDeclaration {
+    public let ss: [Statement] = []
+    public let main: Bool
 }
