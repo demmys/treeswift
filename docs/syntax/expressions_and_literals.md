@@ -1,4 +1,28 @@
-### Expressions
+### Operation
+
+```
+operation -> expression
+           | assignment-operation
+           | break-operation
+           | continue-operation
+           | fallthrough-operation
+           | return-operation
+           | throw-operation
+
+assignment-operation -> pattern AssignmentOperator expression
+
+break-operation -> Break Identifier?
+
+continue-operation -> Continue Indentifier?
+
+fallthrough-operation -> Fallthrough
+
+return-operation -> Return expression?
+
+throw-operation -> Throw expression
+```
+
+### Expression
 
 ```
 expression-list      -> expression expression-list-tail
@@ -10,7 +34,6 @@ try-operator -> Try | Try PostfixExclamation
 
 binary-expressions -> binary-expression binary-expressions?
 binary-expression  -> BinaryOperator prefix-expression
-                    | AssignmentOperator try-operator? prefix-expression
                     | conditional-operator try-operator? prefix-expression
                     | type-casting-operator
 

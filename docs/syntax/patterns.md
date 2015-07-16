@@ -1,35 +1,48 @@
 ### Patterns
 
 ```
-pattern -> wildcard-pattern type-annotation?
-         | identifier-pattern type-annotation?
+pattern -> identifier-pattern
+         | wildcard-pattern
+         | tuple-pattern
+         | expression-pattern
          | value-binding-pattern
-         | tuple-pattern type-annotation?
          | enum-case-pattern
          | optional-pattern
          | type-casting-pattern
-         | expression-pattern
 
-wildcard-pattern -> Underscore
+declarational-pattern -> identifier-pattern
+                       | wildcard-pattern
+                       | declarational-tuple-pattern
 
-identifier-pattern -> Identifier
+conditional-pattern -> wildcard-pattern
+                     | tuple-pattern
+                     | expression-pattern
+                     | value-binding-pattern
+                     | enum-case-pattern
+                     | optional-pattern
+                     | type-casting-pattern
 
-value-binding-pattern -> Var pattern | Let pattern
+wildcard-pattern -> Underscore type-annotation?
 
-tuple-pattern                   -> LeftParenthesis tuple-pattern-element-list? RightParenthesis
-                                 | LeftParenthesis RightParenthesis
-tuple-pattern-element-list      -> tuple-pattern-element tuple-pattern-element-list-tail?
-tuple-pattern-element-list-tail -> Comma tuple-pattern-element-list
-tuple-pattern-element           -> pattern
+identifier-pattern -> Identifier type-annotation?
+
+value-binding-pattern -> Var pattern
+                       | Let pattern
+
+declarational-tuple-pattern               -> LeftParenthesis declarational-tuple-pattern-elements? RightParenthesis
+declarational-tuple-pattern-elements      -> declarational-pattern declarational-tuple-pattern-elements-tail?
+declarational-tuple-pattern-elements-tail -> Comma declarational-pattern
+
+tuple-pattern               -> LeftParenthesis tuple-pattern-elements? RightParenthesis
+tuple-pattern-elements      -> pattern tuple-pattern-elements-tail?
+tuple-pattern-elements-tail -> Comma pattern
 
 enum-case-pattern -> type-identifier? Dot enum-case-name tuple-pattern?
 
-optional-pattern -> pattern PostfixQuestion
+optional-pattern         -> pattern PostfixQuestion
 
-type-casting-pattern -> is-pattern
-                      | as-pattern
-is-pattern           -> Is type
-as-pattern           -> pattern as type
+type-casting-pattern -> Is type
+                      | pattern As type
 
 expression-pattern -> expression
 ```

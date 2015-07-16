@@ -17,13 +17,17 @@ declaration  -> import-declaration
               | subscript-declaration
               | operator-declaration
 
-code-block -> LeftBrace statements? RightBrace
-
 type-inheritance-clause      -> Colon Class type-inheritance-clause-tail?
                               | Colon type-inheritance-list
 type-inheritance-clause-tail -> Comma type-inheritance-list
 type-inheritance-list        -> type-identifier type-inheritance-list-tail?
 type-inheritance-list-tail   -> Comma type-inheritance-list
+```
+
+#### Top level declaration
+
+```
+top-level-declaration -> procedures?
 ```
 
 #### Import declaration
@@ -45,7 +49,7 @@ constant-declaration -> attributes? declaration-modifiers? Let pattern-initializ
 variable-declaration       -> variable-declaration-head pattern-initializer-list
                             | variable-declaration-head variable-name type-annotation variable-declaration-block
                             | variable-declaration-head variable-name initializer willSet-didSet-block
-variable-declaration-block -> code-block
+variable-declaration-block -> procedure-block
                             | getter-setter-block
                             | getter-setter-keyword-block
                             | initializer? willSet-didSet-block
@@ -54,8 +58,8 @@ variable-name              -> Identifier
 
 getter-setter-block -> LeftBrace getter-clause setter-clause? RightBrace
                      | LeftBrace setter-clause getter-clause RightBrace
-getter-clause       -> attributes? Get code-block
-setter-clause       -> attributes? Set setter-name? code-block
+getter-clause       -> attributes? Get procedure-block
+setter-clause       -> attributes? Set setter-name? procedure-block
 setter-name         -> LeftParenthesis Identifier RightParenthesis
 
 getter-setter-keyword-block -> LeftBrace getter-keyword-clause setter-keyword-clause? RightBrace
@@ -65,12 +69,12 @@ setter-keyword-clause       -> attributes? Set
 
 willSet-didSet-block -> LeftBrace willSet-clause didSet-clause? RightBrace
                       | LeftBrace didSet-clause willSet-clause? RightBrace
-willSet-clause       -> attributes? WillSet setter-name? code-block
-didSet-clause        -> attributes? DidSet setter-name? code-block
+willSet-clause       -> attributes? WillSet setter-name? procedure-block
+didSet-clause        -> attributes? DidSet setter-name? procedure-block
 
 pattern-initializer-list -> pattern-initializer pattern-initializer-tail?
 pattern-initializer-tail -> Comma pattern-initializer-list
-pattern-initializer      -> pattern initializer?
+pattern-initializer      -> declarational-pattern initializer?
 initializer              -> AssignmentOperator expression
 ```
 
@@ -92,7 +96,7 @@ function-head      -> attributes? declaration-modifiers? Func
 function-name      -> Identifier | PrefixOperator | PostfixOperator | BinaryOperator
 function-signature -> parameter-clauses (Throws | Rethrows)? function-result?
 function-result    -> Arrow attributes? type
-function-body      -> code-block
+function-body      -> procedure-block
 
 parameter-clauses       -> parameter-clause parameter-clauses?
 parameter-clause        -> LeftParenthesis RightParenthesis
@@ -180,14 +184,14 @@ protocol-associated-type-declaration ->  typealias-head type-inheritance-clause?
 #### Initializer declaration
 
 ```
-initializer-declaration -> initializer-head generic-parameter-clause? parameter-clause code-block
+initializer-declaration -> initializer-head generic-parameter-clause? parameter-clause procedure-block
 initializer-head        -> attributes? declaration-modifiers? Init (PostfixQuestion | PostfixExclamation)?
 ```
 
 #### Deinitializer declaration
 
 ```
-deinitializer-declaration -> attributes? Deinit code-block
+deinitializer-declaration -> attributes? Deinit procedure-block
 ```
 
 #### Extension declaration
@@ -200,7 +204,7 @@ extension-body        -> Leftbrace declarations RightBrace
 #### Subscript declaration
 
 ```
-subscript-declaration -> subscript-head subscript-result code-block
+subscript-declaration -> subscript-head subscript-result procedure-block
                        | subscript-head subscript-result getter-setter-block
                        | subscript-head subscript-result getter-setter-keyword-block
 subscript-head        -> attributes? declaration-modifiers? Subscript parameter-clause
