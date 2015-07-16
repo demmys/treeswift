@@ -24,7 +24,7 @@ tuple-pattern-element           -> pattern
 
 enum-case-pattern -> type-identifier? Dot enum-case-name tuple-pattern?
 
-optional-pattern -> identifier-pattern PostfixQuestion
+optional-pattern -> pattern PostfixQuestion
 
 type-casting-pattern -> is-pattern
                       | as-pattern
