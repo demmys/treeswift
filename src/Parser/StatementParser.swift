@@ -84,14 +84,15 @@ class StatementParser {
         default:
             // TODO
         }
-        guard isTerminalToken(ts.look()) else {
-            throw ParserError.Error("Statement should end with line feed or semicolon", ts.look().info)
+        guard isTerminalToken() else {
+            throw ParserError.Error("Continuous statement should be separated by ';'", ts.look().info)
         }
+        ts.next(1, skipLineFeed: false)
         return s
     }
 
-    private func isTerminalToken(t: Token) -> Bool {
-        switch t.kind {
+    private func isTerminalToken() -> Bool {
+        switch ts.look(0, skipLineFeed: false).kind {
         case .LineFeed, .Semicolon, .EndOfFile:
             return true
         default:
@@ -153,7 +154,16 @@ class StatementParser {
         switch ts.look().kind {
         case .Semicolon:
             break
-        case .Attribute, .Modifier, .Var:
+        case .Attribute:
+            let b = DeclarationBuilder()
+            b.attrs = dp.attributes()
+            b.mods = dp.modifiers()
+            c.pre = .Declaration(try dp.variableDeclaration(b))
+        case .Modifier:
+            let b = DeclarationBuilder()
+            b.mods = dp.modifiers()
+            c.pre = .Declaration(try dp.variableDeclaration(b))
+        case .Var:
             c.pre = .Declaration(try dp.variableDeclaration())
         default:
             c.pre = .Expressions(try ep.expressionList())
@@ -205,7 +215,7 @@ class StatementParser {
         c.src = try ep.expression()
         c.filter = try whereClause()
         b.cond = .ForIn(c)
-        b.body = dp.codeBlock()
+        b.body = try dp.codeBlock()
         return b.build()
     }
 
@@ -359,14 +369,14 @@ class StatementParser {
     }
 
     private func returnStatement() throws -> Statement {
-        if isTerminalToken(ts.look()) {
+        if isTerminalToken() {
             return .Return(nil)
         }
         return .Return(try ep.expression())
     }
 
     private func throwStatement() throws -> Statement {
-        if isTerminalToken(ts.look()) {
+        if isTerminalToken() {
             return .Throw(nil)
         }
         return .Throw(try ep.expression())

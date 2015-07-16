@@ -56,7 +56,7 @@ public class Parser {
     private func topLevelDeclaration() throws -> TopLevelDeclaration {
         let sp = StatementParser(ts)
         let b = TopLevelDeclarationBuilder()
-        while ts.look.kind() != .EndOfFile {
+        while ts.look().kind != .EndOfFile {
             b.add(try sp.statement())
         }
         return b.build()

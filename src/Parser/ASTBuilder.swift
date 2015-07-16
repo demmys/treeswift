@@ -138,4 +138,35 @@ class OptionalConditionBuilder {
 class DeclarationBuilder {
     var attrs: [String]?
     var mods: [ModifierKind]?
+    var body: DeclarationBuilderBody!
+}
+
+enum DeclarationBuilderBody {
+    case Import(ImportDeclarationBuilder)
+    case Constant([(Pattern, Expression)])
+    case Variable(VariableDeclarationBuilder)
+}
+
+class ImportDeclarationBuilder {
+    var kind: ImportKind?
+    var path: [String]!
+}
+
+class VariableDeclarationBuilder {
+    enum InitializedVariable {
+        case .Pattern(Pattern)
+        case .Name(IdentifierKind, Type?)
+    }
+
+    struct Block {
+        var attrs: [String]?
+        var setterName: IdentifierKind?
+        var body: [Statement]?
+    }
+
+    var ini: [(InitializedVariable, Expression?)] = []
+    var getter: Block?
+    var setter: Block?
+    var willSetter: Block?
+    var didSetter: Block?
 }

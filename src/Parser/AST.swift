@@ -422,6 +422,10 @@ class PatternInitializers : AST {
     func accept(_: ASTVisitor) {}
 }
 
+public enum ImportKind {
+    case Typealias, Struct, Class, Enum, Protocol, Var, Func
+}
+
 public enum Declaration : AST {
     case Constant([PatternInitializer])
     case Variable([PatternInitializer])
@@ -437,58 +441,6 @@ public enum Declaration : AST {
 /*
  * Statements
  */
-
-public class StatementWrapper {
-    public var value: Statement
-    init(_ value: Statement) {
-        self.value = value
-    }
-    public func accept(_: ASTVisitor) {}
-}
-public enum ElseClause : AST {
-    case Else([Statement]?)
-    case ElseIf(StatementWrapper)
-    public func accept(_: ASTVisitor) {}
-}
-
-public enum IfCondition : AST {
-    case Term(Expression)
-    public func accept(_: ASTVisitor) {}
-}
-
-public enum WhileCondition : AST {
-    case Term(Expression)
-    case Definition(Declaration)
-    public func accept(_: ASTVisitor) {}
-}
-
-public enum ForInit : AST {
-    case VariableDeclaration(Declaration)
-    case Terms([Expression])
-    public func accept(_: ASTVisitor) {}
-}
-
-public class ForCondition : AST {
-    public var initial: ForInit?
-    public var condition: Expression?
-    public var finalize: Expression?
-    init(_ i: ForInit?, _ c: Expression?, _ f: Expression?) {
-        initial = i
-        condition = c
-        finalize = f
-    }
-    public func accept(_: ASTVisitor) {}
-}
-
-enum Condition {
-    enum BindingType {
-        case Let, Var
-    }
-
-    case Case(Pattern, Expression, Expression?)
-    case Optional([(BindingType?, Pattern, Expression)], Expression?)
-}
-
 public enum Statement {
     case Expression(Expression)
     case Declaration(Declaration)
@@ -509,6 +461,15 @@ public enum Statement {
     case Defer([Statement]?)
     // do-statement
     case Do()
+}
+
+enum Condition {
+    enum BindingType {
+        case Let, Var
+    }
+
+    case Case(Pattern, Expression, Expression?)
+    case Optional([(BindingType?, Pattern, Expression)], Expression?)
 }
 
 /*

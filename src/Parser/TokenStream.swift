@@ -92,8 +92,17 @@ class TokenStream : TokenPeeper {
         return top
     }
 
-    func next(n: Int = 1) {
-        index! += n
+    func next(var n: Int = 1, skipLineFeed: Bool = true) {
+        guard n > 0 else {
+            return
+        }
+        if skipLineFeed && queue[index! + 1].kind == .LineFeed {
+            ++index!
+            next(n, skipLineFeed)
+        } else {
+            ++index!
+            next(n - 1, skipLineFeed)
+        }
     }
 
     private func load(classified: CharacterClass? = nil) -> Token {
