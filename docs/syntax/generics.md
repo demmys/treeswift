@@ -25,7 +25,6 @@ same-type-requirement   -> type-identifier BinaryDoubleEqual type
 
 ```
 generic-argument-clause    -> PrefixGraterThan generic-argument-clause PostfixLessThan
-generic-argument-list      -> generic-argument generic-argument-list-tail?
+generic-argument-list      -> type generic-argument-list-tail?
 generic-argument-list-tail -> Comma generic-argument-list
-generic-argument        -> type
 ```
