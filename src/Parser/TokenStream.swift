@@ -105,6 +105,26 @@ class TokenStream : TokenPeeper {
         }
     }
 
+    func test(kinds: TokenKind...) -> Bool {
+        return examine(kinds).0
+    }
+
+    func try(kinds: TokenKind...) -> Token {
+        return examine(kinds).1
+    }
+
+    private func examine(kinds: [TokenKind]) -> (Bool, Token) {
+        let skipLineFeed = kinds.contains(.LineFeed)
+        let t = look(0, skipLineFeed: skipLineFeed)
+        for k in kinds {
+            if t.kind == k {
+                next(1, skipLineFeed: skipLineFeed)
+                return (true, t)
+            }
+        }
+        return (false, t)
+    }
+
     private func load(classified: CharacterClass? = nil) -> Token {
         var info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
         func produce(kind: TokenKind) -> Token {
