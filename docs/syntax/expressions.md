@@ -25,19 +25,16 @@ throw-operation -> Throw expression
 ### Expression
 
 ```
-expression-list      -> expression expression-list-tail
+expression-list      -> expression expression-list-tail?
 expression-list-tail -> Comma expression-list
 
-expression -> try-operator? prefix-expression binary-expressions?
+expression -> try-operator? prefix-expression binary-expression?
 
 try-operator -> Try | Try PostfixExclamation
 
-binary-expressions -> binary-expression binary-expressions?
-binary-expression  -> BinaryOperator prefix-expression
-                    | conditional-operator try-operator? prefix-expression
-                    | type-casting-operator
-
-conditional-operator -> BinaryQuestion expression Colon
+binary-expression  -> BinaryOperator prefix-expression binary-expression?
+                    | BinaryQuestion expression Colon expression
+                    | type-casting-operator binary-expression?
 
 type-casting-operator -> Is type
                        | As type
@@ -60,8 +57,8 @@ postfix-expression-tail-body -> PostfixOperator
                               | forced-value-expression
                               | optional-chaining-expression
 
-function-call-expression -> parenthesized-expression closure-expression?
-                          // | closure-expression
+function-call-expression -> tuple-expression /* closure-expression? */
+                          /* | closure-expression */
 
 initializer-expression -> Dot Init
 
@@ -83,13 +80,13 @@ primary-expression -> Identifier generic-argument-clause?
                     | self-expression
                     | superclass-expression
                     | closure-expression
-                    | parenthesized-expression
+                    | tuple-expression
                     | implicit-member-expression
                     | wildcard-expression
 
 literal-expression -> literal
                     | array-literal
-                    | dictionaly-literal
+                    | dictionary-literal
                     | FILE | LINE | COLUMN | FUNCTION
 
 array-literal            -> LeftBracket array-literal-items? RightBracket
@@ -97,22 +94,22 @@ array-literal-items      -> array-literal-item array-literal-items-tail? Comma?
 array-literal-items-tail -> Comma array-literal-items
 array-literal-item       -> expression
 
-dictionaly-literal            -> LeftBracket dictionaly-literal-items RightBracket
+dictionary-literal            -> LeftBracket dictionary-literal-items RightBracket
                                | LeftBracket Colon RightBracket
-dictionaly-literal-items      -> dictionaly-literal-item dictionaly-literal-items-tail? Comma?
-dictionaly-literal-items-tail -> Comma dictionaly-literal-items
-dictionaly-literal-item       -> expression Colon expression
+dictionary-literal-items      -> dictionary-literal-item dictionary-literal-items-tail? Comma?
+dictionary-literal-items-tail -> Comma dictionary-literal-items
+dictionary-literal-item       -> expression Colon expression
 
 self-expression -> Self
                  | Self Dot Identifier
-                 | Self LeftBracket expression RightBracket
+                 | Self LeftBracket expression-list RightBracket
                  | Self Dot Init
 
 superclass-expression -> Super Dot Identifier
                        | Super LeftBracket expression RightBracket
                        | Super Dot Init
 
-closure-expression   -> LeftBrace closure-signature? statements RightBrace
+closure-expression   -> LeftBrace closure-signature? procedures RightBrace
 closure-signature    -> capture-clause closure-type-clause? In
                       | closure-type-clause In
 closure-type-clause  -> parameter-clause function-result?
@@ -128,22 +125,11 @@ capture-specifier    -> Weak | Unowned
 
 implicit-member-expression -> Dot Identifier
 
-parenthesized-expression      -> LeftParenthesis expression-element-list? RightParenthesis
+tuple-expression              -> LeftParenthesis expression-element-list? RightParenthesis
 expression-element-list       -> expression-element expression-element-list-tail?
 expression-element-list-tail  -> Comma expression-element-list
 expression-element            -> expression
                                | Identifier Colon expression
 
 wildcard-expression -> Underscore
-
-```
-
-### Literals
-
-```
-literal -> numeric-literal
-         | IntegerLiteral
-         | True
-         | False
-         | Nil
 ```

@@ -37,8 +37,6 @@ Extension -> 'extension'
 
 Fallthrough -> 'Fallthrough'
 
-False -> 'false'
-
 Final -> 'final'
 
 Else -> 'else'
@@ -126,8 +124,6 @@ Switch -> 'switch'
 Throw -> 'throw'
 
 Throws -> 'throws'
-
-True -> 'true'
 
 Try -> 'try'
 
