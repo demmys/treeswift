@@ -10,13 +10,7 @@ public struct Token {
     }
 }
 
-protocol TokenPeeper {
-    func look() -> Token
-    func look(Int) -> Token
-    func look(Int, skipLineFeed: Bool) -> Token
-}
-
-class TokenStream : TokenPeeper {
+class TokenStream {
     private struct Context {
         var source: String? = nil
         // set `CharacterClass.LineFeed` to `prev`
@@ -73,13 +67,7 @@ class TokenStream : TokenPeeper {
         }
     }
 
-    func look() -> Token {
-        return look(0)
-    }
-    func look(ahead: Int) -> Token {
-        return look(ahead, skipLineFeed: true)
-    }
-    func look(ahead: Int, skipLineFeed: Bool) -> Token {
+    func look(ahead: Int = 0, skipLineFeed: Bool = true) -> Token {
         if index + ahead >= queue.count {
             for var i = queue.count - 1; i < index + ahead; ++i {
                 queue.append(load())
@@ -115,10 +103,10 @@ class TokenStream : TokenPeeper {
 
     private func examine(kinds: [TokenKind]) -> (Bool, TokenKind) {
         let skipLineFeed = kinds.contains(.LineFeed)
-        let t = look(0, skipLineFeed: skipLineFeed)
+        let t = look(skipLineFeed: skipLineFeed)
         for k in kinds {
             if t.kind == k {
-                next(1, skipLineFeed: skipLineFeed)
+                next(skipLineFeed: skipLineFeed)
                 return (true, t.kind)
             }
         }
