@@ -80,17 +80,13 @@ class IdentifierComposer : TokenComposer {
 
     func compose(CharacterClass) -> TokenKind? {
         switch state {
-        case .IdentifierCharacter:
+        case .IdentifierCharacter, .QuotedIdentifierTail:
             if let v = stringValue {
-                return .Identifier(.Identifier(v))
-            }
-        case .QuotedIdentifierTail:
-            if let v = stringValue {
-                return .Identifier(.QuotedIdentifier(v))
+                return .Identifier(v)
             }
         case .ImplicitParameterDigit:
             if let v = intValue {
-                return .Identifier(.ImplicitParameter(v))
+                return .ImplicitParameterName(v))
             }
         default:
             break

@@ -10,13 +10,8 @@ class TypeParser : GrammarParser {
 
     func type() throws -> Type {
         switch ts.try(identifier, .LeftBracket, .LeftParenthesis, .Protocol) {
-        case let .Identifier(k):
-            switch k {
-            case .Identifier(s):
-                return try containerType(try identifierType(s))
-            default:
-                throw ParserError.Error("Expected type", ts.look().info)
-            }
+        case let .Identifier(s):
+            return try containerType(try identifierType(s))
         case .LeftBracket:
             return try containerType(try collectionType())
         case .LeftParenthesis:
@@ -80,10 +75,10 @@ class TypeParser : GrammarParser {
         case .Inout:
             x.inOut = true
             ts.next()
-            if case .Identifier(.Identifier(s)) = ts.look().kind {
+            if case .Identifier(s) = ts.look().kind {
                 return tupleTypeElementBody(x, s)
             }
-        case .Identifier(.Identifier(s)):
+        case .Identifier(s):
             return tupleTypeElementBody(x, s)
         default:
             x.type = try type()

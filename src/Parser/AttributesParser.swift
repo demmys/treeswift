@@ -8,7 +8,7 @@ class AttributesParser : GrammarParser {
     }
 
     private func attribute() throws -> Attribute {
-        if case let .Identifier(.Identifier(s)) = ts.test(identifier) {
+        if case let .Identifier(s) = ts.test(identifier) {
             return Attribute(s)
         } else {
             throw ParserError.Error("Expected identifier for attribute", ts.look().info)

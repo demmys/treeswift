@@ -156,9 +156,9 @@ class ExpressionParser : GrammarParser {
             return .Self
         case .DynamicType:
             return .DynamicType
-        case let .Identifier(k):
+        case let .Identifier(s):
             return .ExplicitNamedMember(
-                try getMemberRef(k), // TODO
+                try getMemberRef(s), // TODO
                 genArgs: try gp.genericArgumentClause()
             )
         case .IntegerLiteral(let d, true):
@@ -170,13 +170,19 @@ class ExpressionParser : GrammarParser {
 
     private func expressionCore() throws -> ExpressionCore {
         switch ts.try(
-            identifier, integerLiteral, floatingPointLiteral, stringLiteral,
-            booleanLiteral, .Nil, .LeftBracket, .FILE, .LINE, .COLUMN, .FUNCTION,
+            identifier, implicitParameterName, integerLiteral, floatingPointLiteral,
+            stringLiteral, booleanLiteral, .Nil, .LeftBracket,
+            .FILE, .LINE, .COLUMN, .FUNCTION,
             .Self, .Super, .LeftBrace, .LeftParenthesis, .Dot, .Underscore
         ) {
-        case let .Identifier(k):
+        case let .Identifier(s):
             return .ValueRef(
-                try getValueRef(k), // TODO
+                try getValueRef(s), // TODO
+                genArgs: try gp.genericArgumentClause()
+            )
+        case let .ImplicitParameterName(i):
+            return .ValueRef(
+                try getImplicitParameterRef(i), // TODO
                 genArgs: try gp.genericArgumentClause()
             )
         case let .IntegerLiteral(i, _):
@@ -208,10 +214,10 @@ class ExpressionParser : GrammarParser {
         case .LeftParenthesis:
             return .Tuple(try tupleExpression())
         case .Dot:
-            guard case let .Identifier(k) = ts.try(identifier) else {
+            guard case let .Identifier(s) = ts.try(identifier) else {
                 throw ParserError.Error("Expected identifier after the begging of implicit member expression", ts.look().info)
             }
-            return .ImplicitMember(try getMemberRef(k))
+            return .ImplicitMember(try getMemberRef(s))
         case .Underscore:
             return .Wildcard
         default:
@@ -272,9 +278,9 @@ class ExpressionParser : GrammarParser {
     private func selfExpression() throws -> ExpressionCore {
         switch ts.try(.Dot, .LeftBracket) {
         case .Dot:
-            switch ts.try(.Identifier, .Init) {
-            case let .Identifier(k):
-                return .SelfMember(try getMemberRef(k))
+            switch ts.try(identifier, .Init) {
+            case let .Identifier(s):
+                return .SelfMember(try getMemberRef(s))
             case .Init:
                 return .SelfInitializer
             default:
@@ -295,8 +301,8 @@ class ExpressionParser : GrammarParser {
         switch ts.try(.Dot, .LeftBracket) {
         case .Dot:
             switch ts.try(.Identifier, .Init) {
-            case let .Identifier(k):
-                return .SuperClassMember(try getMemberRef(k))
+            case let .Identifier(s):
+                return .SuperClassMember(try getMemberRef(s))
             case .Init:
                 return .SuperClassInitializer
             default:
@@ -325,7 +331,7 @@ class ExpressionParser : GrammarParser {
         var t: Tuple = []
         repeat {
             if case .Colon = ts.look(1).kind {
-                if case let .Identifier(.Identifier(s)) = ts.try(identifier) {
+                if case let .Identifier(s) = ts.try(identifier) {
                     ts.next()
                     t.append((s, try expression()))
                     continue

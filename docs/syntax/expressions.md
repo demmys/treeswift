@@ -43,7 +43,7 @@ type-casting-operator -> Is type
 
 prefix-expression -> PrefixOperator? postfix-expression
                    | in-out-expression
-in-out-expression -> PrefixAmpersand Identifier
+in-out-expression -> PrefixAmpersand value-reference
 
 postfix-expression           -> primary-expression postfix-expression-tail?
 postfix-expression-tail      -> postfix-expression-tail-body postfix-expression-tail?
@@ -75,7 +75,7 @@ forced-value-expression -> PostfixExclamation
 
 optional-chaining-expression -> PostfixQuestion
 
-primary-expression -> Identifier generic-argument-clause?
+primary-expression -> value-reference generic-argument-clause?
                     | literal-expression
                     | self-expression
                     | superclass-expression
@@ -114,7 +114,7 @@ closure-signature    -> capture-clause closure-type-clause? In
                       | closure-type-clause In
 closure-type-clause  -> parameter-clause function-result?
                       | identifier-list function-result?
-identifier-list      -> Identifier identifier-list-tail?
+identifier-list      -> value-reference identifier-list-tail?
 identifier-list-tail  | Comma identifier-list
 capture-clause       -> LeftBracket capture-list RightBracket
 capture-list         -> capture-specifier? expression capture-list-tail?

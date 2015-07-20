@@ -1,6 +1,7 @@
 class GrammarParser {
     private let integerLiteral = TokenKind.IntegerLiteral(0, true)
-    private let identifier = TokenKind.Identifier(.Identifier(""))
+    private let identifier = TokenKind.Identifier("")
+    private let implicitParameterName = TokenKind.ImplicitParameterName(0)
     private let prefixOperator = TokenKind.PrefixOperator("")
     private let binaryOperator = TokenKind.BinaryOperator("")
     private let postfixOperator = TokenKind.PostfixOperator("")

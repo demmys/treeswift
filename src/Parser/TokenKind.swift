@@ -8,30 +8,6 @@ public enum ModifierKind {
     case InternalSet, PrivateSet, PublicSet
 }
 
-public enum IdentifierKind : Equatable {
-    case Identifier(String)
-    case QuotedIdentifier(String)
-    case ImplicitParameter(Int)
-}
-
-public func ==(lhs: IdentifierKind, rhs: IdentifierKind) -> Bool {
-    switch lhs {
-    case let .Identifier(s):
-        if case .Identifier(s) = rhs {
-            return true
-        }
-    case let .QuotedIdentifier(s):
-        if case .QuotedIdentifier(s) = rhs {
-            return true
-        }
-    case let .ImplicitParameter(i):
-        if case .ImplicitParameter(i) = rhs {
-            return true
-        }
-    }
-    return false
-}
-
 public enum TokenKind : Equatable {
     case Error(ErrorMessage)
     case EndOfFile, LineFeed
@@ -45,7 +21,7 @@ public enum TokenKind : Equatable {
     case PrefixQuestion, BinaryQuestion, PostfixQuestion
     case PostfixExclamation
     case PrefixOperator(String), BinaryOperator(String), PostfixOperator(String)
-    case Identifier(IdentifierKind)
+    case Identifier(String), ImplicitParameterName(Int)
     case IntegerLiteral(Int64, decimalDigits: Bool)
     case FloatingPointLiteral(Double)
     case StringLiteral(String)
