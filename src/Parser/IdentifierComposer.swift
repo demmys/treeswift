@@ -78,7 +78,7 @@ class IdentifierComposer : TokenComposer {
         }
     }
 
-    func compose(CharacterClass) -> TokenKind? {
+    func compose(_: CharacterClass) -> TokenKind? {
         switch state {
         case .IdentifierCharacter, .QuotedIdentifierTail:
             if let v = stringValue {
@@ -86,7 +86,7 @@ class IdentifierComposer : TokenComposer {
             }
         case .ImplicitParameterDigit:
             if let v = intValue {
-                return .ImplicitParameterName(v))
+                return .ImplicitParameterName(v)
             }
         default:
             break

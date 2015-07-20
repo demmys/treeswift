@@ -2,14 +2,14 @@ class TypeParser : GrammarParser {
     private let ap: AttributesParser
     private let gp: GenericsParser
 
-    init(_ ts: TokenStream) {
+    override init(_ ts: TokenStream) {
         ap = AttributesParser(ts)
         gp = GenericsParser(ts)
         super.init(ts)
     }
 
     func type() throws -> Type {
-        switch ts.try(identifier, .LeftBracket, .LeftParenthesis, .Protocol) {
+        switch ts.match([identifier, .LeftBracket, .LeftParenthesis, .Protocol]) {
         case let .Identifier(s):
             return try containerType(try identifierType(s))
         case .LeftBracket:
@@ -23,13 +23,13 @@ class TypeParser : GrammarParser {
         }
     }
 
-    private func identifierType(s: String) throws -> Type {
+    private func identifierType(s: String) throws -> IdentifierType {
         return IdentifierType(try getTypeRef(s), try gp.genericArgumentClause())
     }
 
     private func collectionType() throws -> Type {
         let t = try type()
-        switch ts.try(.RightBracket, .Colon) {
+        switch ts.match([.RightBracket, .Colon]) {
         case .RightBracket:
             return ArrayType(t)
         case .Colon:
@@ -39,19 +39,19 @@ class TypeParser : GrammarParser {
         }
     }
 
-    private func tupleType() throws -> Type {
+    private func tupleType() throws -> TupleType {
         let x = TupleType()
         // unit
-        if ts.test(.RightParenthesis) {
+        if ts.test([.RightParenthesis]) {
             return x
         }
-        while {
+        repeat {
             x.elems.append(try tupleTypeElement())
-        } ts.test(.Comma)
-        switch ts.try(.VariadicSymbol, .RightParenthesis) {
+        } while ts.test([.Comma])
+        switch ts.match([.VariadicSymbol, .RightParenthesis]) {
         case .VariadicSymbol:
             x.variadic = true
-            guard ts.test(.RightParenthesis) else {
+            guard ts.test([.RightParenthesis]) else {
                 throw ParserError.Error("Expected ')' at the end of tuple type", ts.look().info)
             }
             return x
@@ -62,24 +62,26 @@ class TypeParser : GrammarParser {
         }
     }
 
-    private func tupleTypeElement() throws -> Type {
+    private func tupleTypeElement() throws -> TupleTypeElement {
         let x = TupleTypeElement()
         switch ts.look().kind {
         case .Atmark:
-            x.attrs = ap.attributes()
-            if ts.test(.Inout) {
+            x.attrs = try ap.attributes()
+            if ts.test([.InOut]) {
                 x.inOut = true
             }
             x.type = try type()
             return x
-        case .Inout:
+        case .InOut:
             x.inOut = true
             ts.next()
-            if case .Identifier(s) = ts.look().kind {
-                return tupleTypeElementBody(x, s)
+            if case let .Identifier(s) = ts.look().kind {
+                return try tupleTypeElementBody(x, s)
             }
-        case .Identifier(s):
-            return tupleTypeElementBody(x, s)
+            x.type = try type()
+            return x
+        case let .Identifier(s):
+            return try tupleTypeElementBody(x, s)
         default:
             x.type = try type()
             return x
@@ -88,7 +90,7 @@ class TypeParser : GrammarParser {
 
     private func tupleTypeElementBody(
         x: TupleTypeElement, _ s: String
-    ) -> TupleTypeElement {
+    ) throws -> TupleTypeElement {
         if case .Colon = ts.look(1).kind {
             ts.next(2)
             x.label = s
@@ -99,40 +101,43 @@ class TypeParser : GrammarParser {
         return x
     }
 
-    private func protocolCompositionType() throws -> Type {
-        guard ts.test(.PrefixGraterThan) else {
+    private func protocolCompositionType() throws -> ProtocolCompositionType {
+        guard ts.test([.PrefixLessThan]) else {
             throw ParserError.Error("Expected following '<' for protocol composition type", ts.look().info)
         }
         let x = ProtocolCompositionType()
         // empty list
-        if ts.test(.PostfixLessThan) {
+        if ts.test([.PostfixGraterThan]) {
             return x
         }
         repeat {
-            x.types.append(try typeIdentifier())
-        } while ts.test(.Comma)
-        guard ts.test(.PostfixLessThan) else {
+            guard case let .Identifier(s) = ts.match([identifier]) else {
+                throw ParserError.Error("Expected type identifier for element of protocol composition type", ts.look().info)
+            }
+            x.types.append(try identifierType(s))
+        } while ts.test([.Comma])
+        guard ts.test([.PostfixGraterThan]) else {
             throw ParserError.Error("Expected '>' at the end of protocol composition type", ts.look().info)
         }
         return x
     }
 
     private func containerType(t: Type) throws -> Type {
-        switch ts.try(
+        switch ts.match([
             .Throws, .Rethrows, .Arrow, .PostfixQuestion, .PostfixExclamation, .Dot
-        ) {
+        ]) {
         case .Throws:
-            return functionType(t, .Throws)
+            return try functionType(t, .Throws)
         case .Rethrows:
-            return functionType(t, .Rethrows)
+            return try functionType(t, .Rethrows)
         case .Arrow:
-            return functionType(t, .Nothing)
+            return try functionType(t, .Nothing)
         case .PostfixQuestion:
             return OptionalType(t)
         case .PostfixExclamation:
             return ImplicitlyUnwrappedOptionalType(t)
         case .Dot:
-            switch ts.try(.TYPE, .PROTOCOL) {
+            switch ts.match([.TYPE, .PROTOCOL]) {
             case .TYPE:
                 return MetaType(t)
             case .PROTOCOL:

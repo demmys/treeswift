@@ -172,7 +172,7 @@ class NumericLiteralComposer : TokenComposer {
         }
     }
 
-    func compose(CharacterClass) -> TokenKind? {
+    func compose(_: CharacterClass) -> TokenKind? {
         switch state {
         case .BaseSpecifier:
             return TokenKind.IntegerLiteral(integralPart, decimalDigits: true)

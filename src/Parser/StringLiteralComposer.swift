@@ -88,7 +88,7 @@ class StringLiteralComposer : TokenComposer {
         return false
     }
 
-    func compose(CharacterClass) -> TokenKind? {
+    func compose(_: CharacterClass) -> TokenKind? {
         guard case .Completed = state else {
             return nil
         }

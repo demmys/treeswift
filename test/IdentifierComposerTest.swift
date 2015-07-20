@@ -11,24 +11,33 @@ class IdentifierComposerTest : TokenComposerTest {
         ])
     }
 
-    private func isIdentifier(literal: String, _ expected: IdentifierKind) throws {
+    private func isIdentifier(literal: String, _ expected: String) throws {
         switch try putStringAndCompose(literal) {
-        case let .Identifier(k):
-            try equals("parsed identifier", k, expected)
+        case let .Identifier(s):
+            try equals("parsed identifier", s, expected)
         default:
             throw FailureReason.Text("expected composed result to Identifier but actual is not Identifier.")
         }
     }
 
+    private func isImplicitParameterName(literal: String, _ expected: Int) throws {
+        switch try putStringAndCompose(literal) {
+        case let .ImplicitParameterName(i):
+            try equals("parsed implicit parameter name", i, expected)
+        default:
+            throw FailureReason.Text("expected composed result to ImplicitParameterName but actual is not ImplicitParameterName.")
+        }
+    }
+
     private func analyzeNormalIdentifier() throws {
-        try isIdentifier("id", .Identifier("id"))
+        try isIdentifier("id", "id")
     }
 
     private func analyzeQuotedIdentifier() throws {
-        try isIdentifier("`if`", .QuotedIdentifier("if"))
+        try isIdentifier("`if`", "if")
     }
 
     private func analyzeImplicitParameter() throws {
-        try isIdentifier("$0", .ImplicitParameter(0))
+        try isImplicitParameterName("$0", 0)
     }
 }

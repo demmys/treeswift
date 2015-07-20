@@ -1,6 +1,6 @@
 protocol TokenComposer {
-    func put(CharacterClass, Character) -> Bool
-    func compose(CharacterClass) -> TokenKind?
+    func put(_: CharacterClass, _: Character) -> Bool
+    func compose(_: CharacterClass) -> TokenKind?
 }
 
 private let capitalA: Int = 65

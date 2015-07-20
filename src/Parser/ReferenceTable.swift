@@ -1,4 +1,4 @@
-class ValueRef {
+public class ValueRef {
     let name: String
 
     init(_ n: String) {
@@ -6,7 +6,7 @@ class ValueRef {
     }
 }
 
-class OperatorRef {
+public class OperatorRef {
     let name: String
 
     init(_ n: String) {
@@ -14,7 +14,7 @@ class OperatorRef {
     }
 }
 
-class MemberRef {
+public class MemberRef {
     let name: String
 
     init(_ n: String) {
@@ -22,7 +22,7 @@ class MemberRef {
     }
 }
 
-class TypeRef {
+public class TypeRef {
     let name: String
 
     init(_ n: String) {

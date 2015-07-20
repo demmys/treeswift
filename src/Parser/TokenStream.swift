@@ -80,24 +80,24 @@ class TokenStream {
         return top
     }
 
-    func next(var n: Int = 1, skipLineFeed: Bool = true) {
+    func next(n: Int = 1, skipLineFeed: Bool = true) {
         guard n > 0 else {
             return
         }
         if skipLineFeed && queue[index! + 1].kind == .LineFeed {
             ++index!
-            next(n, skipLineFeed)
+            next(n, skipLineFeed: skipLineFeed)
         } else {
             ++index!
-            next(n - 1, skipLineFeed)
+            next(n - 1, skipLineFeed: skipLineFeed)
         }
     }
 
-    func test(kinds: TokenKind...) -> Bool {
+    func test(kinds: [TokenKind]) -> Bool {
         return examine(kinds).0
     }
 
-    func try(kinds: TokenKind...) -> TokenKind {
+    func match(kinds: [TokenKind]) -> TokenKind {
         return examine(kinds).1
     }
 
@@ -170,33 +170,30 @@ class TokenStream {
                 ctx.consume(head)
                 return load()
             }
-        case .Semicolon:
-            ctx.consume(head)
-            return produce(.Semicolon)
-        case .Colon:
-            ctx.consume(head)
-            return produce(.Colon)
-        case .Comma:
-            ctx.consume(head)
-            return produce(.Comma)
         case .Arrow:
             ctx.consume(head, n: 2)
             return produce(.Arrow)
-        case .Hash:
-            ctx.consume(head)
-            return produce(.Hash)
-        case .Underscore:
-            ctx.consume(head)
-            return produce(.Underscore)
-        case .Dot:
-            ctx.consume(head)
-            return produce(.Dot)
         case .Equal:
             ctx.consume(head)
             return produce(.AssignmentOperator)
         case .Atmark:
             ctx.consume(head)
             return produce(.Atmark)
+        case .Colon:
+            ctx.consume(head)
+            return produce(.Colon)
+        case .Comma:
+            ctx.consume(head)
+            return produce(.Comma)
+        case .Dot:
+            ctx.consume(head)
+            return produce(.Dot)
+        case .Semicolon:
+            ctx.consume(head)
+            return produce(.Semicolon)
+        case .Underscore:
+            ctx.consume(head)
+            return produce(.Underscore)
         case .LeftParenthesis:
             ctx.consume(head)
             return produce(.LeftParenthesis)
@@ -272,7 +269,7 @@ class TokenStream {
             return produce(composerParse(
                 head,
                 composer: OperatorComposer(prev: ctx.prev),
-                isEndOfToken: { (follow) in true }
+                isEndOfToken: { _ in true }
             ))
         case .OperatorHead, .DotOperatorHead:
             return produce(composerParse(
@@ -328,7 +325,7 @@ class TokenStream {
                     return false
                 }
             ))
-        case .Digit:
+        case .Digit, .Minus:
             return produce(composerParse(
                 head,
                 composer: NumericLiteralComposer(),

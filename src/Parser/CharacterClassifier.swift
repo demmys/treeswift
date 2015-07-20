@@ -6,7 +6,7 @@ enum CharacterClass {
     case LeftBracket, RightBracket
     case BackQuote, BackSlash, Dollar, DoubleQuote
     // belows requires a look-ahead to classify
-    case Arrow, Equal, Dot, Underscore
+    case Arrow, Equal, Dot, Minus, Underscore
     // belows may be a reserved operator
     case Ampersand, Question, Exclamation
     case LessThan, GraterThan
@@ -65,8 +65,13 @@ class CharacterClassifier {
             case "-":
                 // token "->" cannot become a custom operator
                 if let succ = cp.lookAhead() {
-                    if succ == ">" {
+                    switch succ {
+                    case ">":
                         return .Arrow
+                    case "0"..."9":
+                        return .Minus
+                    default:
+                        break
                     }
                 }
                 return .OperatorHead

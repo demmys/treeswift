@@ -1,6 +1,6 @@
 public class Expression {
     var tryType: TryType!
-    let body: ExpressionBody
+    var body: ExpressionBody!
 }
 
 public enum TryType {
@@ -25,14 +25,8 @@ public class BinaryExpressionBody : ExpressionBody {
 }
 
 public class ConditionalExpressionBody : ExpressionBody {
-    let trueSide: Expression
-    let falseSide: Expression
-
-    init(cond: ExpressionUnit, trueSide: Expression, falseSide: Expression) {
-        self.trueSide = trueSide
-        self.falseSide = falseSide
-        super.init(unit: cond)
-    }
+    var trueSide: Expression!
+    var falseSide: Expression!
 }
 
 public class TypeCastingExpressionBody : ExpressionBody {
@@ -58,7 +52,7 @@ public enum ExpressionPrefix {
 }
 
 public enum ExpressionPostfix {
-    case Initializer, Self, DynamicType
+    case Initializer, PostfixSelf, DynamicType
     case ForcedValue, OptionalChaining
     case Operator(OperatorRef)
     case ExplicitNamedMember(MemberRef, genArgs: [Type]?)
@@ -69,25 +63,24 @@ public enum ExpressionPostfix {
 
 // primary-expression
 public enum ExpressionCore {
-    case ValueRef(ValueRef, genArgs: [Type]?)
-    case FunctionRef(FunctionRef)
+    case Value(ValueRef, genArgs: [Type]?)
     case Integer(Int64)
     case FloatingPoint(Double)
-    case String(String)
+    case StringExpression(String)
     case Boolean(Bool)
     case Nil
     case Array([Expression])
     case Dictionary([(Expression, Expression)])
-    case Self, SelfInitializer
+    case SelfExpression, SelfInitializer
     case SelfMember(MemberRef)
     case SelfSubscript([Expression])
     case SuperClassInitializer
     case SuperClassMember(MemberRef)
     case SuperClassSubscript([Expression])
     case Closure // TODO
-    case Tuple(Tuple)
+    case TupleExpression(Tuple)
     case ImplicitMember(MemberRef)
     case Wildcard
 }
 
-typealias Tuple = [(String?, Expression)]
+public typealias Tuple = [(String?, Expression)]

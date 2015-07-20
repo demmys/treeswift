@@ -13,8 +13,8 @@ public enum TokenKind : Equatable {
     case EndOfFile, LineFeed
     // symbols
     case Arrow, AssignmentOperator, Atmark, BinaryQuestion
-    case Colon, Comma, Dot, PostfixExclamation, PostfixLessThan, PostfixQuestion
-    case PrefixAmpersand, PrefixGraterThan PrefixQuestion, Semicolon, Underscore
+    case Colon, Comma, Dot, PostfixExclamation, PostfixGraterThan, PostfixQuestion
+    case PrefixAmpersand, PrefixLessThan, PrefixQuestion, Semicolon, Underscore
     case VariadicSymbol
     // brackets
     case LeftParenthesis, RightParenthesis
@@ -37,8 +37,8 @@ public enum TokenKind : Equatable {
     case Deinit, DidSet, Do, DynamicType, Enum, Extension, Fallthrough, Else, For
     case Func, Get, Guard, If, Import, In, Infix, Init, InOut, Is, Let, Left, Nil
     case None, Operator, Postfix, Prefix, Protocol, Precedence, Repeat, Rethrows
-    case Return, Right, Safe, Set, Struct, Subscript, Super, Switch, Throw, Throws
-    case Try, Typealias, Unowned, Unsafe, Var, Weak, Where, While, WillSet
+    case Return, Right, Safe, `Self`, Set, Struct, Subscript, Super, Switch, Throw
+    case Throws, Try, Typealias, Unowned, Unsafe, Var, Weak, Where, While, WillSet
     case PROTOCOL, TYPE
 }
 
@@ -88,8 +88,8 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .PostfixExclamation = rhs {
             return true
         }
-    case .PostfixLessThan:
-        if case .PostfixLessThan = rhs {
+    case .PostfixGraterThan:
+        if case .PostfixGraterThan = rhs {
             return true
         }
     case .PostfixQuestion:
@@ -100,8 +100,12 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .PrefixAmpersand = rhs {
             return true
         }
-    case .PrefixGraterThan PrefixQuestion:
-        if case .PrefixGraterThan PrefixQuestion = rhs {
+    case .PrefixLessThan:
+        if case .PrefixLessThan = rhs {
+            return true
+        }
+    case .PrefixQuestion:
+        if case .PrefixQuestion = rhs {
             return true
         }
     case .Semicolon:
@@ -160,12 +164,8 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .ImplicitParameterName = rhs {
             return true
         }
-    case .IntegerLiteral(Int64:
-        if case .IntegerLiteral(Int64 = rhs {
-            return true
-        }
-    case .decimalDigits: Bool):
-        if case .decimalDigits: Bool) = rhs {
+    case .IntegerLiteral:
+        if case .IntegerLiteral = rhs {
             return true
         }
     case .FloatingPointLiteral:
@@ -372,6 +372,10 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Set = rhs {
             return true
         }
+    case .`Self`:
+        if case .`Self` = rhs {
+            return true
+        }
     case .Struct:
         if case .Struct = rhs {
             return true
@@ -438,10 +442,6 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         }
     case .TYPE:
         if case .TYPE = rhs {
-            return true
-        }
-    case .Unowned:
-        if case .Unowned = rhs {
             return true
         }
     }

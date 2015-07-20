@@ -25,7 +25,8 @@ class NumericLiteralComposerTest : TokenComposerTest {
             ("analyze decimal fraction start with zero", analyzeDecimalFractionStartWithZero),
             ("analyze underscore separated decimal fraction", analyzeUnderscoreSeparatedDecimalFraction),
             ("not analyze hex decimal fraction without exponent", notAnalyzeHexFractionWithoutExponent),
-            ("analyze hex fraction with exponent", analyzeHexFractionWithExponent)
+            ("analyze hex fraction with exponent", analyzeHexFractionWithExponent),
+            ("analyze negative number", analyzeNegativeNumber)
         ])
     }
 
@@ -122,5 +123,9 @@ class NumericLiteralComposerTest : TokenComposerTest {
 
     private func analyzeHexFractionWithExponent() throws {
         try isFloatingPointLiteral("0xfe.dcbap12", 0xfe.dcbap12)
+    }
+
+    private func analyzeNegativeNumber() throws {
+        try isIntegerLiteral("-123", -123, false)
     }
 }

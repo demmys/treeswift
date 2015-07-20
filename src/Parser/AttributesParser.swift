@@ -1,14 +1,14 @@
 class AttributesParser : GrammarParser {
     func attributes() throws -> [Attribute] {
         var attrs: [Attribute] = []
-        while ts.test(.Atmark) {
+        while ts.test([.Atmark]) {
             attrs.append(try attribute())
         }
         return attrs
     }
 
     private func attribute() throws -> Attribute {
-        if case let .Identifier(s) = ts.test(identifier) {
+        if case let .Identifier(s) = ts.match([identifier]) {
             return Attribute(s)
         } else {
             throw ParserError.Error("Expected identifier for attribute", ts.look().info)

@@ -7,7 +7,7 @@ enum ParserError : ErrorType {
 }
 
 public enum ParseResult {
-    case Succeeded(TopLevelDeclaration)
+    case Succeeded([String:Expression])
     case Failed([Error])
 }
 
@@ -20,7 +20,7 @@ public class Parser {
     }
 
     public func parse() -> ParseResult {
-        var result: [String:TopLevelDeclaration] = [:]
+        var result: [String:Expression] = [:]
         for fileName in fileNames {
             do {
                 ts = try createStream(fileName)
@@ -35,7 +35,7 @@ public class Parser {
                 return .Failed([("Unexpected error: \(e)", nil)])
             }
         }
-        return .Succeeded(mergeAST(result))
+        return .Succeeded(result)
     }
 
     private func createStream(fileName: String) throws -> TokenStream {
@@ -48,10 +48,14 @@ public class Parser {
         return ts
     }
 
+    private func topLevelDeclaration() throws -> Expression {
+        return try ExpressionParser(ts).expression()
+    }
+
+    /*
     private func mergeAST(tlds: [TopLevelDeclaration]) throws -> TopLevelDeclaration {
         // TODO
     }
-
 
     private func topLevelDeclaration() throws -> TopLevelDeclaration {
         let sp = StatementParser(ts)
@@ -61,4 +65,5 @@ public class Parser {
         }
         return b.build()
     }
+    */
 }

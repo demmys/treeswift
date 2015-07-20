@@ -85,6 +85,8 @@ Right -> 'right'
 
 Safe -> 'safe'
 
+Self -> 'self'
+
 Set -> 'set'
 
 Struct -> 'struct'

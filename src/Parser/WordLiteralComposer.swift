@@ -10,7 +10,7 @@ class WordLiteralComposer : TokenComposer {
         index = word.startIndex
     }
 
-    func put(CharacterClass, _ c: Character) -> Bool {
+    func put(_: CharacterClass, _ c: Character) -> Bool {
         if index == word.endIndex {
             succeeded = false
             return false
@@ -27,7 +27,7 @@ class WordLiteralComposer : TokenComposer {
         }
     }
 
-    func compose(CharacterClass) -> TokenKind? {
+    func compose(_: CharacterClass) -> TokenKind? {
         if succeeded {
             return kind
         }
