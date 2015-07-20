@@ -24,7 +24,7 @@ class TypeParser : GrammarParser {
     }
 
     private func identifierType(s: String) throws -> Type {
-        return IdentifierType(try getTypeRef(s), try gp.genericArgumentClause()) // TODO
+        return IdentifierType(try getTypeRef(s), try gp.genericArgumentClause())
     }
 
     private func collectionType() throws -> Type {

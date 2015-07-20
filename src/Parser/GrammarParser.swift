@@ -52,4 +52,39 @@ class GrammarParser {
             }
         }
     }
+
+    func getValueRef(name: String) throws -> ValueRef {
+        if name == "" {
+            throw ParserError.Error("dummy error")
+        }
+        return ValueRef(name)
+    }
+
+    func getImplicitParameterRef(num: Int) throws -> ValueRef {
+        if num < 0 {
+            throw ParserError.Error("dummy error")
+        }
+        return ValueRef(String(num))
+    }
+
+    func getOperatorRef(name: String) throws -> OperatorRef {
+        if name == "" {
+            throw ParserError.Error("dummy error")
+        }
+        return OperatorRef(name)
+    }
+
+    func getMemberRef(name: String) throws -> MemberRef {
+        if name == "" {
+            throw ParserError.Error("dummy error")
+        }
+        return MemberRef(name)
+    }
+
+    func getTypeRef(name: String) throws -> TypeRef {
+        if name == "" {
+            throw ParserError.Error("dummy error")
+        }
+        return TypeRef(name)
+    }
 }

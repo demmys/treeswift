@@ -20,7 +20,7 @@ public class ExpressionBody {
 }
 
 public class BinaryExpressionBody : ExpressionBody {
-    var op: OperatorRef! // TODO
+    var op: OperatorRef!
     var right: ExpressionBody!
 }
 
@@ -61,16 +61,16 @@ public enum ExpressionPostfix {
     case Initializer, Self, DynamicType
     case ForcedValue, OptionalChaining
     case Operator(OperatorRef)
-    case ExplicitNamedMember(MemberRef, genArgs: [Type]?) // TODO
-    case ExplicitUnnamedMember(MemberRef) // TODO
+    case ExplicitNamedMember(MemberRef, genArgs: [Type]?)
+    case ExplicitUnnamedMember(MemberRef)
     case Subscript([Expression])
     case FunctionCall(Tuple)
 }
 
 // primary-expression
 public enum ExpressionCore {
-    case ValueRef(ValueRef, genArgs: [Type]?) // TODO
-    case FunctionRef(FunctionRef) // TODO
+    case ValueRef(ValueRef, genArgs: [Type]?)
+    case FunctionRef(FunctionRef)
     case Integer(Int64)
     case FloatingPoint(Double)
     case String(String)

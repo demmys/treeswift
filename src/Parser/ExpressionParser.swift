@@ -55,7 +55,7 @@ class ExpressionParser : GrammarParser {
     ) throws -> BinaryExpressionBody {
         let x = BinaryExpressionBody()
         x.left = preExp
-        x.op = try getOperatorRef(s) // TODO
+        x.op = try getOperatorRef(s)
         x.right = try expressionBody()
         return x
     }
@@ -158,11 +158,11 @@ class ExpressionParser : GrammarParser {
             return .DynamicType
         case let .Identifier(s):
             return .ExplicitNamedMember(
-                try getMemberRef(s), // TODO
+                try getMemberRef(s),
                 genArgs: try gp.genericArgumentClause()
             )
         case .IntegerLiteral(let d, true):
-            return .ExplicitUnnamedMember(try getMemberRef(d)) // TODO
+            return .ExplicitUnnamedMember(try getMemberRef(d))
         default:
             throw ParserError.Error("Unexpected token after '.'", ts.look().info)
         }
@@ -177,12 +177,12 @@ class ExpressionParser : GrammarParser {
         ) {
         case let .Identifier(s):
             return .ValueRef(
-                try getValueRef(s), // TODO
+                try getValueRef(s),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .ImplicitParameterName(i):
             return .ValueRef(
-                try getImplicitParameterRef(i), // TODO
+                try getImplicitParameterRef(i),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .IntegerLiteral(i, _):
