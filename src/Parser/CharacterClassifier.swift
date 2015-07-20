@@ -1,18 +1,19 @@
 enum CharacterClass {
     case EndOfFile, LineFeed, CarriageReturn, Space
-    case Semicolon, Colon, Comma, Hash, Underscore, Atmark
+    case Atmark, Colon, Comma, Semicolon
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
     case LeftBracket, RightBracket
-    // belows may be a part of word
-    case Arrow
-    case Dot, Equal, Digit
-    case DoubleQuote, BackSlash
-    case Dollar, BackQuote, IdentifierHead, IdentifierFollow
-    case OperatorHead, DotOperatorHead, OperatorFollow
-    // belows may be a reserved word
-    case LessThan, GraterThan
+    case BackQuote, BackSlash, Dollar, DoubleQuote
+    // belows requires a look-ahead to classify
+    case Arrow, Equal, Dot, Underscore
+    // belows may be a reserved operator
     case Ampersand, Question, Exclamation
+    case LessThan, GraterThan
+    // belows are the parts of literal
+    case Digit
+    case IdentifierHead, IdentifierFollow
+    case OperatorHead, DotOperatorHead, OperatorFollow
     // meaningless characters
     case LineCommentHead, BlockCommentHead, BlockCommentTail
     case Others
@@ -33,12 +34,14 @@ class CharacterClassifier {
                 return .LineFeed
             case "\r":
                 return .CarriageReturn
-            case ";":
-                return .Semicolon
+            case "@":
+                return .Atmark
             case ":":
                 return .Colon
             case ",":
                 return .Comma
+            case ";":
+                return .Semicolon
             case "(":
                 return .LeftParenthesis
             case ")":
@@ -53,16 +56,20 @@ class CharacterClassifier {
                 return .RightBracket
             case "`":
                 return .BackQuote
-            case "#":
-                return .Hash
-            case "$":
-                return .Dollar
-            case "@":
-                return .Atmark
-            case "\"":
-                return .DoubleQuote
             case "\\":
                 return .BackSlash
+            case "$":
+                return .Dollar
+            case "\"":
+                return .DoubleQuote
+            case "-":
+                // token "->" cannot become a custom operator
+                if let succ = cp.lookAhead() {
+                    if succ == ">" {
+                        return .Arrow
+                    }
+                }
+                return .OperatorHead
             case "=":
                 // token "=" cannot become a custom operator
                 if let succ = cp.lookAhead() {
@@ -71,6 +78,21 @@ class CharacterClassifier {
                     }
                 }
                 return .Equal
+            case ".":
+                if let succ = cp.lookAhead() {
+                    if succ == "." {
+                        return .DotOperatorHead
+                    }
+                }
+                return .Dot
+            case "_":
+                // token "_" cannot become an identifier
+                if let succ = cp.lookAhead() {
+                    if isIdentifierFollow(succ) || isIdentifierHead(succ) {
+                        return .IdentifierHead
+                    }
+                }
+                return .Underscore
             case "&":
                 // token "&" will be distinguished from other operators
                 // by the fact that of prefix operator is reserved
@@ -116,29 +138,6 @@ class CharacterClassifier {
                     }
                 }
                 return .GraterThan
-            case "-":
-                // token "->" cannot become a custom operator
-                if let succ = cp.lookAhead() {
-                    if succ == ">" {
-                        return .Arrow
-                    }
-                }
-                return .OperatorHead
-            case "_":
-                // token "_" cannot become an identifier
-                if let succ = cp.lookAhead() {
-                    if isIdentifierFollow(succ) || isIdentifierHead(succ) {
-                        return .IdentifierHead
-                    }
-                }
-                return .Underscore
-            case ".":
-                if let succ = cp.lookAhead() {
-                    if succ == "." {
-                        return .DotOperatorHead
-                    }
-                }
-                return .Dot
             case "/":
                 if let succ = cp.lookAhead() {
                     switch succ {

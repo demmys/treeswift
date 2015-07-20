@@ -1,7 +1,7 @@
 ### Operators
 
 ```
-AssignmentOperator -> '='
+BinaryDoubleEqual = '=='
 
 BinaryOperator -> front-separator \zs operator \ze back-separator
                 | [^front-separator] \zs operator \ze [^back-separator]

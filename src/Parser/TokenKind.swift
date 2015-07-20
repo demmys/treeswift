@@ -11,26 +11,35 @@ public enum ModifierKind {
 public enum TokenKind : Equatable {
     case Error(ErrorMessage)
     case EndOfFile, LineFeed
-    case Semicolon, Colon, Comma, Hash, Underscore, Atmark
+    // symbols
+    case Arrow, AssignmentOperator, Atmark, BinaryQuestion
+    case Colon, Comma, Dot, PostfixExclamation, PostfixLessThan, PostfixQuestion
+    case PrefixAmpersand, PrefixGraterThan PrefixQuestion, Semicolon, Underscore
+    case VariadicSymbol
+    // brackets
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
     case LeftBracket, RightBracket
-    case AssignmentOperator, Dot, Arrow
-    case PrefixLessThan, PostfixGraterThan
-    case PrefixAmpersand
-    case PrefixQuestion, BinaryQuestion, PostfixQuestion
-    case PostfixExclamation
+    // operators
     case PrefixOperator(String), BinaryOperator(String), PostfixOperator(String)
+    // value references
     case Identifier(String), ImplicitParameterName(Int)
+    // literals
     case IntegerLiteral(Int64, decimalDigits: Bool)
     case FloatingPointLiteral(Double)
     case StringLiteral(String)
     case BooleanLiteral(Bool)
+    case COLUMN, FILE, FUNCTION, LINE
+    // modifier
     case Modifier(ModifierKind)
-    case Attribute(String)
-    case As, Associativity, Break, Continue, Do, Else, For, Func, If, Infix
-    case In, InOut, Is, Let, Left, Nil, None, Operator, Prefix, Postfix
-    case Precedence, Return, Right, Typealias, Unowned, Var, Weak, While
+    // reserved words
+    case As, Associativity, Break, Catch, Case, Class, Continue, Default, Defer
+    case Deinit, DidSet, Do, DynamicType, Enum, Extension, Fallthrough, Else, For
+    case Func, Get, Guard, If, Import, In, Infix, Init, InOut, Is, Let, Left, Nil
+    case None, Operator, Postfix, Prefix, Protocol, Precedence, Repeat, Rethrows
+    case Return, Right, Safe, Set, Struct, Subscript, Super, Switch, Throw, Throws
+    case Try, Typealias, Unowned, Unsafe, Var, Weak, Where, While, WillSet
+    case PROTOCOL, TYPE
 }
 
 public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
@@ -47,8 +56,20 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .LineFeed = rhs {
             return true
         }
-    case .Semicolon:
-        if case .Semicolon = rhs {
+    case .Arrow:
+        if case .Arrow = rhs {
+            return true
+        }
+    case .AssignmentOperator:
+        if case .AssignmentOperator = rhs {
+            return true
+        }
+    case .Atmark:
+        if case .Atmark = rhs {
+            return true
+        }
+    case .BinaryQuestion:
+        if case .BinaryQuestion = rhs {
             return true
         }
     case .Colon:
@@ -59,28 +80,40 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Comma = rhs {
             return true
         }
-    case .Arrow:
-        if case .Arrow = rhs {
+    case .Dot:
+        if case .Dot = rhs {
             return true
         }
-    case .Hash:
-        if case .Hash = rhs {
+    case .PostfixExclamation:
+        if case .PostfixExclamation = rhs {
+            return true
+        }
+    case .PostfixLessThan:
+        if case .PostfixLessThan = rhs {
+            return true
+        }
+    case .PostfixQuestion:
+        if case .PostfixQuestion = rhs {
+            return true
+        }
+    case .PrefixAmpersand:
+        if case .PrefixAmpersand = rhs {
+            return true
+        }
+    case .PrefixGraterThan PrefixQuestion:
+        if case .PrefixGraterThan PrefixQuestion = rhs {
+            return true
+        }
+    case .Semicolon:
+        if case .Semicolon = rhs {
             return true
         }
     case .Underscore:
         if case .Underscore = rhs {
             return true
         }
-    case .Atmark:
-        if case .Atmark = rhs {
-            return true
-    }
-    case .Dot:
-        if case .Dot = rhs {
-            return true
-        }
-    case .AssignmentOperator:
-        if case .AssignmentOperator = rhs {
+    case .VariadicSymbol:
+        if case .VariadicSymbol = rhs {
             return true
         }
     case .LeftParenthesis:
@@ -107,34 +140,6 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .RightBracket = rhs {
             return true
         }
-    case .PrefixLessThan:
-        if case .PrefixLessThan = rhs {
-            return true
-        }
-    case .PostfixGraterThan:
-        if case .PostfixGraterThan = rhs {
-            return true
-        }
-    case .PrefixAmpersand:
-        if case .PrefixAmpersand = rhs {
-            return true
-        }
-    case .PrefixQuestion:
-        if case .PrefixQuestion = rhs {
-            return true
-        }
-    case .BinaryQuestion:
-        if case .BinaryQuestion = rhs {
-            return true
-        }
-    case .PostfixQuestion:
-        if case .PostfixQuestion = rhs {
-            return true
-        }
-    case .PostfixExclamation:
-        if case .PostfixExclamation = rhs {
-            return true
-        }
     case .PrefixOperator:
         if case .PrefixOperator = rhs {
             return true
@@ -151,8 +156,16 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Identifier = rhs {
             return true
         }
-    case .IntegerLiteral:
-        if case .IntegerLiteral = rhs {
+    case .ImplicitParameterName:
+        if case .ImplicitParameterName = rhs {
+            return true
+        }
+    case .IntegerLiteral(Int64:
+        if case .IntegerLiteral(Int64 = rhs {
+            return true
+        }
+    case .decimalDigits: Bool):
+        if case .decimalDigits: Bool) = rhs {
             return true
         }
     case .FloatingPointLiteral:
@@ -167,12 +180,24 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .BooleanLiteral = rhs {
             return true
         }
-    case .Modifier:
-        if case .Modifier = rhs {
+    case .COLUMN:
+        if case .COLUMN = rhs {
             return true
         }
-    case .Attribute:
-        if case .Attribute = rhs {
+    case .FILE:
+        if case .FILE = rhs {
+            return true
+        }
+    case .FUNCTION:
+        if case .FUNCTION = rhs {
+            return true
+        }
+    case .LINE:
+        if case .LINE = rhs {
+            return true
+        }
+    case .Modifier:
+        if case .Modifier = rhs {
             return true
         }
     case .As:
@@ -187,12 +212,56 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Break = rhs {
             return true
         }
+    case .Catch:
+        if case .Catch = rhs {
+            return true
+        }
+    case .Case:
+        if case .Case = rhs {
+            return true
+        }
+    case .Class:
+        if case .Class = rhs {
+            return true
+        }
     case .Continue:
         if case .Continue = rhs {
             return true
         }
+    case .Default:
+        if case .Default = rhs {
+            return true
+        }
+    case .Defer:
+        if case .Defer = rhs {
+            return true
+        }
+    case .Deinit:
+        if case .Deinit = rhs {
+            return true
+        }
+    case .DidSet:
+        if case .DidSet = rhs {
+            return true
+        }
     case .Do:
         if case .Do = rhs {
+            return true
+        }
+    case .DynamicType:
+        if case .DynamicType = rhs {
+            return true
+        }
+    case .Enum:
+        if case .Enum = rhs {
+            return true
+        }
+    case .Extension:
+        if case .Extension = rhs {
+            return true
+        }
+    case .Fallthrough:
+        if case .Fallthrough = rhs {
             return true
         }
     case .Else:
@@ -207,16 +276,32 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Func = rhs {
             return true
         }
+    case .Get:
+        if case .Get = rhs {
+            return true
+        }
+    case .Guard:
+        if case .Guard = rhs {
+            return true
+        }
     case .If:
         if case .If = rhs {
+            return true
+        }
+    case .Import:
+        if case .Import = rhs {
+            return true
+        }
+    case .In:
+        if case .In = rhs {
             return true
         }
     case .Infix:
         if case .Infix = rhs {
             return true
         }
-    case .In:
-        if case .In = rhs {
+    case .Init:
+        if case .Init = rhs {
             return true
         }
     case .InOut:
@@ -247,40 +332,112 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Operator = rhs {
             return true
         }
+    case .Postfix:
+        if case .Postfix = rhs {
+            return true
+        }
     case .Prefix:
         if case .Prefix = rhs {
             return true
         }
-    case .Postfix:
-        if case .Postfix = rhs {
+    case .Protocol:
+        if case .Protocol = rhs {
             return true
         }
     case .Precedence:
         if case .Precedence = rhs {
             return true
         }
-    case .Return:
-        if case .Return = rhs {
+    case .Repeat:
+        if case .Repeat = rhs {
             return true
         }
-    case .Var:
-        if case .Var = rhs {
+    case .Rethrows:
+        if case .Rethrows = rhs {
+            return true
+        }
+    case .Return:
+        if case .Return = rhs {
             return true
         }
     case .Right:
         if case .Right = rhs {
             return true
         }
+    case .Safe:
+        if case .Safe = rhs {
+            return true
+        }
+    case .Set:
+        if case .Set = rhs {
+            return true
+        }
+    case .Struct:
+        if case .Struct = rhs {
+            return true
+        }
+    case .Subscript:
+        if case .Subscript = rhs {
+            return true
+        }
+    case .Super:
+        if case .Super = rhs {
+            return true
+        }
+    case .Switch:
+        if case .Switch = rhs {
+            return true
+        }
+    case .Throw:
+        if case .Throw = rhs {
+            return true
+        }
+    case .Throws:
+        if case .Throws = rhs {
+            return true
+        }
+    case .Try:
+        if case .Try = rhs {
+            return true
+        }
     case .Typealias:
         if case .Typealias = rhs {
+            return true
+        }
+    case .Unowned:
+        if case .Unowned = rhs {
+            return true
+        }
+    case .Unsafe:
+        if case .Unsafe = rhs {
+            return true
+        }
+    case .Var:
+        if case .Var = rhs {
+            return true
+        }
+    case .Weak:
+        if case .Weak = rhs {
+            return true
+        }
+    case .Where:
+        if case .Where = rhs {
             return true
         }
     case .While:
         if case .While = rhs {
             return true
         }
-    case .Weak:
-        if case .Weak = rhs {
+    case .WillSet:
+        if case .WillSet = rhs {
+            return true
+        }
+    case .PROTOCOL:
+        if case .PROTOCOL = rhs {
+            return true
+        }
+    case .TYPE:
+        if case .TYPE = rhs {
             return true
         }
     case .Unowned:

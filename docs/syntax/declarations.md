@@ -103,7 +103,7 @@ parameter-clause        -> LeftParenthesis RightParenthesis
                          | LeftParenthesis parameter-list VariadicSymbol? RightParenthesis
 parameter-list          -> parameter parameter-list-tail?
 parameter-list-tail     -> Comma parameter-list
-parameter               -> Inout? (Let | Var)? Hash? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
+parameter               -> Inout? (Let | Var)? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
                          | attributes? type
 external-parameter-name -> Identifier | Underscore
 local-parameter-name    -> Identifier | Underscore

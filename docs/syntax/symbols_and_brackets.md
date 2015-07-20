@@ -1,7 +1,13 @@
 ### Symbols
 
 ```
-Semicolon -> ';'
+Arrow -> '->'
+
+AssignmentOperator -> '='
+
+Atmark -> '@'
+
+BinaryQuestion -> '?'
 
 Colon -> ':'
 
@@ -9,39 +15,37 @@ Comma -> ','
 
 Dot -> '.'
 
-Arrow -> '->'
-
-Hash -> '#'
-
-Underscore -> '_'
-
-Atmark -> '@'
-
-Dollar -> '$'
-
-BackQuote -> '`'
-
-Minus -> '-'
-
-DoubleQuote -> '"'
-
-BackSlash -> '\'
-
-PrefixAmpersand -> '&'
-
-PrefixQuestion -> '?'
-BinaryQuestion -> '?'
-PostfixQuestion -> '?'
-
 PostfixExclamation -> '!'
-
-PrefixGraterThan -> '<'
 
 PostfixLessThan -> '>'
 
-BinaryDoubleEqual -> '=='
+PostfixQuestion -> '?'
+
+PrefixAmpersand -> '&'
+
+PrefixGraterThan -> '<'
+
+PrefixQuestion -> '?'
+
+Semicolon -> ';'
+
+Underscore -> '_'
 
 VariadicSymbol -> '...'
+```
+
+#### Symbols for literal parsing
+
+```
+BackQuote -> '`'
+
+BackSlash -> '\'
+
+Dollar -> '$'
+
+DoubleQuote -> '"'
+
+Minus -> '-'
 ```
 
 ### Brackets
