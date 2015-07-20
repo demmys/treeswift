@@ -14,6 +14,7 @@ class NumericLiteralComposer : TokenComposer {
     }
 
     private var state = State.Head
+    private var negative = false
     private var integralPart: Int64 = 0
     private var fractionPart: Int64?
     private var exponentPart: Int64?
@@ -23,7 +24,7 @@ class NumericLiteralComposer : TokenComposer {
 
     func put(cc: CharacterClass, _ c: Character) -> Bool {
         switch cc {
-        case .Digit, .IdentifierHead, .Dot, .OperatorHead:
+        case .Digit, .IdentifierHead, .Dot, .OperatorHead, .Minus:
             switch state {
             case .Head:
                 switch c {
@@ -32,6 +33,8 @@ class NumericLiteralComposer : TokenComposer {
                 case "1"..."9":
                     integralPart = Int64(String(c))!
                     state = .FollowingDigit(10, .Integral)
+                case "-":
+                    negative = true
                 default:
                     state = .Failed
                     return false
@@ -175,14 +178,20 @@ class NumericLiteralComposer : TokenComposer {
     func compose(_: CharacterClass) -> TokenKind? {
         switch state {
         case .BaseSpecifier:
-            return TokenKind.IntegerLiteral(integralPart, decimalDigits: true)
+            if negative {
+                integralPart = -integralPart
+            }
+            return .IntegerLiteral(integralPart, decimalDigits: !negative)
         case let .FollowingDigit(base, pos):
             if base == 16 && fractionPart != nil && exponentPart == nil {
                 return nil
             }
             if pos == .Integral {
-                return TokenKind.IntegerLiteral(
-                    integralPart, decimalDigits: base == 10
+                if negative {
+                    integralPart = -integralPart
+                }
+                return .IntegerLiteral(
+                    integralPart, decimalDigits: base == 10 && !negative
                 )
             }
             var value: Double = Double(integralPart)
@@ -205,7 +214,10 @@ class NumericLiteralComposer : TokenComposer {
                     }
                 }
             }
-            return TokenKind.FloatingPointLiteral(value)
+            if negative {
+                value = -value
+            }
+            return .FloatingPointLiteral(value)
         default:
             return nil
         }

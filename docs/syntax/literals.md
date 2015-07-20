@@ -34,7 +34,7 @@ decimal-exponent -> '[eE]' sign? '[0-9][0-9_]*'
 hexadecimal-fraction -> '\.[0-9a-fA-F][0-9a-fA-F_]*'
 hexadecimal-exponent -> '[pP]' sign? '[0-9][0-9_]*'
 
-sign -> '+' | '-'
+sign -> '+' | Minus
 ```
 
 #### String literal
