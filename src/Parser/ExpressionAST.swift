@@ -1,6 +1,3 @@
-/*
- * expression
- */
 public class Expression {
     var tryType: TryType!
     let body: ExpressionBody
@@ -40,7 +37,7 @@ public class ConditionalExpressionBody : ExpressionBody {
 
 public class TypeCastingExpressionBody : ExpressionBody {
     var castType: CastType!
-    var type: TypeRef! // TODO
+    var type: Type!
 }
 
 public enum CastType {
@@ -64,15 +61,15 @@ public enum ExpressionPostfix {
     case Initializer, Self, DynamicType
     case ForcedValue, OptionalChaining
     case Operator(OperatorRef)
-    case ExplicitNamedMember(MemberRef, genericArguments: [TypeRef]?) // TODO
+    case ExplicitNamedMember(MemberRef, genArgs: [Type]?) // TODO
     case ExplicitUnnamedMember(MemberRef) // TODO
     case Subscript([Expression])
-    case FunctionCall(Tuple) // TODO
+    case FunctionCall(Tuple)
 }
 
 // primary-expression
 public enum ExpressionCore {
-    case ValueRef(ValueRef, genericArguments: [TypeRef]?) // TODO
+    case ValueRef(ValueRef, genArgs: [Type]?) // TODO
     case FunctionRef(FunctionRef) // TODO
     case Integer(Int64)
     case FloatingPoint(Double)
@@ -88,7 +85,7 @@ public enum ExpressionCore {
     case SuperClassMember(MemberRef)
     case SuperClassSubscript([Expression])
     case Closure // TODO
-    case Tuple(Tuple) // TODO
+    case Tuple(Tuple)
     case ImplicitMember(MemberRef)
     case Wildcard
 }

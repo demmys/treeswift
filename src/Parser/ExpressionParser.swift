@@ -3,9 +3,9 @@ class ExpressionParser : GrammarParser {
     private let gp: GenericsParser
 
     init(_ ts: TokenStream) {
-        super.init(ts)
         tp = TypeParser(ts)
         gp = GenericsParser(ts)
+        super.init(ts)
     }
 
     func expressionList() throws -> [Expression] {
@@ -34,7 +34,7 @@ class ExpressionParser : GrammarParser {
 
     private func expressionBody() throws -> ExpressionBody {
         let preExp = try expressionUnit()
-        switch ts.try(binaryOperator, .BinaryQuestion, .Is, .As).kind {
+        switch ts.try(binaryOperator, .BinaryQuestion, .Is, .As) {
         case let .BinaryOperator(s):
             return try binaryExpressionBody(preExp)
         case .BinaryQuestion:
@@ -79,7 +79,7 @@ class ExpressionParser : GrammarParser {
         let x = TypeCastingExpressionBody()
         x.left = preExp
         x.castType = .Is
-        x.type = try tp.type() // TODO
+        x.type = try tp.type()
         return x
     }
 
@@ -111,7 +111,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func expressionPrefix() throws -> ExpressionPrefix {
-        switch ts.try(prefixOperator, .PrefixAmpersand).kind {
+        switch ts.try(prefixOperator, .PrefixAmpersand) {
         case .PrefixOperator(s):
             return .Operator(try getOperatorRef(s))
         case .PrefixAmpersand:
@@ -159,7 +159,7 @@ class ExpressionParser : GrammarParser {
         case let .Identifier(k):
             return .ExplicitNamedMember(
                 try getMemberRef(k), // TODO
-                genericArguments: try gp.genericArgumentClause()
+                genArgs: try gp.genericArgumentClause()
             )
         case .IntegerLiteral(let d, true):
             return .ExplicitUnnamedMember(try getMemberRef(d)) // TODO
@@ -177,7 +177,7 @@ class ExpressionParser : GrammarParser {
         case let .Identifier(k):
             return .ValueRef(
                 try getValueRef(k), // TODO
-                genericArguments: try gp.genericArgumentClause()
+                genArgs: try gp.genericArgumentClause()
             )
         case let .IntegerLiteral(i, _):
             return .Integer(i)
@@ -334,6 +334,9 @@ class ExpressionParser : GrammarParser {
             }
             t.append((nil, try expression()))
         } while ts.test(.Comma)
+        guard ts.test(.RightParenthesis) else {
+            throw ParserError.Error("Expected ')' at the end of tuple", ts.look().info)
+        }
         return t
     }
 }

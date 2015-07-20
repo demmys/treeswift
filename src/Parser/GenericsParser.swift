@@ -1,9 +1,9 @@
 class GenericsParser : GrammarParser {
-    func genericArgumentClause() throws -> [TypeRef]? {
+    func genericArgumentClause() throws -> [Type]? {
         guard ts.test(.PrefixGraterThan) else {
             return nil
         }
-        var types: [TypeRef] = []
+        var types: [Type] = []
         repeat {
             types.append(try type())
         } while ts.test(.Comma)
