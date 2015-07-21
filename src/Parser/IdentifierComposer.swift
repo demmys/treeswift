@@ -93,4 +93,26 @@ class IdentifierComposer : TokenComposer {
         }
         return nil
     }
+
+    func isEndOfToken(follow: CharacterClass) -> Bool {
+        switch state {
+        case .IdentifierCharacter:
+            switch follow {
+            case .IdentifierHead, .IdentifierFollow, .Digit, .Underscore:
+                return false
+            default:
+                return true
+            }
+        case .QuotedIdentifierTail:
+            return true
+        case .ImplicitParameterDigit:
+            if case .Digit = follow {
+                return false
+            } else {
+                return true
+            }
+        default:
+            return true
+        }
+    }
 }

@@ -33,4 +33,8 @@ class WordLiteralComposer : TokenComposer {
         }
         return nil
     }
+
+    func isEndOfToken(_: CharacterClass) -> Bool {
+        return succeeded
+    }
 }

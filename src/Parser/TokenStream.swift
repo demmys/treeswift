@@ -266,110 +266,41 @@ class TokenStream {
             ctx.consume()
             return produce(.Error(.InvalidToken))
         case .LessThan, .GraterThan, .Ampersand, .Question, .Exclamation:
-            return produce(composerParse(
-                head,
-                composer: OperatorComposer(prev: ctx.prev),
-                isEndOfToken: { _ in true }
-            ))
+            return produce(
+                composerParse(head, composer: OperatorComposer(prev: ctx.prev))
+            )
         case .OperatorHead, .DotOperatorHead:
-            return produce(composerParse(
-                head,
-                composer: OperatorComposer(prev: ctx.prev),
-                isEndOfToken: { (follow) in
-                    switch follow {
-                    case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
-                         .Ampersand, .Question, .Exclamation,
-                         .Equal, .Arrow,
-                         .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
-                        return false
-                    case .DotOperatorHead, .Dot:
-                        switch head {
-                        case .DotOperatorHead:
-                            return false
-                        default:
-                            return true
-                        }
-                    default:
-                        return true
-                    }
-                }
-            ))
+            return produce(
+                composerParse(head, composer: OperatorComposer(prev: ctx.prev))
+            )
         case .Dollar:
-            return produce(composerParse(
-                head,
-                composer: IdentifierComposer(),
-                isEndOfToken: { (follow) in
-                    switch follow {
-                    case .Digit:
-                        return false
-                    default:
-                        return true
-                    }
-                }
-            ))
+            return produce(
+                composerParse(head, composer: IdentifierComposer())
+            )
         case .BackQuote:
-            var lastToken = false
-            return produce(composerParse(
-                head,
-                composer: IdentifierComposer(),
-                isEndOfToken: { (follow) in
-                    if lastToken {
-                        return true
-                    }
-                    switch follow {
-                    case .BackQuote:
-                        lastToken = true
-                    default:
-                        break
-                    }
-                    return false
-                }
-            ))
-        case .Digit, .Minus:
-            return produce(composerParse(
-                head,
-                composer: NumericLiteralComposer(),
-                isEndOfToken: { (follow) in
-                    switch follow {
-                    case .Digit, .IdentifierHead, .Dot, .OperatorHead:
-                        return false
-                    default:
-                        return true
-                    }
-                }
-            ))
+            return produce(
+                composerParse(head, composer: IdentifierComposer())
+            )
+        case .Minus:
+            switch ctx.prev {
+            case .LineFeed, .Semicolon, .Space,
+                 .BlockCommentTail, .LeftParenthesis, .LeftBrace, .LeftBracket:
+                return produce(
+                    composerParse(head, composer: NumericLiteralComposer())
+                )
+            default:
+                return produce(
+                    composerParse(head, composer: OperatorComposer(prev: ctx.prev))
+                )
+            }
+        case .Digit:
+            return produce(
+                composerParse(head, composer: NumericLiteralComposer())
+            )
         case .DoubleQuote:
-            var escaped = false
-            var interpolationNest = 0
-            return produce(composerParse(
-                head,
-                composer: StringLiteralComposer(),
-                isEndOfToken: { (follow) in
-                    switch follow {
-                    case .DoubleQuote:
-                        if !escaped && interpolationNest == 0{
-                            return true
-                        }
-                        escaped = false
-                    case .BackSlash:
-                        escaped = true
-                    case .LeftParenthesis:
-                        if interpolationNest > 0 {
-                            ++interpolationNest
-                        } else if escaped {
-                            interpolationNest = 1
-                            escaped = false
-                        }
-                    case .RightParenthesis:
-                        if interpolationNest > 0 {
-                            --interpolationNest
-                        }
-                    default:
-                        escaped = false
-                    }
-                    return false
-                }
-            ))
+            return produce(
+                composerParse(head, composer: StringLiteralComposer())
+            )
         case .IdentifierHead:
             let composer = IdentifierComposer()
             var reservedWords: [WordLiteralComposer]?
@@ -442,7 +373,6 @@ class TokenStream {
                 break
             }
             var follow = head
-            var endOfToken = false
             repeat {
                 composer.put(follow, ctx.cp.look()!)
                 reservedWords = reservedWords?.filter({
@@ -450,13 +380,7 @@ class TokenStream {
                 })
                 ctx.consume(follow)
                 follow = classifier.classify()
-                switch follow {
-                case .IdentifierHead, .IdentifierFollow, .Digit, .Underscore:
-                    break
-                default:
-                    endOfToken = true
-                }
-            } while !endOfToken
+            } while !composer.isEndOfToken(follow)
 
             if let kinds = reservedWords?.map({
                 $0.compose(follow)
@@ -473,21 +397,17 @@ class TokenStream {
         }
     }
 
-    private func composerParse(head: CharacterClass,
-                               composer: TokenComposer,
-                               isEndOfToken: CharacterClass -> Bool) -> TokenKind {
+    private func composerParse(
+        head: CharacterClass, composer: TokenComposer
+    ) -> TokenKind {
         var follow = head
-        var endOfToken = false
         repeat {
             if !composer.put(follow, ctx.cp.look()!) {
                 return .Error(.InvalidToken)
             }
             ctx.consume(follow)
             follow = classifier.classify()
-            if isEndOfToken(follow) {
-                endOfToken = true
-            }
-        } while !endOfToken
+        } while !composer.isEndOfToken(follow)
 
         if let kind = composer.compose(follow) {
             return kind

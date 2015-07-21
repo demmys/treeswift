@@ -161,4 +161,32 @@ class OperatorComposer : TokenComposer {
             return false
         }
     }
+
+    func isEndOfToken(follow: CharacterClass) -> Bool {
+        switch state {
+        case .OperatorCharacter:
+            switch follow {
+            case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
+                 .Ampersand, .Question, .Exclamation, .Equal, .Arrow, .Minus,
+                 .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
+                return false
+            default:
+                return true
+            }
+        case .DotOperatorCharacter:
+            switch follow {
+            case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
+                 .Ampersand, .Question, .Exclamation, .Equal, .Arrow, .Minus,
+                 .DotOperatorHead, .Dot,
+                 .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
+                return false
+            default:
+                return true
+            }
+        case .ReservedOperator:
+            return true
+        default:
+            return false
+        }
+    }
 }

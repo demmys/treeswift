@@ -94,4 +94,11 @@ class StringLiteralComposer : TokenComposer {
         }
         return .StringLiteral(value)
     }
+
+    func isEndOfToken(_: CharacterClass) -> Bool {
+        guard case .Completed = state else {
+            return false
+        }
+        return true
+    }
 }

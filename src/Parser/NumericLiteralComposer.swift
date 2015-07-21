@@ -222,4 +222,31 @@ class NumericLiteralComposer : TokenComposer {
             return nil
         }
     }
+
+    func isEndOfToken(follow: CharacterClass) -> Bool {
+        switch state {
+        case .BaseSpecifier:
+            switch follow {
+            case .Digit, .IdentifierHead, .Dot:
+                return false
+            default:
+                return true
+            }
+        case let .FollowingDigit(_, pos):
+            switch follow {
+            case .Digit, .IdentifierHead:
+                return false
+            case .Dot:
+                if case .Integral = pos {
+                    return false
+                } else {
+                    return true
+                }
+            default:
+                return true
+            }
+        default:
+            return false
+        }
+    }
 }
