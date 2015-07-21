@@ -7,7 +7,7 @@ public enum TryType {
     case Nothing, Try, ForcedTry
 }
 
-public class ExpressionBody {
+public class ExpressionBody : CustomStringConvertible {
     var unit: ExpressionUnit!
     var left: ExpressionUnit! {
         get { return unit }
@@ -17,21 +17,37 @@ public class ExpressionBody {
         get { return unit }
         set(c) { unit = c }
     }
+
+    public var description: String { get {
+        return "(ExpressionBody \(unit))"
+    } }
 }
 
 public class BinaryExpressionBody : ExpressionBody {
     var op: OperatorRef!
     var right: ExpressionBody!
+
+    override public var description: String { get {
+        return "(BinaryExpressionBody \(left) \(op) \(right))"
+    } }
 }
 
 public class ConditionalExpressionBody : ExpressionBody {
     var trueSide: Expression!
     var falseSide: Expression!
+
+    override public var description: String { get {
+        return "(ConditionalExpressionBody \(cond) \(trueSide) \(falseSide))"
+    } }
 }
 
 public class TypeCastingExpressionBody : ExpressionBody {
     var castType: CastType!
     var type: Type!
+
+    override public var description: String { get {
+        return "(TypeCastingExpressionBody \(castType) \(type))"
+    } }
 }
 
 public enum CastType {

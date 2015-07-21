@@ -1,4 +1,4 @@
-public protocol Type {}
+public protocol Type : CustomStringConvertible {}
 
 public class IdentifierType : Type {
     let ref: TypeRef
@@ -28,10 +28,6 @@ public class DictionaryType : Type {
     }
 }
 
-public enum ThrowType {
-    case Nothing, Throws, Rethrows
-}
-
 public class TupleType : Type {
     var elems: [TupleTypeElement] = []
     var variadic: Bool = false
@@ -58,6 +54,10 @@ public class FunctionType : Type {
         throwType = t
         ret = r
     }
+}
+
+public enum ThrowType {
+    case Nothing, Throws, Rethrows
 }
 
 public class OptionalType : Type {
