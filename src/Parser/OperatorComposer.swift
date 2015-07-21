@@ -47,7 +47,7 @@ class OperatorComposer : TokenComposer {
         case .OperatorCharacter:
             switch cc {
             case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
-                 .Ampersand, .Question, .Exclamation, .Equal, .Arrow,
+                 .Ampersand, .Question, .Exclamation, .Equal, .Arrow, .Minus,
                  .LineCommentHead, .BlockCommentHead, .BlockCommentTail:
                 value!.append(c)
                 return true
@@ -58,7 +58,7 @@ class OperatorComposer : TokenComposer {
         case .DotOperatorCharacter:
             switch cc {
             case .OperatorHead, .OperatorFollow, .LessThan, .GraterThan,
-                 .Ampersand, .Question, .Exclamation, .Equal, .Arrow,
+                 .Ampersand, .Question, .Exclamation, .Equal, .Arrow, .Minus,
                  .LineCommentHead, .BlockCommentHead, .BlockCommentTail,
                  .DotOperatorHead, .Dot:
                 value!.append(c)

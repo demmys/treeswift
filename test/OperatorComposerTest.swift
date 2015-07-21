@@ -6,7 +6,8 @@ class OperatorComposerTest : TokenComposerTest {
         super.init("OperatorComposer class", { OperatorComposer(prev: .Space) })
         setTestCases([
             ("can analyze operator", analyzeOperator),
-            ("can analyze dot operator", analyzeDotOperator)
+            ("can analyze dot operator", analyzeDotOperator),
+            ("can analyze operator start and end with '-'", analyzeOperatorWithMinus)
         ])
     }
 
@@ -25,5 +26,9 @@ class OperatorComposerTest : TokenComposerTest {
 
     private func analyzeDotOperator() throws {
         try isOperator("..+", "..+")
+    }
+
+    private func analyzeOperatorWithMinus() throws {
+        try isOperator("---", "---")
     }
 }
