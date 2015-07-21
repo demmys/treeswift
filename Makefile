@@ -40,7 +40,7 @@ $(INC_DIR)/%.swiftmodule: $(SRC_DIR)/%/*.swift
 	@[ -d $(INC_DIR) ] || mkdir -p $(INC_DIR)
 	cd $(INC_DIR); $(COMPILER) $(CFLAGS) -module-name $(basename $(notdir $@)) -emit-module $(addprefix ../,$^)
 
-$(OBJ_DIR)/main.o: $(MODS_INC)
+$(OBJ_DIR)/main.o: $(MODS_INC) $(SRC_DIR)/main.swift
 	@[ -d $(OBJ_DIR) ] || mkdir -p $(OBJ_DIR)
 	cd $(OBJ_DIR); $(COMPILER) $(CFLAGS) -module-name TreeSwift -c ../$(SRC_DIR)/main.swift
 
