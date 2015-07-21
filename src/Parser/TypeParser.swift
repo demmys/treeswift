@@ -1,11 +1,13 @@
 class TypeParser : GrammarParser {
-    private let ap: AttributesParser
-    private let gp: GenericsParser
+    var ap: AttributesParser!
+    var gp: GenericsParser!
 
-    override init(_ ts: TokenStream) {
-        ap = AttributesParser(ts)
-        gp = GenericsParser(ts)
-        super.init(ts)
+    func setParser(
+        attributesParser ap: AttributesParser,
+        genericsParser gp: GenericsParser
+    ) {
+        self.ap = ap
+        self.gp = gp
     }
 
     func type() throws -> Type {

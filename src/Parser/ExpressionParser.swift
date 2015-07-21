@@ -1,11 +1,13 @@
 class ExpressionParser : GrammarParser {
-    private let tp: TypeParser
-    private let gp: GenericsParser
+    var tp: TypeParser!
+    var gp: GenericsParser!
 
-    override init(_ ts: TokenStream) {
-        tp = TypeParser(ts)
-        gp = GenericsParser(ts)
-        super.init(ts)
+    func setParser(
+        typeParser tp: TypeParser,
+        genericsParser gp: GenericsParser
+    ) {
+        self.tp = tp
+        self.gp = gp
     }
 
     func expressionList() throws -> [Expression] {

@@ -1,9 +1,8 @@
 class GenericsParser : GrammarParser {
-    private let tp: TypeParser
+    var tp: TypeParser!
 
-    override init(_ ts: TokenStream) {
-        tp = TypeParser(ts)
-        super.init(ts)
+    func setParser(typeParser tp: TypeParser) {
+        self.tp = tp
     }
 
     func genericArgumentClause() throws -> [Type]? {

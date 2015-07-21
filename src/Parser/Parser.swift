@@ -49,7 +49,14 @@ public class Parser {
     }
 
     private func topLevelDeclaration() throws -> Expression {
-        return try ExpressionParser(ts).expression()
+        let ap = AttributesParser(ts)
+        let gp = GenericsParser(ts)
+        let tp = TypeParser(ts)
+        let ep = ExpressionParser(ts)
+        gp.setParser(typeParser: tp)
+        tp.setParser(attributesParser: ap, genericsParser: gp)
+        ep.setParser(typeParser: tp, genericsParser: gp)
+        return try ep.expression()
     }
 
     /*
