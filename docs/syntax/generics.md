@@ -14,9 +14,9 @@ generic-parameter -> type-name
 requirement-clause      -> Where requirement-list
 requirement-list        -> requirement
                          | requirement Comma requirement-list
-requirement             -> confirmance-requirement
+requirement             -> conformance-requirement
                          | same-type-requirement
-confirmance-requirement -> type-identifier : type-identifier
+conformance-requirement -> type-identifier : type-identifier
                          | type-identifier : protocol-composition-type
 same-type-requirement   -> type-identifier BinaryDoubleEqual type
 ```
