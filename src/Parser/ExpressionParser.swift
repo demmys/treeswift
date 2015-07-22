@@ -1,6 +1,6 @@
 class ExpressionParser : GrammarParser {
-    var tp: TypeParser!
-    var gp: GenericsParser!
+    private var tp: TypeParser!
+    private var gp: GenericsParser!
 
     func setParser(
         typeParser tp: TypeParser,
@@ -335,12 +335,12 @@ class ExpressionParser : GrammarParser {
         var t: Tuple = []
         repeat {
             if case .Colon = ts.look(1).kind {
-                if case let .Identifier(s) = ts.match([identifier]) {
-                    ts.next()
-                    t.append((s, try expression()))
-                    continue
+                guard case let .Identifier(s) = ts.match([identifier]) else {
+                    throw ParserError.Error("Expected identifier for the label of tuple element", ts.look().info)
                 }
-                throw ParserError.Error("Expected identifier for the label of tuple element", ts.look().info)
+                ts.next()
+                t.append((s, try expression()))
+                continue
             }
             t.append((nil, try expression()))
         } while ts.test([.Comma])

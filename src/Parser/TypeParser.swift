@@ -1,6 +1,6 @@
 class TypeParser : GrammarParser {
-    var ap: AttributesParser!
-    var gp: GenericsParser!
+    private var ap: AttributesParser!
+    private var gp: GenericsParser!
 
     func setParser(
         attributesParser ap: AttributesParser,
@@ -10,22 +10,33 @@ class TypeParser : GrammarParser {
         self.gp = gp
     }
 
+    func typeAnnotation() throws -> (Type, [Attribute])? {
+        if ts.test([.Colon]) {
+            return (try type(), try ap.attributes())
+        }
+        return nil
+    }
+
     func type() throws -> Type {
+        return try containerType(try primaryType())
+    }
+
+    func primaryType() throws -> Type {
         switch ts.match([identifier, .LeftBracket, .LeftParenthesis, .Protocol]) {
         case let .Identifier(s):
-            return try containerType(try identifierType(s))
+            return try identifierType(s)
         case .LeftBracket:
-            return try containerType(try collectionType())
+            return try collectionType()
         case .LeftParenthesis:
-            return try containerType(try tupleType())
+            return try tupleType()
         case .Protocol:
-            return try containerType(try protocolCompositionType())
+            return try protocolCompositionType()
         default:
             throw ParserError.Error("Expected type", ts.look().info)
         }
     }
 
-    private func identifierType(s: String) throws -> IdentifierType {
+    func identifierType(s: String) throws -> IdentifierType {
         return IdentifierType(try getTypeRef(s), try gp.genericArgumentClause())
     }
 
@@ -77,12 +88,13 @@ class TypeParser : GrammarParser {
         case .InOut:
             x.inOut = true
             ts.next()
-            if case let .Identifier(s) = ts.look().kind {
+            if case let .Identifier(s) = ts.match([identifier]) {
                 return try tupleTypeElementBody(x, s)
             }
             x.type = try type()
             return x
         case let .Identifier(s):
+            ts.next()
             return try tupleTypeElementBody(x, s)
         default:
             x.type = try type()
@@ -93,17 +105,17 @@ class TypeParser : GrammarParser {
     private func tupleTypeElementBody(
         x: TupleTypeElement, _ s: String
     ) throws -> TupleTypeElement {
-        if case .Colon = ts.look(1).kind {
-            ts.next(2)
+        if let (type, attrs) = try typeAnnotation() {
             x.label = s
-            x.type = try type()
+            x.attrs = attrs
+            x.type = type
             return x
         }
         x.type = try type()
         return x
     }
 
-    private func protocolCompositionType() throws -> ProtocolCompositionType {
+    func protocolCompositionType() throws -> ProtocolCompositionType {
         guard ts.test([.PrefixLessThan]) else {
             throw ParserError.Error("Expected following '<' for protocol composition type", ts.look().info)
         }

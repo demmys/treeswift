@@ -16,14 +16,14 @@ class GrammarParser {
 
     func find(candidates: [TokenKind], startIndex: Int = 0) -> (Int, TokenKind) {
         var i = startIndex
-        var kind = ts.look(i).kind
+        var kind = ts.look(i, skipLineFeed: false).kind
         while kind != .EndOfFile {
             for c in candidates {
                 if kind == c {
                     return (i, kind)
                 }
             }
-            kind = ts.look(++i).kind
+            kind = ts.look(++i, skipLineFeed: false).kind
         }
         return (i, .EndOfFile)
     }
@@ -56,7 +56,42 @@ class GrammarParser {
         }
     }
 
+    func findRightParenthesisBefore(
+        candidates: [TokenKind], startIndex: Int = 0
+    ) -> Int? {
+        var i = startIndex
+        var nest = 0
+        while true {
+            let kind = ts.look(i).kind
+            switch kind {
+            case .EndOfFile:
+                return nil
+            case .LeftParenthesis:
+                ++nest
+            case .RightParenthesis:
+                if nest == 0 {
+                    return i
+                }
+                --nest
+            default:
+                for c in candidates {
+                    if kind == c {
+                        return nil
+                    }
+                }
+                ++i
+            }
+        }
+    }
+
     func getValueRef(name: String) throws -> ValueRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return ValueRef(name)
+    }
+
+    func createValueRef(name: String) throws -> ValueRef {
         if name == "" {
             throw ParserError.Error("dummy error", ts.look().info)
         }
@@ -77,9 +112,14 @@ class GrammarParser {
         return OperatorRef(name)
     }
 
-    func getMemberRef(name: String) throws -> MemberRef {
+    func getMemberRef(
+        name: String, withClassName className: String? = nil
+    ) throws -> MemberRef {
         if name == "" {
             throw ParserError.Error("dummy error", ts.look().info)
+        }
+        if let c = className {
+            return MemberRef("\(c).\(name)")
         }
         return MemberRef(name)
     }
@@ -96,5 +136,9 @@ class GrammarParser {
             throw ParserError.Error("dummy error", ts.look().info)
         }
         return TypeRef(name)
+    }
+
+    func isEnum(name: String) -> Bool {
+        return true
     }
 }

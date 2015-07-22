@@ -35,11 +35,11 @@ public enum TokenKind : Equatable {
     // reserved words
     case As, Associativity, Break, Catch, Case, Class, Continue, Default, Defer
     case Deinit, DidSet, Do, DynamicType, Enum, Extension, Fallthrough, Else, For
-    case Func, Get, Guard, If, Import, In, Infix, Init, InOut, Is, Let, Left, Nil
-    case None, Operator, Postfix, Prefix, Protocol, Precedence, Repeat, Rethrows
-    case Return, Right, Safe, `Self`, Set, Struct, Subscript, Super, Switch, Throw
-    case Throws, Try, Typealias, Unowned, Unsafe, Var, Weak, Where, While, WillSet
-    case PROTOCOL, TYPE
+    case Func, Get, Guard, If, Import, In, Indirect, Infix, Init, InOut, Is, Let
+    case Left, Nil, None, Operator, Postfix, Prefix, Protocol, Precedence, Repeat
+    case Rethrows, Return, Right, Safe, `Self`, Set, Struct, Subscript, Super
+    case Switch, Throw, Throws, Try, Typealias, Unowned, Unsafe, Var, Weak, Where
+    case While, WillSet, PROTOCOL, TYPE
 }
 
 public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
@@ -294,6 +294,10 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         }
     case .In:
         if case .In = rhs {
+            return true
+        }
+    case .Indirect:
+        if case .Indirect = rhs {
             return true
         }
     case .Infix:
