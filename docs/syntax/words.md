@@ -49,6 +49,8 @@ Import -> 'import'
 
 In -> 'in'
 
+Indirect -> 'indirect'
+
 Infix -> 'infix'
 
 Init -> 'init'

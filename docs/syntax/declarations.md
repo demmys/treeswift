@@ -117,12 +117,12 @@ enum-declaration      -> attributes? access-level-modifier? enum-declaration-bod
 enum-declaration-body -> union-style-enum
                        | raw-value-style-enum
 
-union-style-enum         -> Enum Identifier generic-parameter-clause? type-inheritance-clause? LeftBrace union-style-enum-members? RightBrace
+union-style-enum         -> Indirect? Enum Identifier generic-parameter-clause? type-inheritance-clause? LeftBrace union-style-enum-members? RightBrace
 union-style-enum-members -> union-style-enum-member union-style-enum-members?
 union-style-enum-member  -> declaration
                           | union-style-enum-case-clause
 
-union-style-enum-case-clause -> attributes? Case union-style-enum-case-list
+union-style-enum-case-clause -> attributes? Indirect? Case union-style-enum-case-list
 union-style-enum-case-list   -> union-style-enum-case union-style-enum-case-tail?
 union-style-enum-case-tail   -> Comma union-style-enum-case-list
 union-style-enum-case        -> enum-case-name tuple-type?
