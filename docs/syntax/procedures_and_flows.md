@@ -1,3 +1,16 @@
+### Procedures
+
+```
+procedures -> procedure procedures?
+
+procedure -> procedure-head (LineFeed | Semicolon | EndOfFile)
+procedure-head -> declaration
+                | operation
+                | flow
+
+procedure-block -> LeftBrace procedures? RightBrace
+```
+
 ### Flows
 
 ```
@@ -104,17 +117,4 @@ defer-flow -> Defer procedure-block
 do-flow       -> Do procedure-block catch-clauses?
 catch-clauses -> catch-clause catch-clauses?
 catch-clause  -> Catch conditional-pattern? condition-clause? procedure-block
-```
-
-### Procedures
-
-```
-procedures -> procedure procedures?
-
-procedure -> procedure-head (LineFeed | Semicolon | EndOfFile)
-procedure-head -> declaration
-                | operation
-                | flow
-
-procedure-block -> LeftBrace procedures? RightBrace
 ```
