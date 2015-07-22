@@ -30,11 +30,11 @@ protocol-identifier-list      -> protocol-identifier protocol-identifier-list-ta
 protocol-identifier-list-tail -> Comma protocol-identifier-list
 protocol-identifier           -> type-identifier
 
-type-postfixes    -> type-postfix-body type-postfixes?
-type-postfix-body -> function-type
-                   | optional-type 
-                   | implicitly-unwrapped-optional-type
-                   | metatype-type
+type-postfixes -> type-postfix type-postfixes?
+type-postfix   -> function-type
+                | optional-type
+                | implicitly-unwrapped-optional-type
+                | metatype-type
 
 function-type -> type (throws | rethrows)? Arrow type
 

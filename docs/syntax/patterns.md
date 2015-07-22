@@ -1,48 +1,49 @@
 ### Patterns
 
 ```
-pattern -> identifier-pattern
-         | wildcard-pattern
-         | tuple-pattern
-         | expression-pattern
-         | value-binding-pattern
-         | enum-case-pattern
-         | optional-pattern
-         | type-casting-pattern
-
 declarational-pattern -> identifier-pattern
                        | wildcard-pattern
                        | declarational-tuple-pattern
 
-conditional-pattern -> wildcard-pattern
-                     | tuple-pattern
-                     | expression-pattern
-                     | value-binding-pattern
-                     | enum-case-pattern
-                     | optional-pattern
-                     | type-casting-pattern
+conditional-pattern -> primary-pattern pattern-postfixes?
+
+primary-pattern -> wildcard-pattern
+                 | conditional-tuple-pattern
+                 | value-binding-pattern
+                 | enum-case-pattern
+                 | type-matching-pattern
+                 | expression-pattern
 
 wildcard-pattern -> Underscore type-annotation?
 
 identifier-pattern -> Identifier type-annotation?
 
-value-binding-pattern -> Var pattern
-                       | Let pattern
+value-binding-pattern -> Var conditional-pattern
+                       | Let conditional-pattern
 
-declarational-tuple-pattern               -> LeftParenthesis declarational-tuple-pattern-elements? RightParenthesis
-declarational-tuple-pattern-elements      -> declarational-pattern declarational-tuple-pattern-elements-tail?
-declarational-tuple-pattern-elements-tail -> Comma declarational-pattern
+declarational-tuple-pattern               -> LeftParenthesis declarational-tuple-pattern-elements? RightParenthesis type-annotation?
+declarational-tuple-pattern-elements      -> declarational-tuple-pattern-element declarational-tuple-pattern-elements-tail?
+declarational-tuple-pattern-elements-tail -> Comma declarational-tuple-pattern-element
+declarational-tuple-pattern-element       -> declarational-pattern
+                                           | Identifier Colon declarational-pattern
 
-tuple-pattern               -> LeftParenthesis tuple-pattern-elements? RightParenthesis
-tuple-pattern-elements      -> pattern tuple-pattern-elements-tail?
-tuple-pattern-elements-tail -> Comma pattern
+conditional-tuple-pattern               -> LeftParenthesis conditional-tuple-pattern-elements? RightParenthesis type-annotation?
+conditional-tuple-pattern-elements      -> conditional-tuple-pattern-element tuple-pattern-elements-tail?
+conditional-tuple-pattern-elements-tail -> Comma conditional-tuple-pattern-element
+conditional-tuple-pattern-element       -> conditional-pattern
+                                         | Identifier Colon conditional-pattern
 
-enum-case-pattern -> type-identifier? Dot enum-case-name tuple-pattern?
+enum-case-pattern -> type-identifier? Dot Identifier conditional-tuple-pattern?
 
-optional-pattern         -> pattern PostfixQuestion
-
-type-casting-pattern -> Is type
-                      | pattern As type
+type-pattern -> Is type
 
 expression-pattern -> expression
+
+pattern-postfixes -> pattern-postfix pattern-postfixes?
+pattern-postfix   -> optional-pattern
+                   | type-casting-pattern
+
+optional-pattern -> PostfixQuestion
+
+type-casting-pattern -> As type
 ```
