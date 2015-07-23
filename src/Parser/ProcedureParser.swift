@@ -156,9 +156,9 @@ class ProcedureParser : GrammarParser {
         let x = ForInFlow(label)
         var p: Pattern!
         if ts.test([.Case]) {
-            p = try pp.declarationalPattern()
-        } else {
             p = try pp.conditionalPattern()
+        } else {
+            p = try pp.declarationalPattern()
         }
         guard ts.test([.In]) else {
             throw ParserError.Error("Expected 'in' after pattern of ForInFlow", ts.look().info)
