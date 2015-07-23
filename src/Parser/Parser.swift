@@ -7,7 +7,7 @@ enum ParserError : ErrorType {
 }
 
 public enum ParseResult {
-    case Succeeded([String:Expression])
+    case Succeeded([String:[Procedure]])
     case Failed([Error])
 }
 
@@ -20,7 +20,7 @@ public class Parser {
     }
 
     public func parse() -> ParseResult {
-        var result: [String:Expression] = [:]
+        var result: [String:[Procedure]] = [:]
         for fileName in fileNames {
             do {
                 ts = try createStream(fileName)
@@ -48,15 +48,23 @@ public class Parser {
         return ts
     }
 
-    private func topLevelDeclaration() throws -> Expression {
+    private func topLevelDeclaration() throws -> [Procedure] {
         let ap = AttributesParser(ts)
         let gp = GenericsParser(ts)
         let tp = TypeParser(ts)
         let ep = ExpressionParser(ts)
+        let dp = DeclarationParser(ts)
+        let pp = PatternParser(ts)
+        let parser = ProcedureParser(ts)
         gp.setParser(typeParser: tp)
         tp.setParser(attributesParser: ap, genericsParser: gp)
         ep.setParser(typeParser: tp, genericsParser: gp)
-        return try ep.expression()
+        dp.setParser(patternParser: pp, expressionParser: ep)
+        pp.setParser(typeParser: tp, expressionParser: ep)
+        parser.setParser(
+            declarationParser: dp, patternParser: pp, expressionParser: ep
+        )
+        return try parser.procedures()
     }
 
     /*

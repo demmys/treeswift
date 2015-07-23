@@ -1,4 +1,100 @@
 /*
+ * ProcedureAST
+ */
+extension Procedure : CustomStringConvertible {
+    public var description: String { get {
+        let pre = "(Procedure"
+        let post = ")"
+        switch self {
+        case let .DeclarationProcedure(d):
+            return "\(pre) type: declaration \(d)\(post)"
+        case let .OperationProcedure(o):
+            return "\(pre) type: operation \(o)\(post)"
+        case let .FlowProcedure(f):
+            return "\(pre) type: flow \(f)\(post)"
+        case .FlowSwitchProcedure:
+            return "<<error: no description provided>>"
+        }
+    } }
+}
+
+extension Operation : CustomStringConvertible {
+    public var description: String { get {
+        let pre = "(Operation"
+        let post = ")"
+        switch self {
+        case let .ExpressionOperation(e):
+            return "\(pre) type: expression \(e)\(post)"
+        case let .AssignmentOperation(p, e):
+            return "\(pre) type: assignment \(p) \(e)\(post)"
+        case let .BreakOperation(s):
+            return "\(pre) type: break \(s)\(post)"
+        case let .ContinueOperation(s):
+            return "\(pre) type: continue \(s)\(post)"
+        case .FallthroughOperation:
+            return "\(pre) type: fallthrough\(post)"
+        case let .ReturnOperation(e):
+            return "\(pre) type: return \(e)\(post)"
+        case let .ThrowOperation(e):
+            return "\(pre) type: throw \(e)\(post)"
+        }
+    } }
+}
+
+extension PatternMatching : CustomStringConvertible {
+    public var description: String { get {
+        return "(PatternMatching \(pat) \(exp) \(rest))"
+    } }
+}
+
+extension ForInit : CustomStringConvertible {
+    public var description: String { get {
+        let pre = "(ForInit"
+        let post = ")"
+        switch self {
+        case let .VariableDeclaration(d):
+            return "\(pre) type: variable-declaration \(d)\(post)"
+        case let .InitOperation(o):
+            return "\(pre) type: init \(o)\(post)"
+        }
+    } }
+}
+
+extension ElseClause : CustomStringConvertible {
+    public var description: String { get {
+        let pre = "(ElseClause"
+        let post = ")"
+        switch self {
+        case let .Else(ps):
+            return "\(pre) type: else \(ps)\(post)"
+        case let .ElseIf(f):
+            return "\(pre) type: else-if \(f)\(post)"
+        }
+    } }
+}
+
+/*
+extension FlowSwitch : CustomStringConvertible {
+    public var description: String { get {
+    } }
+}
+*/
+
+/*
+ * DeclarationAST
+ */
+extension VariableDeclaration {
+    public var description: String { get {
+        let pre = "(VariableDeclaration"
+        let post = ")"
+        switch self {
+        case let .PatternInitializerList(pi):
+            return "\(pre) type: pattern-initializer-list \(pi)\(post)"
+        }
+    } }
+}
+
+/*
  * ExpressionAST
  */
 extension Expression : CustomStringConvertible {
@@ -177,6 +273,66 @@ extension MetaType {
 extension MetaProtocol {
     public var description: String { get {
         return "(MetaProtocol \(proto))"
+    } }
+}
+
+/*
+ * PatternAST
+ */
+extension Pattern : CustomStringConvertible {
+    public var description: String { get {
+        let pre = "(Pattern"
+        let post = ")"
+        switch self {
+        case .IdentityPattern:
+            return "\(pre) type: identity\(post)"
+        case .BooleanPattern:
+            return "\(pre) type: boolean\(post)"
+        case let .OptionalBindingConstantPattern(p):
+            return "\(pre) type: optional-binding-constant \(p)\(post)"
+        case let .OptionalBindingVariablePattern(p):
+            return "\(pre) type: optional-binding-variable \(p)\(post)"
+        case let .IdentifierPattern(r):
+            return "\(pre) type: identifier \(r)\(post)"
+        case let .TypedIdentifierPattern(r, t, attrs):
+            return "\(pre) type: type-identifier \(r) \(t) \(attrs)\(post)"
+        case .WildcardPattern:
+            return "\(pre) type: wildcard-pattern)\(post)"
+        case let .TypedWildcardPattern(t, attrs):
+            return "\(pre) type: typed-wildcard \(t) \(attrs)\(post)"
+        case let .TuplePattern(pt):
+            return "\(pre) type: tuple \(pt)\(post)"
+        case let .VariableBindingPattern(p):
+            return "\(pre) type: variable-binding \(p)\(post)"
+        case let .ConstantBindingPattern(p):
+            return "\(pre) type: constant-binding \(p)\(post)"
+        case let .EnumCasePattern(r, pt):
+            return "\(pre) type: enum-case \(r) \(pt)\(post)"
+        case let .TypePattern(t):
+            return "\(pre) type: type \(t)\(post)"
+        case let .ExpressionPattern(e):
+            return "\(pre) type: expression \(e)\(post)"
+        case let .OptionalPattern(p):
+            return "\(pre) type: optional \(p)\(post)"
+        case let .TypeCastingPattern(p, t):
+            return "\(pre) type: typeCasting \(p) \(t)\(post)"
+        }
+    } }
+}
+
+/*
+ * GenericsAST
+ */
+extension Requirement : CustomStringConvertible {
+    public var description: String { get {
+        let pre = "(Requirement"
+        let post = ")"
+        switch self {
+        case let .Conformance(i, t):
+            return "\(pre) type: conformance \(i) \(t)\(post)"
+        case let .SameType(i, t):
+            return "\(pre) type: same-type \(i) \(t)\(post)"
+        }
     } }
 }
 

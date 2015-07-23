@@ -1,5 +1,5 @@
 public enum Procedure {
-    case DeclarationProcedure // (Declaration) TODO
+    case DeclarationProcedure(Declaration)
     case OperationProcedure(Operation)
     case FlowProcedure(Flow)
     case FlowSwitchProcedure(FlowSwitch)
@@ -15,9 +15,13 @@ public enum Operation {
     case ThrowOperation(Expression)
 }
 
-public class Flow {
+public class Flow : CustomStringConvertible {
     var pats: [PatternMatching]!
     var block: [Procedure]!
+
+    public var description: String { get {
+        return "<<error: no description provided>>"
+    } }
 }
 
 public class PatternMatching {
@@ -45,10 +49,14 @@ public class ForFlow : Flow {
     func setCond(c: Expression) {
         pats = [PatternMatching(.BooleanPattern, c, nil)]
     }
+
+    public override var description: String { get {
+        return "(ForFlow label: \(label) \(ini) \(pats) \(fin) \(block))"
+    } }
 }
 
 public enum ForInit {
-    case VariableDeclaration // (Declaration) TODO
+    case VariableDeclaration(Declaration)
     case InitOperation(Operation)
 }
 
@@ -58,6 +66,10 @@ public class ForInFlow : Flow {
     init(_ label: String?) {
         self.label = label
     }
+
+    public override var description: String { get {
+        return "(ForInFlow label: \(label) \(pats) \(block))"
+    } }
 }
 
 public class WhileFlow : Flow {
@@ -66,6 +78,10 @@ public class WhileFlow : Flow {
     init(_ label: String?) {
         self.label = label
     }
+
+    public override var description: String { get {
+        return "(WhileFlow label: \(label) \(pats) \(block))"
+    } }
 }
 
 public class RepeatWhileFlow : Flow {
@@ -78,6 +94,10 @@ public class RepeatWhileFlow : Flow {
     func setCond(c: Expression) {
         pats = [PatternMatching(.BooleanPattern, c, nil)]
     }
+
+    public override var description: String { get {
+        return "(RepeatWhileFlow label: \(label) \(pats) \(block))"
+    } }
 }
 
 public class IfFlow : Flow {
@@ -87,6 +107,10 @@ public class IfFlow : Flow {
     init(_ label: String?) {
         self.label = label
     }
+
+    public override var description: String { get {
+        return "(IfFlow label: \(label) \(pats) \(block) \(els))"
+    } }
 }
 
 public enum ElseClause {
@@ -94,15 +118,31 @@ public enum ElseClause {
     case ElseIf(IfFlow)
 }
 
-public class GuardFlow : Flow {}
+public class GuardFlow : Flow {
+    public override var description: String { get {
+        return "(GuardFlow \(pats) \(block))"
+    } }
+}
 
-public class DeferFlow : Flow {}
+public class DeferFlow : Flow {
+    public override var description: String { get {
+        return "(DeferFlow \(block))"
+    } }
+}
 
 public class DoFlow : Flow {
     var catches: [CatchFlow] = []
+
+    public override var description: String { get {
+        return "(DoFlow \(block) \(catches))"
+    } }
 }
 
-public class CatchFlow : Flow {}
+public class CatchFlow : Flow {
+    public override var description: String { get {
+        return "(CatchFlow \(pats) \(block))"
+    } }
+}
 
 public class FlowSwitch {
     var label: String?

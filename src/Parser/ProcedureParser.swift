@@ -1,14 +1,14 @@
 class ProcedureParser : GrammarParser {
-    // private var dp: DeclarationParser!
+    private var dp: DeclarationParser!
     private var pp: PatternParser!
     private var ep: ExpressionParser!
 
     func setParser(
-        // declarationParser dp: DeclarationParser,
+        declarationParser dp: DeclarationParser,
         patternParser pp: PatternParser,
         expressionParser ep: ExpressionParser
     ) {
-        // self.dp = dp
+        self.dp = dp
         self.pp = pp
         self.ep = ep
     }
@@ -34,11 +34,11 @@ class ProcedureParser : GrammarParser {
         case .Atmark:
             // declaration beggining with attributes
             // TODO
-            throw ParserError.Error("Declarations are not implemented yet", ts.look().info)
+            throw ParserError.Error("Declaration with attributes is not implemented yet", ts.look().info)
         case .Modifier:
             // declaration beggining with modifiers
             // TODO
-            throw ParserError.Error("Declarations are not implemented yet", ts.look().info)
+            throw ParserError.Error("Declaration with modifiers is not implemented yet", ts.look().info)
         case .For:
             x = .FlowProcedure(try forFlow())
         case .While:
@@ -67,9 +67,7 @@ class ProcedureParser : GrammarParser {
             x = .OperationProcedure(.ThrowOperation(try ep.expression()))
         case .Import, .Let, .Var, .Typealias, .Func, .Enum, .Indirect, .Struct,
              .Class, .Protocol, .Extension, .Prefix, .Infix, .Postfix:
-            // TODO
-            // x = .DeclarationProcedure(try dp.declaration()) 
-            throw ParserError.Error("Declarations are not implemented yet", ts.look().info)
+            x = .DeclarationProcedure(try dp.declaration()) 
         case let .Identifier(s):
             // labeled-procedure or expression-operation
             if case .Colon = ts.look(1).kind {
@@ -142,14 +140,13 @@ class ProcedureParser : GrammarParser {
             return nil
         case .Atmark:
             // TODO
-            throw ParserError.Error("Declarations are not implemented yet", ts.look().info)
+            throw ParserError.Error("Declaration with attributes are not implemented yet", ts.look().info)
         case .Modifier:
             // TODO
-            throw ParserError.Error("Declarations are not implemented yet", ts.look().info)
+            throw ParserError.Error("Declaration with modifiers are not implemented yet", ts.look().info)
         case .Var:
-            // TODO
-            // return .VariableDeclaration(try dp.variableDeclaration())
-            throw ParserError.Error("Declarations are not implemented yet", ts.look().info)
+            ts.next()
+            return .VariableDeclaration(try dp.variableDeclaration())
         default:
             return .InitOperation(try assignmentOrExpressionOperation())
         }

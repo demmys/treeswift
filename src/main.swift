@@ -47,13 +47,19 @@ if arguments.count < 2 {
     let parser = Parser(Array(arguments[1..<arguments.count]))
     switch parser.parse() {
     case let .Succeeded(result):
-        for (fileName, exp) in result {
+        for (fileName, ps) in result {
             print("----- \(fileName) -----")
-            prettyPrint(exp)
+            for p in ps {
+                prettyPrint(p)
+            }
         }
     case let .Failed(errors):
-        for error in errors {
-            print(error)
+        for (msg, info) in errors {
+            if let i = info {
+                print("\(i.lineNo):\(i.charNo) \(msg)\n\(i.source!)")
+            } else {
+                print("\(msg)")
+            }
         }
     }
 }
