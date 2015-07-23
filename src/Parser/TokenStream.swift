@@ -313,29 +313,53 @@ class TokenStream {
             case "b":
                 reservedWords = [WordLiteralComposer("break", .Break)]
             case "c":
-                reservedWords = [WordLiteralComposer("continue", .Continue)]
+                reservedWords = [
+                    WordLiteralComposer("catch", .Catch),
+                    WordLiteralComposer("case", .Case),
+                    WordLiteralComposer("class", .Class),
+                    WordLiteralComposer("continue", .Continue)
+                ]
             case "d":
-                reservedWords = [WordLiteralComposer("do", .Do)]
+                reservedWords = [
+                    WordLiteralComposer("default", .Default),
+                    WordLiteralComposer("defer", .Defer),
+                    WordLiteralComposer("deinit", .Deinit),
+                    WordLiteralComposer("didSet", .DidSet),
+                    WordLiteralComposer("do", .Do),
+                    WordLiteralComposer("dynamicType", .DynamicType)
+                ]
             case "e":
-                reservedWords = [WordLiteralComposer("else", .Else)]
+                reservedWords = [
+                    WordLiteralComposer("enum", .Enum),
+                    WordLiteralComposer("extension", .Extension),
+                    WordLiteralComposer("else", .Else)
+                ]
             case "f":
                 reservedWords = [
+                    WordLiteralComposer("fallthrough", .Fallthrough),
                     WordLiteralComposer("false", .BooleanLiteral(false)),
                     WordLiteralComposer("for", .For),
                     WordLiteralComposer("func", .Func)
                 ]
+            case "g":
+                reservedWords = [
+                    WordLiteralComposer("get", .Get),
+                    WordLiteralComposer("guard", .Guard)
+                ]
             case "i":
                 reservedWords = [
                     WordLiteralComposer("if", .If),
-                    WordLiteralComposer("infix", .Infix),
+                    WordLiteralComposer("import", .Import),
                     WordLiteralComposer("in", .In),
+                    WordLiteralComposer("indirect", .Indirect),
+                    WordLiteralComposer("infix", .Infix),
                     WordLiteralComposer("inout", .InOut),
                     WordLiteralComposer("is", .Is)
                 ]
             case "l":
                 reservedWords = [
-                    WordLiteralComposer("left", .Left),
-                    WordLiteralComposer("let", .Let)
+                    WordLiteralComposer("let", .Let),
+                    WordLiteralComposer("left", .Left)
                 ]
             case "n":
                 reservedWords = [
@@ -347,27 +371,59 @@ class TokenStream {
             case "p":
                 reservedWords = [
                     WordLiteralComposer("postfix", .Postfix),
-                    WordLiteralComposer("precedence", .Precedence),
-                    WordLiteralComposer("prefix", .Prefix)
+                    WordLiteralComposer("prefix", .Prefix),
+                    WordLiteralComposer("protocol", .Protocol),
+                    WordLiteralComposer("precedence", .Precedence)
                 ]
             case "r":
                 reservedWords = [
+                    WordLiteralComposer("repeat", .Repeat),
+                    WordLiteralComposer("rethrows", .Rethrows),
                     WordLiteralComposer("return", .Return),
                     WordLiteralComposer("right", .Right)
                 ]
+            case "s":
+                reservedWords = [
+                    WordLiteralComposer("safe", .Safe),
+                    WordLiteralComposer("self", .`Self`),
+                    WordLiteralComposer("set", .Set),
+                    WordLiteralComposer("struct", .Struct),
+                    WordLiteralComposer("subscript", .Subscript),
+                    WordLiteralComposer("super", .Super),
+                    WordLiteralComposer("switch", .Switch)
+                ]
             case "t":
                 reservedWords = [
+                    WordLiteralComposer("throw", .Throw),
+                    WordLiteralComposer("throws", .Throws),
+                    WordLiteralComposer("try", .Try),
                     WordLiteralComposer("true", .BooleanLiteral(true)),
                     WordLiteralComposer("typealias", .Typealias)
                 ]
+            case "u":
+                reservedWords = [
+                    WordLiteralComposer("unowned", .Unowned),
+                    WordLiteralComposer("unsafe", .Unsafe),
+                ]
             case "v":
                 reservedWords = [WordLiteralComposer("var", .Var)]
-            case "u":
-                reservedWords = [WordLiteralComposer("unowned", .Unowned)]
             case "w":
                 reservedWords = [
                     WordLiteralComposer("weak", .Weak),
-                    WordLiteralComposer("while", .While)
+                    WordLiteralComposer("where", .Where),
+                    WordLiteralComposer("while", .While),
+                    WordLiteralComposer("willSet", .WillSet)
+                ]
+            case "T":
+                reservedWords = [WordLiteralComposer("Type", .TYPE)]
+            case "P":
+                reservedWords = [WordLiteralComposer("Protocol", .Protocol)]
+            case "_":
+                reservedWords = [
+                    WordLiteralComposer("__COLUMN__", .COLUMN),
+                    WordLiteralComposer("__FILE__", .FILE),
+                    WordLiteralComposer("__FUNCTION__", .FUNCTION),
+                    WordLiteralComposer("__LINE__", .LINE)
                 ]
             default:
                 break

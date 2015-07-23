@@ -31,9 +31,9 @@ Enum -> 'enum'
 
 Extension -> 'extension'
 
-Fallthrough -> 'Fallthrough'
-
 Else -> 'else'
+
+Fallthrough -> 'Fallthrough'
 
 For -> 'for'
 
@@ -121,9 +121,9 @@ While -> 'while'
 
 WillSet -> 'willSet'
 
-TYPE -> 'Type'
-
 PROTOCOL -> 'Protocol'
+
+TYPE -> 'Type'
 
 COLUMN -> '__COLUMN__'
 
