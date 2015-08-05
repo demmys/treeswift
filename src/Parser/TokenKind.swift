@@ -15,7 +15,6 @@ public enum TokenKind : Equatable {
     case Arrow, AssignmentOperator, Atmark, BinaryQuestion
     case Colon, Comma, Dot, PostfixExclamation, PostfixGraterThan, PostfixQuestion
     case PrefixAmpersand, PrefixLessThan, PrefixQuestion, Semicolon, Underscore
-    case VariadicSymbol
     // brackets
     case LeftParenthesis, RightParenthesis
     case LeftBrace, RightBrace
@@ -114,10 +113,6 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         }
     case .Underscore:
         if case .Underscore = rhs {
-            return true
-        }
-    case .VariadicSymbol:
-        if case .VariadicSymbol = rhs {
             return true
         }
     case .LeftParenthesis:

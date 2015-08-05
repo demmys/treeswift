@@ -1,13 +1,22 @@
 class ExpressionParser : GrammarParser {
     private var tp: TypeParser!
     private var gp: GenericsParser!
+    private var pp: ProcedureParser!
+    private var ep: ExpressionParser!
+    private var dp: DeclarationParser!
 
     func setParser(
         typeParser tp: TypeParser,
-        genericsParser gp: GenericsParser
+        genericsParser gp: GenericsParser,
+        procedureParser pp: ProcedureParser,
+        expressionParser ep: ExpressionParser,
+        declarationParser dp: DeclarationParser
     ) {
         self.tp = tp
         self.gp = gp
+        self.pp = pp
+        self.ep = ep
+        self.dp = dp
     }
 
     func expressionList() throws -> [Expression] {
@@ -324,7 +333,102 @@ class ExpressionParser : GrammarParser {
     }
 
     private func closureExpression() throws -> ExpressionCore {
-        throw ParserError.Error("Parser for closure expression is not implemented yet", ts.look().info)
+        let c = Closure()
+        switch ts.match([.LeftBracket]) {
+        case .LeftBracket:
+            try captureClause(c)
+            switch ts.match([.LeftParenthesis, identifier]) {
+            case .LeftParenthesis:
+                c.params = .ExplicitTyped(try dp.parameterClause())
+                c.returns = try dp.functionResult()
+            case let .Identifier(s):
+                c.params = try identifierList(s)
+                c.returns = try dp.functionResult()
+            default:
+                break
+            }
+        case .LeftParenthesis:
+            guard let i = findParenthesisClose(1) else {
+                throw ParserError.Error("'(' not closed before end of file.", ts.look().info)
+            }
+            switch ts.look(i).kind {
+            case .Arrow, .In:
+                c.params = .ExplicitTyped(try dp.parameterClause())
+                c.returns = try dp.functionResult()
+            default:
+                c.params = .NotProvided
+                c.body = try closureExpressionTail()
+                return .ClosureExpression(c)
+            }
+        case let .Identifier(s):
+            switch ts.look().kind {
+            case .Comma, .Arrow, .In:
+                ts.next()
+                c.params = try identifierList(s)
+                c.returns = try dp.functionResult()
+            default:
+                c.body = try closureExpressionTail()
+                return .ClosureExpression(c)
+            }
+        default:
+            c.body = try closureExpressionTail()
+            return .ClosureExpression(c)
+        }
+        guard ts.test([.In]) else {
+            throw ParserError.Error("Expected 'in' after closure signature.", ts.look().info)
+        }
+        c.body = try closureExpressionTail()
+        return .ClosureExpression(c)
+    }
+
+    private func identifierList(first: String) throws -> ClosureParameters {
+        var list = [try createValueRef(first)]
+        while ts.test([.Comma]) {
+            guard case let .Identifier(s) = ts.match([identifier]) else {
+                throw ParserError.Error("Expected identifier after ',' of parameter list.", ts.look().info)
+            }
+            list.append(try createValueRef(s))
+        }
+        return .ImplicitTyped(list)
+    }
+
+    private func captureClause(c: Closure) throws {
+        repeat {
+            var s: CaptureSpecifier!
+            specifierSwitch: switch ts.match([.Weak, .Unowned]) {
+            case .Weak:
+                s = .Weak
+            case .Unowned:
+                if case .LeftParenthesis = ts.look().kind {
+                    switch ts.match([.Safe, .Unsafe], ahead: 1) {
+                    case .Safe:
+                        s = .UnownedSafe
+                    case .Unsafe:
+                        s = .UnownedUnsafe
+                    default:
+                        s = .Unowned
+                        break specifierSwitch
+                    }
+                    guard ts.test([.RightParenthesis]) else {
+                        throw ParserError.Error("Expected ')' after 'safe' or 'unsafe' for unowned specifier", ts.look().info)
+                    }
+                } else {
+                    s = .Unowned
+                }
+            default:
+                s = .Nothing
+            }
+            let e = try ep.expression()
+            c.caps.append((s, e))
+        } while ts.test([.Comma])
+    }
+
+    private func closureExpressionTail() throws -> [Procedure] {
+        let ps = try pp.procedures()
+        guard ts.test([.RightBrace]) else {
+            throw ParserError.Error("Expected '}' at the end of closure", ts.look().info)
+        }
+        return ps
     }
 
     private func tupleExpression() throws -> Tuple {

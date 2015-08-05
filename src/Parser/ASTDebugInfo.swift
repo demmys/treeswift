@@ -94,6 +94,39 @@ extension VariableDeclaration {
     } }
 }
 
+extension ParameterClause : CustomStringConvertible {
+    public var description: String { get {
+        return "(ParameterClause variadic: \(isVariadic) \(body))"
+    } }
+}
+
+extension Parameter: CustomStringConvertible {
+    public var description: String { get {
+        let name = "parameter:"
+        switch self {
+        case let .Named(p): return "\(name) named \(p)"
+        case let.Unnamed(attrs, t): return "\(name) unnamed \(attrs) \(t)"
+        }
+    } }
+}
+
+extension NamedParameter : CustomStringConvertible {
+    public var description: String { get {
+        return "inout: \(isInout) variable: \(isVariable) \(externalName) \(internalName) \(type) \(defaultArg)"
+    } }
+}
+
+extension ParameterName : CustomStringConvertible {
+    public var description: String { get {
+        let name = "parameter-name:"
+        switch self {
+        case .NotSpecified: return "\(name) not-specified"
+        case let .Specified(r): return "\(name) specified \(r)"
+        case .Needless: return "\(name) needless"
+        }
+    } }
+}
+
 /*
  * ExpressionAST
  */
@@ -188,10 +221,40 @@ extension ExpressionCore : CustomStringConvertible {
         case let .SuperClassMember(r): return "\(pre) super-class-member \(r)\(post)"
         case let .SuperClassSubscript(es):
             return "\(pre) super-class-subscript \(es)\(post)"
-        case .Closure: return "\(pre) closure\(post)"
+        case let .ClosureExpression(c): return "\(pre) closure-expression \(c)\(post)"
         case let .TupleExpression(t): return "\(pre) tuple \(t)\(post)"
         case let .ImplicitMember(r): return "\(pre) implicit-member \(r)\(post)"
         case .Wildcard: return "\(pre) wildcard\(post)"
+        }
+    } }
+}
+
+extension Closure : CustomStringConvertible {
+    public var description: String { get {
+        return "(Closure \(caps) \(params) \(returns) \(body))"
+    } }
+}
+
+extension CaptureSpecifier: CustomStringConvertible {
+    public var description: String { get {
+        let name = "capture-specifier:"
+        switch self {
+        case .Nothing: return "\(name) nothing"
+        case .Weak: return "\(name) weak"
+        case .Unowned: return "\(name) unowned"
+        case .UnownedSafe: return "\(name) unowned(safe)"
+        case .UnownedUnsafe: return "\(name) unowned(unsafe)"
+        }
+    } }
+}
+
+extension ClosureParameters : CustomStringConvertible {
+    public var description: String { get {
+        let name = "closure-parameters:"
+        switch self {
+        case .NotProvided: return "\(name) not-provided"
+        case let .ExplicitTyped(p): return "\(name) explicit-typed \(p)"
+        case let .ImplicitTyped(vs): return "\(name) inplicit-typed \(vs)"
         }
     } }
 }

@@ -93,10 +93,27 @@ public enum ExpressionCore {
     case SuperClassInitializer
     case SuperClassMember(MemberRef)
     case SuperClassSubscript([Expression])
-    case Closure // TODO
+    case ClosureExpression(Closure)
     case TupleExpression(Tuple)
     case ImplicitMember(MemberRef)
     case Wildcard
+}
+
+public class Closure {
+    var caps: [(CaptureSpecifier, Expression)] = []
+    var params: ClosureParameters!
+    var returns: ([Attribute], Type)?
+    var body: [Procedure]!
+}
+
+public enum CaptureSpecifier {
+    case Nothing, Weak, Unowned, UnownedSafe, UnownedUnsafe
+}
+
+public enum ClosureParameters {
+    case NotProvided
+    case ExplicitTyped(ParameterClause)
+    case ImplicitTyped([ValueRef])
 }
 
 public typealias Tuple = [(String?, Expression)]

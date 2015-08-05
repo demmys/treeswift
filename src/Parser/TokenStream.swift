@@ -93,20 +93,20 @@ class TokenStream {
         }
     }
 
-    func test(kinds: [TokenKind]) -> Bool {
-        return examine(kinds).0
+    func test(kinds: [TokenKind], ahead: Int = 0) -> Bool {
+        return examine(kinds, ahead: ahead).0
     }
 
-    func match(kinds: [TokenKind]) -> TokenKind {
-        return examine(kinds).1
+    func match(kinds: [TokenKind], ahead: Int = 0) -> TokenKind {
+        return examine(kinds, ahead: ahead).1
     }
 
-    private func examine(kinds: [TokenKind]) -> (Bool, TokenKind) {
+    private func examine(kinds: [TokenKind], ahead: Int) -> (Bool, TokenKind) {
         let skipLineFeed = kinds.contains(.LineFeed)
-        let t = look(skipLineFeed: skipLineFeed)
+        let t = look(ahead, skipLineFeed: skipLineFeed)
         for k in kinds {
             if t.kind == k {
-                next(skipLineFeed: skipLineFeed)
+                next(ahead + 1, skipLineFeed: skipLineFeed)
                 return (true, t.kind)
             }
         }

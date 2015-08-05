@@ -56,6 +56,27 @@ class GrammarParser {
         }
     }
 
+    func findParenthesisClose(startIndex: Int = 0) -> Int? {
+        var i = startIndex
+        var nest = 0
+        while true {
+            let kind = ts.look(i).kind
+            switch kind {
+            case .EndOfFile:
+                return nil
+            case .LeftParenthesis:
+                ++nest
+            case .RightParenthesis:
+                if nest == 0 {
+                    return i
+                }
+                --nest
+            default:
+                ++i
+            }
+        }
+    }
+
     func findRightParenthesisBefore(
         candidates: [TokenKind], startIndex: Int = 0
     ) -> Int? {

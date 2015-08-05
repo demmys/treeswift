@@ -58,8 +58,14 @@ public class Parser {
         let parser = ProcedureParser(ts)
         gp.setParser(typeParser: tp)
         tp.setParser(attributesParser: ap, genericsParser: gp)
-        ep.setParser(typeParser: tp, genericsParser: gp)
-        dp.setParser(patternParser: pp, expressionParser: ep)
+        ep.setParser(
+            typeParser: tp, genericsParser: gp, procedureParser: parser,
+            expressionParser: ep, declarationParser: dp
+        )
+        dp.setParser(
+            patternParser: pp, expressionParser: ep, typeParser: tp,
+            attributesParser: ap
+        )
         pp.setParser(typeParser: tp, expressionParser: ep)
         parser.setParser(
             declarationParser: dp, patternParser: pp, expressionParser: ep

@@ -61,8 +61,9 @@ class TypeParser : GrammarParser {
         repeat {
             x.elems.append(try tupleTypeElement())
         } while ts.test([.Comma])
-        switch ts.match([.VariadicSymbol, .RightParenthesis]) {
-        case .VariadicSymbol:
+        switch ts.match([.RightParenthesis]) {
+        case .PrefixOperator("..."), .BinaryOperator("..."), .PostfixOperator("..."):
+            ts.next()
             x.variadic = true
             guard ts.test([.RightParenthesis]) else {
                 throw ParserError.Error("Expected ')' at the end of tuple type", ts.look().info)

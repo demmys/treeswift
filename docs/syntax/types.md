@@ -36,12 +36,12 @@ type-postfix   -> function-type
                 | implicitly-unwrapped-optional-type
                 | metatype-type
 
-function-type -> type (throws | rethrows)? Arrow type
+function-type -> (throws | rethrows)? Arrow type
 
-optional-type -> type PostfixQuestion
+optional-type -> PostfixQuestion
 
-implicitly-unwrapped-optional-type -> type PostfixExclamation
+implicitly-unwrapped-optional-type -> PostfixExclamation
 
-metatype-type -> type Dot TYPE
-               | type Dot PROTOCOL
+metatype-type -> Dot TYPE
+               | Dot PROTOCOL
 ```
