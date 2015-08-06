@@ -8,6 +8,7 @@ class GrammarParser {
     let prefixOperator = TokenKind.PrefixOperator("")
     let binaryOperator = TokenKind.BinaryOperator("")
     let postfixOperator = TokenKind.PostfixOperator("")
+    let modifier = TokenKind.Modifier(.Convenience)
     let ts: TokenStream
 
     init(_ ts: TokenStream) {

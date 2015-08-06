@@ -15,6 +15,8 @@ Class -> 'class'
 
 Continue -> 'continue'
 
+Convenience -> 'convenience'
+
 Default -> 'default'
 
 Defer -> 'defer'
@@ -25,6 +27,8 @@ DidSet -> 'didSet'
 
 Do -> 'do'
 
+Dynamic -> 'dynamic'
+
 DynamicType -> 'dynamicType'
 
 Enum -> 'enum'
@@ -34,6 +38,8 @@ Extension -> 'extension'
 Else -> 'else'
 
 Fallthrough -> 'Fallthrough'
+
+Final -> 'final'
 
 For -> 'for'
 
@@ -57,27 +63,45 @@ Init -> 'init'
 
 Inout -> 'inout'
 
+Internal -> 'internal'
+
 Is -> 'is'
+
+Lazy -> 'lazy'
 
 Let -> 'let'
 
 Left -> 'left'
 
+Mutating -> 'mutating'
+
 Nil -> 'nil'
 
 None -> 'none'
 
+Nonmutating -> 'nonmutating'
+
 Operator -> 'operator'
+
+Optional -> 'optional'
+
+Override -> 'override'
 
 Postfix -> 'postfix'
 
 Prefix -> 'prefix'
 
+Private -> 'private'
+
 Protocol -> 'protocol'
 
 Precedence -> 'precedence'
 
+Public -> 'public'
+
 Repeat -> 'repeat'
+
+Required -> 'required'
 
 Rethrows -> 'rethrows'
 
@@ -90,6 +114,8 @@ Safe -> 'safe'
 Self -> 'self'
 
 Set -> 'set'
+
+Static -> 'static'
 
 Struct -> 'struct'
 
@@ -132,34 +158,4 @@ FILE -> '__FILE__'
 FUNCTION -> '__FUNCTION__'
 
 LINE -> '__LINE__'
-```
-
-#### Words for modifiers
-
-```
-Convenience -> 'convenience'
-
-Dynamic -> 'dynamic'
-
-Final -> 'final'
-
-Lazy -> 'lazy'
-
-Mutating -> 'mutating'
-
-Nonmutating -> 'nonmutating'
-
-Optional -> 'optional'
-
-Override -> 'override'
-
-Required -> 'required'
-
-Internal -> 'internal'
-
-Private -> 'private'
-
-Public -> 'public'
-
-Static -> 'static'
 ```

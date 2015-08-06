@@ -1,11 +1,9 @@
 import Util
 
 public enum ModifierKind {
-    case Class, Convenience, Dynamic, Final, Infix, Lazy, Mutating, Nonmutating
-    case Optional, Override, Postfix, Prefix, Required, Static
-    case Unowned, UnownedSafe, UnownedUnsafe, Weak
+    case Convenience, Dynamic, Final, Lazy, Mutating, Nonmutating
+    case Optional, Override, Required, Static, Unowned, Weak
     case Internal, Private, Public
-    case InternalSet, PrivateSet, PublicSet
 }
 
 public enum TokenKind : Equatable {
@@ -37,7 +35,7 @@ public enum TokenKind : Equatable {
     case Func, Get, Guard, If, Import, In, Indirect, Infix, Init, InOut, Is, Let
     case Left, Nil, None, Operator, Postfix, Prefix, Protocol, Precedence, Repeat
     case Rethrows, Return, Right, Safe, `Self`, Set, Struct, Subscript, Super
-    case Switch, Throw, Throws, Try, Typealias, Unowned, Unsafe, Var, Weak, Where
+    case Switch, Throw, Throws, Try, Typealias, Unsafe, Var, Where
     case While, WillSet, PROTOCOL, TYPE
 }
 
@@ -407,20 +405,12 @@ public func ==(lhs: TokenKind, rhs: TokenKind) -> Bool {
         if case .Typealias = rhs {
             return true
         }
-    case .Unowned:
-        if case .Unowned = rhs {
-            return true
-        }
     case .Unsafe:
         if case .Unsafe = rhs {
             return true
         }
     case .Var:
         if case .Var = rhs {
-            return true
-        }
-    case .Weak:
-        if case .Weak = rhs {
             return true
         }
     case .Where:

@@ -82,6 +82,12 @@ extension FlowSwitch : CustomStringConvertible {
 /*
  * DeclarationAST
  */
+extension Modifier : CustomStringConvertible {
+    public var description: String { get {
+        return "modifier: \(self.rawValue.lowercaseString)"
+    } }
+}
+
 extension VariableDeclaration {
     public var description: String { get {
         let pre = "(VariableDeclaration"

@@ -229,19 +229,3 @@ precedence-level           -> DecimalDigits(0...255)
 associativity-clause       -> Associativity associativity
 associativity              -> Left | Right | None
 ```
-
-#### Declaration modifier
-
-```
-declaration-modifiers -> declaration-modifier declaration-modifiers?
-declaration-modifier  -> Class | Convenience | Dynamic | Final | Infix | Lazy | Mutating | Nonmutating
-                       | Optional | Override | Postfix | Prefix | Required | Static
-                       | Unowned | Unowned LeftParenthesis Safe RightParenthesis
-                       | Unowned LeftParenthesis Unsafe RightParenthesis | Weak
-                       | access-level-modifier
-
-access-level-modifiers -> access-level-modifier access-level-modifiers?
-access-level-modifier  -> Internal | Internal LeftParenthesis Set RightParenthesis
-                        | Private | Private LeftParenthesis Set RightParenthesis
-                        | Public | Public LeftParenthesis Set RightParenthesis
-```

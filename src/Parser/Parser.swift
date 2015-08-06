@@ -68,7 +68,8 @@ public class Parser {
         )
         pp.setParser(typeParser: tp, expressionParser: ep)
         parser.setParser(
-            declarationParser: dp, patternParser: pp, expressionParser: ep
+            declarationParser: dp, patternParser: pp,expressionParser: ep,
+            attributesParser: ap
         )
         return try parser.procedures()
     }

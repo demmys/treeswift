@@ -2,15 +2,18 @@ class ProcedureParser : GrammarParser {
     private var dp: DeclarationParser!
     private var pp: PatternParser!
     private var ep: ExpressionParser!
+    private var ap: AttributesParser!
 
     func setParser(
         declarationParser dp: DeclarationParser,
         patternParser pp: PatternParser,
-        expressionParser ep: ExpressionParser
+        expressionParser ep: ExpressionParser,
+        attributesParser ap: AttributesParser
     ) {
         self.dp = dp
         self.pp = pp
         self.ep = ep
+        self.ap = ap
     }
 
     func procedures() throws -> [Procedure] {
@@ -31,14 +34,6 @@ class ProcedureParser : GrammarParser {
             .For, .While, .Repeat, .If, .Guard, .Defer, .Do, .Switch,
             .Break, .Continue, .Fallthrough, .Return, .Throw
         ]) {
-        case .Atmark:
-            // declaration beggining with attributes
-            // TODO
-            throw ParserError.Error("Declaration with attributes is not implemented yet", ts.look().info)
-        case .Modifier:
-            // declaration beggining with modifiers
-            // TODO
-            throw ParserError.Error("Declaration with modifiers is not implemented yet", ts.look().info)
         case .For:
             x = .FlowProcedure(try forFlow())
         case .While:
@@ -65,8 +60,9 @@ class ProcedureParser : GrammarParser {
             x = .OperationProcedure(try returnOperation())
         case .Throw:
             x = .OperationProcedure(.ThrowOperation(try ep.expression()))
-        case .Import, .Let, .Var, .Typealias, .Func, .Enum, .Indirect, .Struct,
-             .Class, .Protocol, .Extension, .Prefix, .Infix, .Postfix:
+        case .Atmark, .Modifier, .Import, .Let, .Var, .Typealias, .Func, .Enum,
+             .Indirect, .Struct, .Class, .Protocol, .Extension, .Prefix, .Infix,
+             .Postfix:
             x = .DeclarationProcedure(try dp.declaration()) 
         case let .Identifier(s):
             // labeled-procedure or expression-operation
@@ -138,15 +134,13 @@ class ProcedureParser : GrammarParser {
         switch ts.look().kind {
         case .Semicolon:
             return nil
-        case .Atmark:
-            // TODO
-            throw ParserError.Error("Declaration with attributes are not implemented yet", ts.look().info)
-        case .Modifier:
-            // TODO
-            throw ParserError.Error("Declaration with modifiers are not implemented yet", ts.look().info)
-        case .Var:
-            ts.next()
-            return .VariableDeclaration(try dp.variableDeclaration())
+        case .Atmark, .Modifier, .Class, .Var:
+            let attrs = try ap.attributes()
+            let mods = try ap.declarationModifiers()
+            guard ts.test([.Var]) else {
+                throw ParserError.Error("Expected 'var' for the declaration in initialize condition.", ts.look().info)
+            }
+            return .VariableDeclaration(try dp.variableDeclaration(attrs, mods))
         default:
             return .InitOperation(try assignmentOrExpressionOperation())
         }

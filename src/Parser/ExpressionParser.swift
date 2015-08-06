@@ -395,10 +395,10 @@ class ExpressionParser : GrammarParser {
     private func captureClause(c: Closure) throws {
         repeat {
             var s: CaptureSpecifier!
-            specifierSwitch: switch ts.match([.Weak, .Unowned]) {
-            case .Weak:
+            specifierSwitch: switch ts.match([modifier]) {
+            case .Modifier(.Weak):
                 s = .Weak
-            case .Unowned:
+            case .Modifier(.Unowned):
                 if case .LeftParenthesis = ts.look().kind {
                     switch ts.match([.Safe, .Unsafe], ahead: 1) {
                     case .Safe:
@@ -410,7 +410,7 @@ class ExpressionParser : GrammarParser {
                         break specifierSwitch
                     }
                     guard ts.test([.RightParenthesis]) else {
-                        throw ParserError.Error("Expected ')' after 'safe' or 'unsafe' for unowned specifier", ts.look().info)
+                        throw ParserError.Error("Expected ')' after 'safe' or 'unsafe' for unowned modifier", ts.look().info)
                     }
                 } else {
                     s = .Unowned
