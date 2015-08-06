@@ -85,7 +85,7 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func forFlow(label: String? = nil) throws -> Flow {
+    private func forFlow(label: String? = nil) throws -> Flow {
         let (_, k) = find([.Semicolon, .In])
         guard case .Semicolon = k else {
             return try forInFlow()
@@ -134,7 +134,7 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func forIni() throws -> ForInit? {
+    private func forIni() throws -> ForInit? {
         switch ts.look().kind {
         case .Semicolon:
             return nil
@@ -152,7 +152,7 @@ class ProcedureParser : GrammarParser {
         }
     }
 
-    func forInFlow(label: String? = nil) throws -> ForInFlow {
+    private func forInFlow(label: String? = nil) throws -> ForInFlow {
         let x = ForInFlow(label)
         var p: Pattern!
         if ts.test([.Case]) {
@@ -173,21 +173,21 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func whileFlow(label: String? = nil) throws -> WhileFlow {
+    private func whileFlow(label: String? = nil) throws -> WhileFlow {
         let x = WhileFlow(label)
         x.pats = try patternMatchClause()
         x.block = try proceduresBlock()
         return x
     }
 
-    func repeatWhileFlow(label: String? = nil) throws -> RepeatWhileFlow {
+    private func repeatWhileFlow(label: String? = nil) throws -> RepeatWhileFlow {
         let x = RepeatWhileFlow(label)
         x.block = try proceduresBlock()
         x.setCond(try ep.expression())
         return x
     }
 
-    func ifFlow(label: String? = nil) throws -> IfFlow {
+    private func ifFlow(label: String? = nil) throws -> IfFlow {
         let x = IfFlow(label)
         x.pats = try patternMatchClause()
         x.block = try proceduresBlock()
@@ -201,7 +201,7 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func guardFlow() throws -> GuardFlow {
+    private func guardFlow() throws -> GuardFlow {
         let x = GuardFlow()
         x.pats = try patternMatchClause()
         guard ts.test([.Else]) else {
@@ -211,13 +211,13 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func deferFlow() throws -> DeferFlow {
+    private func deferFlow() throws -> DeferFlow {
         let x = DeferFlow()
         x.block = try proceduresBlock()
         return x
     }
 
-    func patternMatchClause() throws -> [PatternMatching] {
+    private func patternMatchClause() throws -> [PatternMatching] {
         var ps: [PatternMatching] = []
         switch ts.look().kind {
         case .RightBrace, .Else:
@@ -237,7 +237,7 @@ class ProcedureParser : GrammarParser {
         return ps
     }
 
-    func matchingPattern() throws -> [PatternMatching] {
+    private func matchingPattern() throws -> [PatternMatching] {
         switch ts.match([.Let, .Var, .Case]) {
         case .Let:
             return try optionalBindingBody({ .OptionalBindingConstantPattern($0) })
@@ -259,7 +259,7 @@ class ProcedureParser : GrammarParser {
         }
     }
 
-    func optionalBindingBody(wrap: Pattern -> Pattern) throws -> [PatternMatching] {
+    private func optionalBindingBody(wrap: Pattern -> Pattern) throws -> [PatternMatching] {
         var pms: [PatternMatching] = []
         repeat {
             let pm = PatternMatching()
@@ -279,7 +279,7 @@ class ProcedureParser : GrammarParser {
         return pms
     }
 
-    func doFlow() throws -> DoFlow {
+    private func doFlow() throws -> DoFlow {
         let x = DoFlow()
         x.block = try proceduresBlock()
         while ts.test([.Catch]) {
@@ -360,21 +360,21 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func breakOperation() -> Operation {
+    private func breakOperation() -> Operation {
         if case let .Identifier(s) = ts.look().kind {
             return .BreakOperation(s)
         }
         return .BreakOperation(nil)
     }
 
-    func continueOperation() -> Operation {
+    private func continueOperation() -> Operation {
         if case let .Identifier(s) = ts.look().kind {
             return .ContinueOperation(s)
         }
         return .ContinueOperation(nil)
     }
 
-    func returnOperation() throws -> Operation {
+    private func returnOperation() throws -> Operation {
         switch ts.look().kind {
         case .Semicolon, .LineFeed, .EndOfFile:
             return .ReturnOperation(nil)
@@ -383,7 +383,7 @@ class ProcedureParser : GrammarParser {
         }
     }
 
-    func labeledProcedure(label: String) throws -> Procedure {
+    private func labeledProcedure(label: String) throws -> Procedure {
         switch ts.match([.For, .While, .Repeat, .If, .Switch]) {
         case .For:
             return .FlowProcedure(try forFlow(label))
@@ -400,7 +400,7 @@ class ProcedureParser : GrammarParser {
         }
     }
 
-    func assignmentOrExpressionOperation() throws -> Operation {
+    private func assignmentOrExpressionOperation() throws -> Operation {
         let (_, k) = find([.AssignmentOperator, .Semicolon, .LineFeed])
         switch k {
         case .AssignmentOperator:
