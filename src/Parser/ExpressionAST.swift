@@ -3,7 +3,7 @@ public class Expression {
     var body: ExpressionBody!
 }
 
-public enum TryType {
+public enum TryType : String {
     case Nothing, Try, ForcedTry
 }
 
