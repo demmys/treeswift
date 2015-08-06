@@ -146,10 +146,15 @@ public class CatchFlow : Flow {
 
 public class FlowSwitch {
     var label: String?
+    var cases: [CaseFlow] = []
 
     init(_ label: String?) {
         self.label = label
     }
 }
 
-public class CaseFlow : Flow {}
+public class CaseFlow : Flow {
+    public override var description: String { get {
+        return "(CaseFlow \(pats) \(block))"
+    } }
+}

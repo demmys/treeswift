@@ -303,10 +303,61 @@ class ProcedureParser : GrammarParser {
         return x
     }
 
-    func flowSwitch(label: String? = nil) throws -> FlowSwitch {
-        // TODO
-        // let x = FlowSwitch(label)
-        throw ParserError.Error("FlowSwitch is not implemented yet.", ts.look().info)
+    private func flowSwitch(label: String? = nil) throws -> FlowSwitch {
+        let x = FlowSwitch(label)
+        let cond = try ep.expression()
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' after switch condition.", ts.look().info)
+        }
+        caseFlowsLoop: while true {
+            switch ts.match([.Case, .Default]) {
+            case .Case:
+                x.cases.append(try caseFlow(cond))
+            case .Default:
+                x.cases.append(try defaultCaseFlow())
+            default:
+                break caseFlowsLoop
+            }
+        }
+        guard ts.test([.RightBrace]) else {
+            throw ParserError.Error("Expected '}' at the end of flow switch.", ts.look().info)
+        }
+        return x
+    }
+
+    private func caseFlow(cond: Expression) throws -> CaseFlow {
+        let x = CaseFlow()
+        x.pats = []
+        repeat {
+            let p = PatternMatching()
+            p.pat = try pp.conditionalPattern()
+            p.exp = cond
+            if ts.test([.Where]) {
+                p.rest = try ep.expression()
+            }
+            x.pats.append(p)
+        } while ts.test([.Comma])
+        guard ts.test([.Colon]) else {
+            throw ParserError.Error("Expected ':' after patterns of case flow.", ts.look().info)
+        }
+        x.block = try procedures()
+        guard x.block.count > 0 else {
+            throw ParserError.Error("Case flow should have at least one procedure.", ts.look().info)
+        }
+        return x
+    }
+
+    private func defaultCaseFlow() throws -> CaseFlow {
+        guard ts.test([.Colon]) else {
+            throw ParserError.Error("Expected ':' after 'default' in flow switch.", ts.look().info)
+        }
+        let x = CaseFlow()
+        x.pats = [PatternMatching(.IdentityPattern, nil, nil)]
+        x.block = try procedures()
+        guard x.block.count > 0 else {
+            throw ParserError.Error("Case flow should have at least one procedure.", ts.look().info)
+        }
+        return x
     }
 
     func breakOperation() -> Operation {

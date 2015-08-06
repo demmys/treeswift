@@ -111,9 +111,7 @@ case-pattern -> Case conditional-pattern AssignmentOperator expression restraint
 flow-switch         -> Switch expression LeftBrace case-flows? RightBrace
 case-flows          -> case-flow case-flows
 case-flow           -> case-label procedures
-                     | case-label Semicolon
                      | Default Colon procedures
-                     | Default Colon Semicolon
 case-label          -> Case case-item-list Colon
 case-item-list      -> conditional-pattern restraint? case-item-list-tail?
 case-item-list-tail -> Comma case-item-list

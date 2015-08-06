@@ -12,8 +12,8 @@ extension Procedure : CustomStringConvertible {
             return "\(pre) type: operation \(o)\(post)"
         case let .FlowProcedure(f):
             return "\(pre) type: flow \(f)\(post)"
-        case .FlowSwitchProcedure:
-            return "<<error: no description provided>>"
+        case let .FlowSwitchProcedure(s):
+            return "\(pre) type: flow-switch \(s)\(post)"
         }
     } }
 }
@@ -73,12 +73,11 @@ extension ElseClause : CustomStringConvertible {
     } }
 }
 
-/*
 extension FlowSwitch : CustomStringConvertible {
     public var description: String { get {
+        return "(FlowSwitch label: \(label) \(cases))"
     } }
 }
-*/
 
 /*
  * DeclarationAST
