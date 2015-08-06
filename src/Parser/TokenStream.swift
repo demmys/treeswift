@@ -84,7 +84,7 @@ class TokenStream {
         guard n > 0 else {
             return
         }
-        if skipLineFeed && queue[index! + 1].kind == .LineFeed {
+        if skipLineFeed && queue[index].kind == .LineFeed {
             ++index!
             next(n, skipLineFeed: skipLineFeed)
         } else {
@@ -102,7 +102,7 @@ class TokenStream {
     }
 
     private func examine(kinds: [TokenKind], ahead: Int) -> (Bool, TokenKind) {
-        let skipLineFeed = kinds.contains(.LineFeed)
+        let skipLineFeed = !kinds.contains(.LineFeed)
         let t = look(ahead, skipLineFeed: skipLineFeed)
         for k in kinds {
             if t.kind == k {
