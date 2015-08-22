@@ -1,4 +1,22 @@
 class AttributesParser : GrammarParser {
+    func lookAfterAttributes(startIndex: Int = 0) throws -> ([Attribute], Int) {
+        var i = startIndex
+        var attrs: [Attribute] = []
+        while case .Atmark = ts.look(i++).kind {
+            attrs.append(try lookAttribute(i))
+        }
+        return (attrs, i)
+    }
+
+    func lookAttribute(startIndex: Int = 0) throws -> Attribute {
+        let token = ts.look(startIndex)
+        if case let .Identifier(s) = token.kind {
+            return Attribute(s)
+        } else {
+            throw ParserError.Error("Expected identifier for attribute", token.info)
+        }
+    }
+
     func attributes() throws -> [Attribute] {
         var attrs: [Attribute] = []
         while ts.test([.Atmark]) {

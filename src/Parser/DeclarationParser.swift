@@ -38,7 +38,7 @@ class DeclarationParser : GrammarParser {
             return x
         case .Identifier:
             let inits = try patternInitializerList()
-            if case .LeftBrace = ts.look().kind {
+            if ts.test([.LeftBrace]) {
                 guard inits.count == 1 else {
                     throw ParserError.Error("When the variable has blocks, you can define only one variable in a declaration.", ts.look().info)
                 }
@@ -75,45 +75,54 @@ class DeclarationParser : GrammarParser {
         }
     }
 
-    private func getterSetterBlock() throws -> VariableBlocks {
-        switch ts.match([.Get, .Set], ahead: 1) {
+    private func getterSetterBlock(
+        attrs: [Attribute] = [], ahead: Int = 0
+    ) throws -> VariableBlocks {
+        switch ts.match([.Get, .Set], ahead: ahead) {
         case .Get:
-            let g = VariableBlock()
+            let g = VariableBlock(attrs: attrs)
             g.body = try prp.proceduresBlock()
             if ts.test([.RightBrace]) {
                 return .GetterSetter(getter: g, setter: nil)
             }
-            var s: VariableBlock!
-            switch ts.match([.Set]) {
-            case .Set:
-                s = try setterBlock()
-            case .Atmark:
-                s = try setterBlock(try ap.attributes())
-            default:
+            let setAttrs = try ap.attributes()
+            guard ts.test([.Set]) else {
                 throw ParserError.Error("Expected setter clause after getter clause", ts.look().info)
             }
+            let s = try setterBlock(setAttrs)
             guard ts.test([.RightBrace]) else {
                 throw ParserError.Error("Expected '}' at the end of getter-setter clause", ts.look().info)
             }
             return .GetterSetter(getter: g, setter: s)
         case .Set:
-            let s = VariableBlock()
-            // TODO parse setter
-            if case .Atmark = ts.look().kind {
-                // TODO parse attributes of getter
-            }
+            let s = try setterBlock(attrs)
+            let getAttrs = try ap.attributes()
             guard ts.test([.Get]) else {
                 throw ParserError.Error("Expected getter clause after setter clause.", ts.look().info)
             }
-            let g = VariableBlock()
+            let g = VariableBlock(attrs: getAttrs)
             g.body = try prp.proceduresBlock()
+            guard ts.test([.RightBrace]) else {
+                throw ParserError.Error("Expected '}' at the end of getter-setter clause", ts.look().info)
+            }
             return .GetterSetter(getter: g, setter: s)
         case .Atmark:
-            // TODO blocks begging with attributes or procedure-block
-            throw ParserError.Error("Variable block begging with attributes is not implemented yet.", ts.look().info)
+            // Expect getter, setter or procedure beggining with attributes
+            // To avoid consuming attributes for procedure, use TokenStream.look only
+            let (firstAttrs, i) = try ap.lookAfterAttributes()
+            switch ts.look(i).kind {
+            case .Get, .Set:
+                return try getterSetterBlock(firstAttrs, ahead: i)
+            default:
+                break
+            }
+            fallthrough
         default:
             let g = VariableBlock()
-            g.body = try prp.proceduresBlock()
+            g.body = try prp.procedures()
+            guard ts.test([.RightBrace]) else {
+                throw ParserError.Error("Expected '}' after procedures block", ts.look().info)
+            }
             return .GetterSetter(getter: g, setter: nil)
         }
     }
@@ -135,8 +144,39 @@ class DeclarationParser : GrammarParser {
     }
 
     private func willSetDidSetBlock() throws -> VariableBlocks {
-        // TODO
-        throw ParserError.Error("willSetDidSetBlock is not implemented yet.", ts.look().info)
+        let attrs = try ap.attributes()
+        switch ts.match([.WillSet, .DidSet]) {
+        case .WillSet:
+            let ws = try setterBlock(attrs)
+            if ts.test([.RightBrace]) {
+                return .WillSetDidSet(willSetter: ws, didSetter: nil)
+            }
+            let didSetAttrs = try ap.attributes()
+            guard ts.test([.DidSet]) else {
+                throw ParserError.Error("Expected did-setter clause after getter clause", ts.look().info)
+            }
+            let ds = try setterBlock(didSetAttrs)
+            guard ts.test([.RightBrace]) else {
+                throw ParserError.Error("Expected '}' at the end of will-setter, did-setter clause", ts.look().info)
+            }
+            return .WillSetDidSet(willSetter: ws, didSetter: ds)
+        case .DidSet:
+            let ds = try setterBlock(attrs)
+            if ts.test([.RightBrace]) {
+                return .WillSetDidSet(willSetter: nil, didSetter: ds)
+            }
+            let willSetAttrs = try ap.attributes()
+            guard ts.test([.WillSet]) else {
+                throw ParserError.Error("Expected will-setter clause after getter clause", ts.look().info)
+            }
+            let ws = try setterBlock(willSetAttrs)
+            guard ts.test([.RightBrace]) else {
+                throw ParserError.Error("Expected '}' at the end of will-setter, did-setter clause", ts.look().info)
+            }
+            return .WillSetDidSet(willSetter: ws, didSetter: ds)
+        default:
+            throw ParserError.Error("Expected will-setter or did-setter.", ts.look().info)
+        }
     }
 
     func functionResult() throws -> ([Attribute], Type)? {

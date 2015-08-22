@@ -70,6 +70,9 @@ public class VariableBlock {
     var body: [Procedure]!
 
     init() {}
+    init(attrs: [Attribute]) {
+        self.attrs = attrs
+    }
 }
 
 public class TypealiasDeclaration : Declaration {
