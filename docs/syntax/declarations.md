@@ -2,19 +2,19 @@
 
 ```
 declarations -> declaration declarations?
-declaration  -> import-declaration
-              | constant-declaration
-              | variable-declaration
-              | typealias-declaration
-              | function-declaration
-              | enum-declaration
-              | struct-declaration
-              | class-declaration
-              | protocol-declaration
-              | initializer-declaration
-              | deinitializer-declaration
-              | extension-declaration
-              | subscript-declaration
+declaration  -> attributes? import-declaration
+              | attributes? declaration-modifiers? constant-declaration
+              | attributes? declaration-modifiers? variable-declaration
+              | attributes? access-level-modifier? typealias-declaration
+              | attributes? declaration-modifiers? function-declaration
+              | attributes? access-level-modifier? enum-declaration
+              | attributes? access-level-modifier? struct-declaration
+              | attributes? access-level-modifier? class-declaration
+              | attributes? access-level-modifier? protocol-declaration
+              | attributes? declaration-modifiers? initializer-declaration
+              | attributes? deinitializer-declaration
+              | access-level-modifier? extension-declaration
+              | attributes? declaration-modifiers? subscript-declaration
               | operator-declaration
 
 type-inheritance-clause      -> Colon Class type-inheritance-clause-tail?
@@ -33,7 +33,7 @@ top-level-declaration -> procedures?
 #### Import declaration
 
 ```
-import-declaration -> attributes? Import import-kind? import-path
+import-declaration -> Import import-kind? import-path
 
 import-kind            -> Typealias | Struct | Class | Enum | Protocol | Var | Func
 import-path            -> import-path-identifier import-path-tail?
@@ -44,16 +44,15 @@ import-path-identifier -> Identifier | PrefixOperator | BinaryOperator | Postfix
 #### Constant declaration, Variable declaration
 
 ```
-constant-declaration -> attributes? declaration-modifiers? Let pattern-initializer-list
+constant-declaration -> Let pattern-initializer-list
 
-variable-declaration       -> variable-declaration-head pattern-initializer-list
-                            | variable-declaration-head variable-name type-annotation variable-declaration-block
-                            | variable-declaration-head variable-name initializer willSet-didSet-block
+variable-declaration       -> Var pattern-initializer-list
+                            | Var variable-name type-annotation variable-declaration-block
+                            | Var variable-name initializer willSet-didSet-block
 variable-declaration-block -> procedure-block
                             | getter-setter-block
                             | getter-setter-keyword-block
                             | initializer? willSet-didSet-block
-variable-declaration-head  -> attributes? declaration-modifiers? Var
 variable-name              -> Identifier
 
 getter-setter-block -> LeftBrace getter-clause setter-clause? RightBrace
@@ -81,8 +80,7 @@ initializer              -> AssignmentOperator expression
 #### Typealias declaration
 
 ```
-typealias-declaration -> typealias-head typealias-assignment
-typealias-head        -> attributes? access-level-modifier? Typealias typealias-name
+typealias-declaration -> Typealias typealias-name typealias-assignment
 typealias-name        -> Identifier
 typealias-assignment  -> AssignmentOperator type
 ```
@@ -90,9 +88,8 @@ typealias-assignment  -> AssignmentOperator type
 #### Function declaration
 
 ```
-function-declaration -> function-head function-name generic-parameter-clause? function-signature function-body
+function-declaration -> Func function-name generic-parameter-clause? function-signature function-body
 
-function-head      -> attributes? declaration-modifiers? Func
 function-name      -> Identifier | PrefixOperator | PostfixOperator | BinaryOperator
 function-signature -> parameter-clauses (Throws | Rethrows)? function-result?
 function-result    -> Arrow attributes? type
@@ -113,9 +110,8 @@ default-argument-clause -> AssignmentOperator expression
 #### Enum declaration
 
 ```
-enum-declaration      -> attributes? access-level-modifier? enum-declaration-body
-enum-declaration-body -> union-style-enum
-                       | raw-value-style-enum
+enum-declaration -> union-style-enum
+                  | raw-value-style-enum
 
 union-style-enum         -> Indirect? Enum Identifier generic-parameter-clause? type-inheritance-clause? LeftBrace union-style-enum-members? RightBrace
 union-style-enum-members -> union-style-enum-member union-style-enum-members?
@@ -146,58 +142,57 @@ enum-case-name -> Identifier
 #### Struct declaration
 
 ```
-struct-declaration -> attributes? access-level-modifier? Struct Identifier generic-parameter-clause? type-inheritance-clause? struct-body
+struct-declaration -> Struct Identifier generic-parameter-clause? type-inheritance-clause? struct-body
 struct-body        -> LeftBrace declarations RightBrace
 ```
 
 #### Class declaration
 
 ```
-class-declaration -> attributes? access-level-modifier? Class Identifier generic-parameter-clause? type-inheritance-clause? class-body
+class-declaration -> Class Identifier generic-parameter-clause? type-inheritance-clause? class-body
 class-body        -> LeftBrace declarations RightBrace
 ```
 
 #### Protocol declaration
 
 ```
-protocol-declaration -> attributes? access-level-modifier? Protocol Identifier type-inheritance-clause? protocol-body
+protocol-declaration -> Protocol Identifier type-inheritance-clause? protocol-body
 protocol-body        -> LeftBrace protocol-member-declarations? RightBrace
 
 protocol-member-declarations -> protocol-member-declaration protocol-declarations?
-protocol-member-declaration  -> protocol-property-declaration
-                              | protocol-method-declaration
-                              | protocol-initializer-declaration
-                              | protocol-subscript-declaration
-                              | protocol-associated-type-declaration
+protocol-member-declaration  -> attributes? declaration-modifiers? protocol-property-declaration
+                              | attributes? declaration-modifiers? protocol-method-declaration
+                              | attributes? declaration-modifiers? protocol-initializer-declaration
+                              | attributes? declaration-modifiers? protocol-subscript-declaration
+                              | attributes? access-level-modifier? protocol-associated-type-declaration
 
-protocol-property-declaration -> variable-declaration-head variable-name type-annotation getter-setter-keyword-block
+protocol-property-declaration -> Var variable-name type-annotation getter-setter-keyword-block
 
-protocol-method-declaration -> function-head function-name generic-parameter-clause? function-signature
+protocol-method-declaration -> Func function-name generic-parameter-clause? function-signature
 
-protocol-initializer-declaration -> initializer-head generic-parameter-clause? parameter-clause
+protocol-initializer-declaration -> Init generic-parameter-clause? parameter-clause
 
-protocol-subscript-declaration -> subscript-head subscript-result getter-setter-keyword-block
+protocol-subscript-declaration -> Subscript subscript-result getter-setter-keyword-block
 
-protocol-associated-type-declaration ->  typealias-head type-inheritance-clause? typealias-assignment?
+protocol-associated-type-declaration ->  Typealias typealias-name type-inheritance-clause? typealias-assignment?
 ```
 
 #### Initializer declaration
 
 ```
-initializer-declaration -> initializer-head generic-parameter-clause? parameter-clause procedure-block
-initializer-head        -> attributes? declaration-modifiers? Init (PostfixQuestion | PostfixExclamation)?
+initializer-declaration -> Init (PostfixQuestion | PostfixExclamation)? generic-parameter-clause? parameter-clause procedure-block
 ```
 
 #### Deinitializer declaration
 
 ```
-deinitializer-declaration -> attributes? Deinit procedure-block
+deinitializer-declaration -> Deinit procedure-block
 ```
 
 #### Extension declaration
 
 ```
-extension-declaration -> access-level-modifier? Extension type-identifier type-inheritance-clause? extension-body
+extension-declaration -> Extension type-identifier type-inheritance-clause? extension-body
 extension-body        -> Leftbrace declarations RightBrace
 ```
 
@@ -207,7 +202,7 @@ extension-body        -> Leftbrace declarations RightBrace
 subscript-declaration -> subscript-head subscript-result procedure-block
                        | subscript-head subscript-result getter-setter-block
                        | subscript-head subscript-result getter-setter-keyword-block
-subscript-head        -> attributes? declaration-modifiers? Subscript parameter-clause
+subscript-head        -> Subscript parameter-clause
 subscript-result      -> Arrow attributes? type
 ```
 

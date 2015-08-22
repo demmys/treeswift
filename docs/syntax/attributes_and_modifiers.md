@@ -22,7 +22,6 @@ declaration-modifier  -> Class | Convenience | Dynamic | Final | Infix | Lazy | 
                        | Unowned LeftParenthesis Unsafe RightParenthesis | Weak
                        | access-level-modifier
 
-access-level-modifiers -> access-level-modifier access-level-modifiers?
 access-level-modifier  -> Internal | Internal LeftParenthesis Set RightParenthesis
                         | Private | Private LeftParenthesis Set RightParenthesis
                         | Public | Public LeftParenthesis Set RightParenthesis

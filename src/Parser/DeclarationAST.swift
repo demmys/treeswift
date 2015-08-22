@@ -2,14 +2,40 @@ public class Declaration : CustomStringConvertible {
     var attrs: [Attribute] = []
     var mods: [Modifier] = []
 
+    init() {}
+    private init(_ attrs: [Attribute], _ mods: [Modifier]) {
+        self.attrs = attrs
+        self.mods = mods
+    }
+    private init(_ attrs: [Attribute], _ mod: Modifier?) {
+        self.attrs = attrs
+        if let m = mod {
+            self.mods = [m]
+        }
+    }
+    private init(_ attrs: [Attribute]) {
+        self.attrs = attrs
+    }
+
     public var description: String {
         return "<<error: no description provided>>"
     }
 }
 
+public class TypeInheritanceClause {
+    var classRequirement = false
+    var types: [IdentifierType] = []
+
+    init() {}
+}
+
 public class ImportDeclaration : Declaration {
-    var kind: ImportKind!
+    var kind: ImportKind?
     var path: [String] = []
+
+    override init(_ attrs: [Attribute]) {
+        super.init(attrs)
+    }
 
     public override var description: String {
         return "(ImportDeclaration kind: \(attrs) \(kind) \(path))"
@@ -24,10 +50,11 @@ public class PatternInitializerDeclaration : Declaration {
     var isVariable = false
     var inits: [(Pattern, Expression?)] = []
 
-    init(isVariable: Bool) {
-        self.isVariable = isVariable
-    }
-    init(isVariable: Bool, inits: [(Pattern, Expression?)]) {
+    init(
+        _ attrs: [Attribute], _ mods: [Modifier],
+        isVariable: Bool, inits: [(Pattern, Expression?)]
+    ) {
+        super.init(attrs, mods)
         self.isVariable = isVariable
         self.inits = inits
     }
@@ -42,7 +69,8 @@ public class VariableBlockDeclaration : Declaration {
     var specifier: VariableBlockSpecifier!
     var blocks: VariableBlocks!
 
-    init(_ name: ValueRef) {
+    init(_ attrs: [Attribute], _ mods: [Modifier], name: ValueRef) {
+        super.init(attrs, mods)
         self.name = name
     }
 
@@ -70,15 +98,20 @@ public class VariableBlock {
     var body: [Procedure]!
 
     init() {}
-    init(attrs: [Attribute]) {
+    init(_ attrs: [Attribute]) {
         self.attrs = attrs
     }
 }
 
 public class TypealiasDeclaration : Declaration {
+    var forProtocol = false
     var name: TypeRef!
-    var inherits: [IdentifierType] = []
+    var inherits: TypeInheritanceClause?
     var type: Type?
+
+    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+        super.init(attrs, mod)
+    }
 
     public override var description: String {
         return "(TypealiasDeclaration \(attrs) \(mods) \(name) \(type))"
@@ -141,7 +174,7 @@ public class EnumDeclaration : Declaration {
     var isIndirect = false
     var name: EnumRef!
     var genParam: GenericParameterClause?
-    var inherits: [IdentifierType] = []
+    var inherits: TypeInheritanceClause?
     var decs: [Declaration] = []
     var caseClause: EnumCaseClause!
 
@@ -192,7 +225,7 @@ public enum RawValueLiteral {
 public class StructDeclaration : Declaration {
     var name: StructRef!
     var genParam: GenericParameterClause?
-    var inherits: [IdentifierType] = []
+    var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
     public override var description: String {
@@ -203,7 +236,7 @@ public class StructDeclaration : Declaration {
 public class ClassDeclaration : Declaration {
     var name: ClassRef!
     var genParam: GenericParameterClause?
-    var inherits: [IdentifierType] = []
+    var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
     public override var description: String {
@@ -213,7 +246,7 @@ public class ClassDeclaration : Declaration {
 
 public class ProtocolDeclaration : Declaration {
     var name: ProtocolRef!
-    var inherits: [IdentifierType] = []
+    var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
     public override var description: String {
@@ -246,7 +279,7 @@ public class DeinitializerDeclaration : Declaration {
 
 public class ExtensionDeclaration : Declaration {
     var type: IdentifierType!
-    var inherits: [IdentifierType] = []
+    var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
     public override var description: String {
@@ -266,9 +299,10 @@ public class SubscriptDeclaration : Declaration {
 
 public class OperatorDeclaration : Declaration {
     var kind: OperatorDeclarationKind!
+    var name: OperatorRef!
 
     public override var description: String {
-        return "(OperatorDeclaration \(kind))"
+        return "(OperatorDeclaration \(kind) \(name))"
     }
 }
 public enum OperatorDeclarationKind {

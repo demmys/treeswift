@@ -117,15 +117,9 @@ class AttributesParser : GrammarParser {
         }
     }
 
-    func accessLevelModifiers() throws -> [Modifier] {
-        var ms: [Modifier] = []
-        while let m = try accessLevelModifier() {
-            ms.append(m)
-        }
-        return ms
-    }
-
-    private func accessLevelModifier(looked: ModifierKind? = nil) throws -> Modifier? {
+    func accessLevelModifier(
+        looked: ModifierKind? = nil
+    ) throws -> Modifier? {
         var target: ModifierKind!
         if looked == nil {
             switch ts.look().kind {
