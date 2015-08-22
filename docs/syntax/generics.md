@@ -3,7 +3,7 @@
 #### Generic parameters
 
 ```
-generic-parameter-clause    -> PrefixGraterThan generic-parameter-list requirement-clause? PostfixLessThan
+generic-parameter-clause    -> PrefixLessThan generic-parameter-list requirement-clause? PostfixGraterThan
 generic-parameter-list      -> generic-parameter generic-parameter-list-tail?
 generic-parameter-list-tail -> Comma generic-parameter-list
 

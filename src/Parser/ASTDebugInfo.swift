@@ -82,36 +82,9 @@ extension FlowSwitch : CustomStringConvertible {
 /*
  * DeclarationAST
  */
-extension Modifier : CustomStringConvertible {
-    public var description: String {
-        return "modifier: \(self.rawValue.lowercaseString)"
-    }
-}
-
 extension ImportKind : CustomStringConvertible {
     public var description: String {
         return self.rawValue.lowercaseString
-    }
-}
-
-extension VariableBlock : CustomStringConvertible {
-    public var description: String {
-        let pre = "(VariableBlock type:"
-        let post =  ")"
-        switch self {
-        case let .Getter(t, attrs, ps):
-            return "\(pre) getter \(t) \(attrs) \(ps)\(post)"
-        case let .Setter(t, attrs, r, ps):
-            return "\(pre) setter \(t) \(attrs) \(r) \(ps)\(post)"
-        case let .GetterKeyword(t, attrs):
-            return "\(pre) getter-keyword \(t) \(attrs) \(post)"
-        case let .SetterKeyword(t, attrs):
-            return "\(pre) setter-keyword \(t) \(attrs) \(post)"
-        case let .WillSet(s, attrs, r, ps):
-            return "\(pre) will-set \(s) \(attrs) \(r) \(ps)\(post)"
-        case let .DidSet(s, attrs, r, ps):
-            return "\(pre) did-set \(s) \(attrs) \(r) \(ps)\(post)"
-        }
     }
 }
 
@@ -120,9 +93,32 @@ extension VariableBlockSpecifier : CustomStringConvertible {
         let name = "specifier:"
         switch self {
         case let .Initializer(e): return "\(name) initializer \(e)"
-        case let .TypeAnnotation(t): return "\(name) type-annotation \(e)"
-        case let .TypedInitializer(t, e): return "\(name) typed-initializer \(t) \(e)"
+        case let .TypeAnnotation(t, attrs): return "\(name) type-annotation \(t) \(attrs)"
+        case let .TypedInitializer(t, attrs, e): return "\(name) typed-initializer \(t) \(attrs) \(e)"
         }
+    }
+}
+
+extension VariableBlocks : CustomStringConvertible {
+    public var description: String {
+        let pre = "(VariableBlocks type:"
+        let post =  ")"
+        switch self {
+        case let .GetterSetter(getter: g, setter: s):
+            return "\(pre) getter-setter \(g) \(s)\(post)"
+        case let .GetterKeyword(attrs):
+            return "\(pre) getter-keyword \(attrs)\(post)"
+        case let .GetterSetterKeyword(getAttrs: gattrs, setAttrs: sattrs):
+            return "\(pre) getter-setter-keyword \(gattrs) \(sattrs)\(post)"
+        case let .WillSetDidSet(willSetter: w, didSetter: d):
+            return "\(pre) will-set-did-set \(w) \(d)\(post)"
+        }
+    }
+}
+
+extension VariableBlock : CustomStringConvertible {
+    public var description: String {
+        return "(VariableBlock \(attrs) \(param) \(body))"
     }
 }
 
@@ -172,6 +168,76 @@ extension ParameterName : CustomStringConvertible {
         case let .Specified(r): return "\(name) specified \(r)"
         case .Needless: return "\(name) needless"
         }
+    }
+}
+
+extension EnumCaseClause : CustomStringConvertible {
+    public var description: String {
+        let pre = "(EnumCaseClause type:"
+        let post =  ")"
+        switch self {
+        case let .UnionStyle(c): return "\(pre) union-style \(c)\(post)"
+        case let .RawValueStyle(c): return "\(pre) raw-value-style \(c)\(post)"
+        }
+    }
+}
+
+extension UnionStyleEnumCaseClause : CustomStringConvertible {
+    public var description: String {
+        return "(UnionStyleEnumCaseList indirect: \(isIndirect) \(attrs) \(cases))"
+    }
+}
+
+extension UnionStyleEnumCase : CustomStringConvertible {
+    public var description: String {
+        return "(UnionStyleEnumCase \(name) \(tuple))"
+    }
+}
+
+extension RawValueStyleEnumCaseClause : CustomStringConvertible {
+    public var description: String {
+        return "(RawValueStyleEnumCaseList \(attrs) \(cases))"
+    }
+}
+
+extension RawValueStyleEnumCase : CustomStringConvertible {
+    public var description: String {
+        return "(RawValueStyleEnumCase \(name) \(value))"
+    }
+}
+
+extension RawValueLiteral : CustomStringConvertible {
+    public var description: String {
+        let pre = "(RawValueLiteral type:"
+        let post = ")"
+        switch self {
+        case let .NumericLiteral(n): return "\(pre) numeric \(n)\(post)"
+        case let .StringLiteral(s): return "\(pre) string \(s)\(post)"
+        }
+    }
+}
+
+extension FailableType : CustomStringConvertible {
+    public var description: String {
+        return "failable-type: \(self.rawValue.lowercaseString)"
+    }
+}
+
+extension OperatorDeclarationKind : CustomStringConvertible {
+    public var description: String {
+        let name = "operator-declaration-kind:"
+        switch self {
+        case .Prefix: return "\(name) prefix"
+        case .Postfix: return "\(name) postfix"
+        case let .Infix(precedence: p, associativity: a):
+            return "\(name) infix precedence: \(p) \(a)"
+        }
+    }
+}
+
+extension Associativity : CustomStringConvertible {
+    public var description: String {
+        return "associativity: \(self.rawValue.lowercaseString)"
     }
 }
 
@@ -347,17 +413,6 @@ extension FunctionType {
     }
 }
 
-extension ThrowType {
-    public var description: String {
-        let name = "throw-type:"
-        switch self {
-        case .Nothing: return "\(name) nothing"
-        case .Throws: return "\(name) throws"
-        case .Rethrows: return "\(name) rethrows"
-        }
-    }
-}
-
 extension OptionalType {
     public var description: String {
         return "(OptionalType \(wrapped))"
@@ -436,6 +491,8 @@ extension Requirement : CustomStringConvertible {
         switch self {
         case let .Conformance(i, t):
             return "\(pre) type: conformance \(i) \(t)\(post)"
+        case let .ProtocolConformance(i, t):
+            return "\(pre) type: protocol-conformance \(i) \(t)\(post)"
         case let .SameType(i, t):
             return "\(pre) type: same-type \(i) \(t)\(post)"
         }
@@ -448,5 +505,11 @@ extension Requirement : CustomStringConvertible {
 extension Attribute : CustomStringConvertible {
     public var description: String {
         return "(Attribute \(attr))"
+    }
+}
+
+extension Modifier : CustomStringConvertible {
+    public var description: String {
+        return "modifier: \(self.rawValue.lowercaseString)"
     }
 }

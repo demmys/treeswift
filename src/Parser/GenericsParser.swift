@@ -5,6 +5,36 @@ class GenericsParser : GrammarParser {
         self.tp = tp
     }
 
+    func genericParameterClause() throws -> GenericParameterClause? {
+        guard ts.test([.PrefixLessThan]) else {
+            return nil
+        }
+        let x = GenericParameterClause()
+        repeat {
+            x.params.append(try genericParameter())
+        } while ts.test([.Comma])
+        x.reqs = try requirementClause()
+        guard ts.test([.PostfixGraterThan]) else {
+            throw ParserError.Error("Expected '>' at the end of generic parameter clause.", ts.look().info)
+        }
+        return x
+    }
+
+    func genericParameter() throws -> GenericParameter {
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier for generic parameter.", ts.look().info)
+        }
+        let r = try createTypeRef(s)
+        if ts.test([.Colon]) {
+            if case let .Identifier(s) = ts.match([identifier]) {
+                return .Conformance(r, try tp.identifierType(s))
+            } else {
+                return .ProtocolConformance(r, try tp.protocolCompositionType())
+            }
+        }
+        return .Identifier(r)
+    }
+
     func requirementClause() throws -> [Requirement] {
         guard ts.test([.Where]) else {
             return []
@@ -21,12 +51,12 @@ class GenericsParser : GrammarParser {
             throw ParserError.Error("Expected identifier at the beggining of requirement", ts.look().info)
         }
         let i = try tp.identifierType(s)
-        switch ts.match([.Colon, identifier]) {
+        switch ts.match([.Colon, binaryOperator]) {
         case .Colon:
             if case let .Identifier(s) = ts.match([identifier]) {
                 return .Conformance(i, try tp.identifierType(s))
             } else {
-                return .Conformance(i, try tp.protocolCompositionType())
+                return .ProtocolConformance(i, try tp.protocolCompositionType())
             }
         case let .BinaryOperator(o):
             if o == "==" {

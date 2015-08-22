@@ -4,7 +4,7 @@ public indirect enum Pattern {
     case OptionalBindingConstantPattern(Pattern)
     case OptionalBindingVariablePattern(Pattern)
     case IdentifierPattern(ValueRef)
-    case TypedIdentifierPattern(ValueRef, Type, [Attribute]?)
+    case TypedIdentifierPattern(ValueRef, Type, [Attribute])
     case WildcardPattern
     case TypedWildcardPattern(Type, [Attribute]?)
     case TuplePattern(PatternTuple)

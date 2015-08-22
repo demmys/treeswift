@@ -56,10 +56,6 @@ public class FunctionType : Type {
     }
 }
 
-public enum ThrowType {
-    case Nothing, Throws, Rethrows
-}
-
 public class OptionalType : Type {
     let wrapped: Type
 

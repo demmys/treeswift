@@ -178,7 +178,7 @@ protocol-initializer-declaration -> initializer-head generic-parameter-clause? p
 
 protocol-subscript-declaration -> subscript-head subscript-result getter-setter-keyword-block
 
-protocol-associated-type-declaration ->  typealias-head type-inheritance-clause? typealias-assignment
+protocol-associated-type-declaration ->  typealias-head type-inheritance-clause? typealias-assignment?
 ```
 
 #### Initializer declaration

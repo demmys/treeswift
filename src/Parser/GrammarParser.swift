@@ -120,6 +120,13 @@ class GrammarParser {
         return ValueRef(name)
     }
 
+    func createTypeRef(name: String) throws -> TypeRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return TypeRef(name)
+    }
+
     func getImplicitParameterRef(num: Int) throws -> ValueRef {
         if num < 0 {
             throw ParserError.Error("dummy error", ts.look().info)
