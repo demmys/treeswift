@@ -171,38 +171,26 @@ extension ParameterName : CustomStringConvertible {
     }
 }
 
-extension EnumCaseClause : CustomStringConvertible {
+extension EnumMember : CustomStringConvertible {
     public var description: String {
-        let pre = "(EnumCaseClause type:"
+        let pre = "(EnumMember type:"
         let post =  ")"
         switch self {
-        case let .UnionStyle(c): return "\(pre) union-style \(c)\(post)"
-        case let .RawValueStyle(c): return "\(pre) raw-value-style \(c)\(post)"
+        case let .DeclarationMember(d):
+            return "\(pre) declaration \(d)\(post)"
+        case let .AlterableStyleMember(c):
+            return "\(pre) alterable-style \(c)\(post)"
+        case let .UnionStyleMember(isIndirect: i, c):
+            return "\(pre) union-style indirect: \(i) \(c)\(post)"
+        case let .RawValueStyleMember(c):
+            return "\(pre) raw-value-style \(c)\(post)"
         }
     }
 }
 
-extension UnionStyleEnumCaseClause : CustomStringConvertible {
+extension EnumCaseClause : CustomStringConvertible {
     public var description: String {
-        return "(UnionStyleEnumCaseList indirect: \(isIndirect) \(attrs) \(cases))"
-    }
-}
-
-extension UnionStyleEnumCase : CustomStringConvertible {
-    public var description: String {
-        return "(UnionStyleEnumCase \(name) \(tuple))"
-    }
-}
-
-extension RawValueStyleEnumCaseClause : CustomStringConvertible {
-    public var description: String {
-        return "(RawValueStyleEnumCaseList \(attrs) \(cases))"
-    }
-}
-
-extension RawValueStyleEnumCase : CustomStringConvertible {
-    public var description: String {
-        return "(RawValueStyleEnumCase \(name) \(value))"
+        return "(EnumCaseClause \(attrs) \(cases))"
     }
 }
 
@@ -211,7 +199,8 @@ extension RawValueLiteral : CustomStringConvertible {
         let pre = "(RawValueLiteral type:"
         let post = ")"
         switch self {
-        case let .NumericLiteral(n): return "\(pre) numeric \(n)\(post)"
+        case let .IntegerLiteral(i): return "\(pre) integer \(i)\(post)"
+        case let .FloatingPointLiteral(f): return "\(pre) floating-point \(f)\(post)"
         case let .StringLiteral(s): return "\(pre) string \(s)\(post)"
         }
     }

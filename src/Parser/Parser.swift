@@ -64,7 +64,7 @@ public class Parser {
         )
         dp.setParser(
             procedureParser: parser, patternParser: pp, expressionParser: ep,
-            typeParser: tp, attributesParser: ap
+            typeParser: tp, attributesParser: ap, genericsParser: gp
         )
         pp.setParser(typeParser: tp, expressionParser: ep)
         parser.setParser(

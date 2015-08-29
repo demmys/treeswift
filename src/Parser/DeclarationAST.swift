@@ -126,6 +126,10 @@ public class FunctionDeclaration : Declaration {
     var returns: ([Attribute], Type)?
     var body: [Procedure] = []
 
+    override init(_ attrs: [Attribute], _ mods: [Modifier]) {
+        super.init(attrs, mods)
+    }
+
     public override var description: String {
         return "(FunctionDeclaration \(attrs) \(mods) \(throwType) \(name) \(genParam) \(params) \(returns) \(body))"
     }
@@ -170,55 +174,80 @@ public enum ParameterName {
 }
 
 public class EnumDeclaration : Declaration {
+    var isIndirect: Bool
     var isRawValueStyle = false
-    var isIndirect = false
     var name: EnumRef!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
-    var decs: [Declaration] = []
-    var caseClause: EnumCaseClause!
+    var members: [EnumMember]!
+
+    init(_ attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool) {
+        self.isIndirect = isIndirect
+        super.init(attrs, mod)
+    }
 
     public override var description: String {
-        return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(mods) \(name) \(genParam) \(inherits) \(decs) \(caseClause))"
+        return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(mods) \(name) \(genParam) \(inherits) \(members))"
     }
 }
 
-public enum EnumCaseClause {
-    case UnionStyle([UnionStyleEnumCaseClause])
-    case RawValueStyle([RawValueStyleEnumCaseClause])
+public enum EnumMember {
+    case DeclarationMember(Declaration)
+    case AlterableStyleMember(EnumCaseClause)
+    case UnionStyleMember(isIndirect: Bool, EnumCaseClause)
+    case RawValueStyleMember(EnumCaseClause)
 }
 
-public class UnionStyleEnumCaseClause {
-    var attrs: [Attribute] = []
-    var isIndirect = false
-    var cases: [UnionStyleEnumCase] = []
+public class EnumCaseClause {
+    var attrs: [Attribute]
+    var cases: [EnumCase] = []
 
-    init() {}
+    init(_ attrs: [Attribute]) {
+        self.attrs = attrs
+    }
 }
 
-public class UnionStyleEnumCase {
+public class EnumCase : CustomStringConvertible {
     var name: EnumCaseRef!
-    var tuple: TupleType?
 
-    init() {}
+    init(_ name: EnumCaseRef) {
+        self.name = name
+    }
+
+    public var description: String {
+        return "(EnumCase \(name))"
+    }
 }
 
-public class RawValueStyleEnumCaseClause {
-    var attrs: [Attribute] = []
-    var cases: [RawValueStyleEnumCase] = []
+public class UnionStyleEnumCase : EnumCase {
+    var tuple: TupleType!
 
-    init() {}
+    init(_ name: EnumCaseRef, _ tuple: TupleType) {
+        super.init(name)
+        self.tuple = tuple
+    }
+
+    public override var description: String {
+        return "(UnionStyleEnumCase \(name) \(tuple))"
+    }
 }
 
-public class RawValueStyleEnumCase {
-    var name: EnumCaseRef!
-    var value: RawValueLiteral?
+public class RawValueStyleEnumCase : EnumCase {
+    var value: RawValueLiteral!
 
-    init() {}
+    init(_ name: EnumCaseRef, _ value: RawValueLiteral) {
+        super.init(name)
+        self.value = value
+    }
+
+    public override var description: String {
+        return "(RawValueStyleEnumCase \(name) \(value))"
+    }
 }
 
 public enum RawValueLiteral {
-    case NumericLiteral(Int)
+    case IntegerLiteral(Int64)
+    case FloatingPointLiteral(Double)
     case StringLiteral(String)
 }
 

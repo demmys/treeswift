@@ -4,23 +4,29 @@ class DeclarationParser : GrammarParser {
     private var ep: ExpressionParser!
     private var tp: TypeParser!
     private var ap: AttributesParser!
+    private var gp: GenericsParser!
 
     func setParser(
         procedureParser prp: ProcedureParser!,
         patternParser ptp: PatternParser,
         expressionParser ep: ExpressionParser,
         typeParser tp: TypeParser,
-        attributesParser ap: AttributesParser
+        attributesParser ap: AttributesParser,
+        genericsParser gp: GenericsParser
     ) {
         self.prp = prp
         self.ptp = ptp
         self.ep = ep
         self.tp = tp
         self.ap = ap
+        self.gp = gp
     }
 
-    func declaration() throws -> Declaration {
-        let attrs = try ap.attributes()
+    func declaration(parsedAttrs: [Attribute]? = nil) throws -> Declaration {
+        var attrs = try ap.attributes()
+        if let pa = parsedAttrs {
+            attrs = pa
+        }
         let almod = try ap.accessLevelModifier()
         var mods = try ap.declarationModifiers()
         switch ts.match([
@@ -401,7 +407,50 @@ class DeclarationParser : GrammarParser {
     private func functionDeclaration(
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> FunctionDeclaration {
-        throw ParserError.Error("FunctionDeclaration parser is not implemented yet.", ts.look().info)
+        let x = FunctionDeclaration(attrs, mods)
+        x.name = try functionName()
+        x.genParam = try gp.genericParameterClause()
+        x.params = try parameterClauses()
+        x.throwType = throwType()
+        x.returns = try functionResult()
+        x.body = try prp.proceduresBlock()
+        return x
+    }
+
+    private func functionName() throws -> FunctionReference {
+        switch ts.match([
+            identifier, prefixOperator, binaryOperator, postfixOperator
+        ]) {
+        case let .Identifier(s):
+            return .Function(try createValueRef(s))
+        case let .PrefixOperator(o):
+            return .Operator(try createOperatorRef(o))
+        case let .BinaryOperator(o):
+            return .Operator(try createOperatorRef(o))
+        case let .PostfixOperator(o):
+            return .Operator(try createOperatorRef(o))
+        default:
+            throw ParserError.Error("Expected function or operator name.", ts.look().info)
+        }
+    }
+
+    private func parameterClauses() throws -> [ParameterClause] {
+        var xs: [ParameterClause] = []
+        while case .LeftParenthesis = ts.look().kind {
+            xs.append(try parameterClause())
+        }
+        return xs
+    }
+
+    private func throwType() -> ThrowType {
+        switch ts.match([.Throws, .Rethrows]) {
+        case .Throws:
+            return .Throws
+        case .Rethrows:
+            return .Rethrows
+        default:
+            return .Nothing
+        }
     }
 
     func functionResult() throws -> ([Attribute], Type)? {
@@ -412,6 +461,9 @@ class DeclarationParser : GrammarParser {
     }
 
     func parameterClause() throws -> ParameterClause {
+        guard ts.test([.LeftParenthesis]) else {
+            throw ParserError.Error("Expected '(' for parameter clause.", ts.look().info)
+        }
         let pc = ParameterClause()
         if ts.test([.RightParenthesis]) {
             return pc
@@ -499,9 +551,119 @@ class DeclarationParser : GrammarParser {
     }
 
     private func enumDeclaration(
-        attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool = true
+        attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool = false
     ) throws -> EnumDeclaration {
-        throw ParserError.Error("EnumDeclaration parser is not implemented yet.", ts.look().info)
+        let x = EnumDeclaration(attrs, mod, isIndirect: isIndirect)
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier.", ts.look().info)
+        }
+        x.name = try createEnumRef(s)
+        x.genParam = try gp.genericParameterClause()
+        x.inherits = try typeInheritanceClause()
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for enum case declarations.", ts.look().info)
+        }
+        if ts.test([.RightBrace]) {
+            return x
+        }
+        x.members = try enumMembers(isIndirect)
+        return x
+    }
+
+    private func enumMembers(isIndirect: Bool) throws -> [EnumMember] {
+        var xs: [EnumMember] = []
+        var isUnionStyle = isIndirect
+        var isRawValueStyle = false
+        while !ts.test([.RightBrace]) {
+            let x = try enumMember(isUnionStyle, isRawValueStyle)
+            switch x {
+            case .UnionStyleMember:
+                if isRawValueStyle {
+                    throw ParserError.Error("Cannot use raw value style enum case with union style enum context.", ts.look().info)
+                }
+                isUnionStyle = true
+            case .RawValueStyleMember:
+                if isUnionStyle {
+                    throw ParserError.Error("Cannot use raw value style enum case with union style enum context.", ts.look().info)
+                }
+                isRawValueStyle = true
+            default:
+                break
+            }
+            xs.append(x)
+        }
+        return xs
+    }
+
+    private func enumMember(
+        var isUnionStyle: Bool, _ isRawValueStyle: Bool
+    ) throws -> EnumMember {
+        let attrs = try ap.attributes()
+        var isIndirect = false
+        if ts.test([.Indirect]) {
+            if isRawValueStyle {
+                throw ParserError.Error("'indirect' keyword is only valid in union style enum context.", ts.look().info)
+            }
+            isIndirect = true
+            isUnionStyle = true
+        }
+        guard ts.test([.Case]) else {
+            if isIndirect {
+                throw ParserError.Error("Expected 'case' for enum case clause", ts.look().info)
+            }
+            return .DeclarationMember(try declaration(attrs))
+        }
+        return try enumCaseClause(
+            attrs, isIndirect,
+            isUnionStyle: isUnionStyle, isRawValueStyle: isRawValueStyle
+        )
+    }
+
+    private func enumCaseClause(
+        attrs: [Attribute], _ isIndirect: Bool,
+        var isUnionStyle: Bool, var isRawValueStyle: Bool
+    ) throws -> EnumMember {
+        let x = EnumCaseClause(attrs)
+        repeat {
+            guard case let .Identifier(s) = ts.match([identifier]) else {
+                throw ParserError.Error("Expected identifier for enum case name", ts.look().info)
+            }
+            let n = try createEnumCaseRef(s)
+            switch ts.match([.LeftParenthesis, .AssignmentOperator]) {
+            case .LeftParenthesis:
+                if isRawValueStyle {
+                    throw ParserError.Error("enum case with associated type is only valid in union style enum context.", ts.look().info)
+                }
+                x.cases.append(UnionStyleEnumCase(n, try tp.tupleType()))
+                isUnionStyle = true
+            case .AssignmentOperator:
+                if isUnionStyle {
+                    throw ParserError.Error("enum case with raw value assignment is only valid in raw value style enum context.", ts.look().info)
+                }
+                switch ts.match([
+                    integerLiteral, floatingPointLiteral, stringLiteral]
+                ) {
+                case let .IntegerLiteral(i, _):
+                    x.cases.append(RawValueStyleEnumCase(n, .IntegerLiteral(i)))
+                case let .FloatingPointLiteral(f):
+                    x.cases.append(RawValueStyleEnumCase(n, .FloatingPointLiteral(f)))
+                case let .StringLiteral(s):
+                    x.cases.append(RawValueStyleEnumCase(n, .StringLiteral(s)))
+                default:
+                    throw ParserError.Error("Expected literal for raw value", ts.look().info)
+                }
+                isRawValueStyle = true
+            default:
+                x.cases.append(EnumCase(n))
+            }
+        } while ts.test([.Comma])
+        if isUnionStyle {
+            return .UnionStyleMember(isIndirect: isIndirect, x)
+        }
+        if isRawValueStyle {
+            return .RawValueStyleMember(x)
+        }
+        return .AlterableStyleMember(x)
     }
 
     private func structDeclaration(

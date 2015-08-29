@@ -52,7 +52,7 @@ class TypeParser : GrammarParser {
         }
     }
 
-    private func tupleType() throws -> TupleType {
+    func tupleType() throws -> TupleType {
         let x = TupleType()
         // unit
         if ts.test([.RightParenthesis]) {

@@ -127,6 +127,27 @@ class GrammarParser {
         return TypeRef(name)
     }
 
+    func createOperatorRef(name: String) throws -> OperatorRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return OperatorRef(name)
+    }
+
+    func createEnumRef(name: String) throws -> EnumRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return EnumRef(name)
+    }
+
+    func createEnumCaseRef(name: String) throws -> EnumCaseRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return EnumCaseRef(name)
+    }
+
     func getImplicitParameterRef(num: Int) throws -> ValueRef {
         if num < 0 {
             throw ParserError.Error("dummy error", ts.look().info)

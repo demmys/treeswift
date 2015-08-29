@@ -337,7 +337,7 @@ class ExpressionParser : GrammarParser {
         switch ts.match([.LeftBracket]) {
         case .LeftBracket:
             try captureClause(c)
-            switch ts.match([.LeftParenthesis, identifier]) {
+            switch ts.match([identifier]) {
             case .LeftParenthesis:
                 c.params = .ExplicitTyped(try dp.parameterClause())
                 c.returns = try dp.functionResult()
