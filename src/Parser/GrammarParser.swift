@@ -148,6 +148,34 @@ class GrammarParser {
         return EnumCaseRef(name)
     }
 
+    func createStructRef(name: String) throws -> StructRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return StructRef(name)
+    }
+
+    func createClassRef(name: String) throws -> ClassRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return ClassRef(name)
+    }
+
+    func createProtocolRef(name: String) throws -> ProtocolRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return ProtocolRef(name)
+    }
+
+    func createExtensionRef(name: String) throws -> ExtensionRef {
+        if name == "" {
+            throw ParserError.Error("dummy error", ts.look().info)
+        }
+        return ExtensionRef(name)
+    }
+
     func getImplicitParameterRef(num: Int) throws -> ValueRef {
         if num < 0 {
             throw ParserError.Error("dummy error", ts.look().info)

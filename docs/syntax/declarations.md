@@ -51,7 +51,6 @@ variable-declaration       -> Var pattern-initializer-list
                             | Var variable-name initializer willSet-didSet-block
 variable-declaration-block -> procedure-block
                             | getter-setter-block
-                            | getter-setter-keyword-block
                             | initializer? willSet-didSet-block
 variable-name              -> Identifier
 
@@ -60,11 +59,6 @@ getter-setter-block -> LeftBrace getter-clause setter-clause? RightBrace
 getter-clause       -> attributes? Get procedure-block
 setter-clause       -> attributes? Set setter-name? procedure-block
 setter-name         -> LeftParenthesis Identifier RightParenthesis
-
-getter-setter-keyword-block -> LeftBrace getter-keyword-clause setter-keyword-clause? RightBrace
-                             | LeftBrace setter-keyword-clause getter-keyword-clause RightBrace
-getter-keyword-clause       -> attributes? Get
-setter-keyword-clause       -> attributes? Set
 
 willSet-didSet-block -> LeftBrace willSet-clause didSet-clause? RightBrace
                       | LeftBrace didSet-clause willSet-clause? RightBrace
@@ -143,14 +137,14 @@ enum-case-name -> Identifier
 
 ```
 struct-declaration -> Struct Identifier generic-parameter-clause? type-inheritance-clause? struct-body
-struct-body        -> LeftBrace declarations RightBrace
+struct-body        -> LeftBrace declarations? RightBrace
 ```
 
 #### Class declaration
 
 ```
 class-declaration -> Class Identifier generic-parameter-clause? type-inheritance-clause? class-body
-class-body        -> LeftBrace declarations RightBrace
+class-body        -> LeftBrace declarations? RightBrace
 ```
 
 #### Protocol declaration
@@ -175,6 +169,11 @@ protocol-initializer-declaration -> Init generic-parameter-clause? parameter-cla
 protocol-subscript-declaration -> Subscript subscript-result getter-setter-keyword-block
 
 protocol-associated-type-declaration ->  Typealias typealias-name type-inheritance-clause? typealias-assignment?
+
+getter-setter-keyword-block -> LeftBrace getter-keyword-clause setter-keyword-clause? RightBrace
+                             | LeftBrace setter-keyword-clause getter-keyword-clause RightBrace
+getter-keyword-clause       -> attributes? Get
+setter-keyword-clause       -> attributes? Set
 ```
 
 #### Initializer declaration
@@ -201,7 +200,6 @@ extension-body        -> Leftbrace declarations RightBrace
 ```
 subscript-declaration -> subscript-head subscript-result procedure-block
                        | subscript-head subscript-result getter-setter-block
-                       | subscript-head subscript-result getter-setter-keyword-block
 subscript-head        -> Subscript parameter-clause
 subscript-result      -> Arrow attributes? type
 ```

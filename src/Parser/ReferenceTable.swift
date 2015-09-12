@@ -105,3 +105,15 @@ public class TypeRef : CustomStringConvertible {
         return "(TypeRef \(name))"
     } }
 }
+
+public class ExtensionRef : CustomStringConvertible {
+    let name: String
+
+    init(_ n: String) {
+        name = n
+    }
+
+    public var description: String { get {
+        return "(ExtensionRef \(name))"
+    } }
+}

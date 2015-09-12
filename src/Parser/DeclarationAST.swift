@@ -16,6 +16,11 @@ public class Declaration : CustomStringConvertible {
     private init(_ attrs: [Attribute]) {
         self.attrs = attrs
     }
+    private init(_ mod: Modifier?) {
+        if let m = mod {
+            self.mods = [m]
+        }
+    }
 
     public var description: String {
         return "<<error: no description provided>>"
@@ -104,7 +109,6 @@ public class VariableBlock {
 }
 
 public class TypealiasDeclaration : Declaration {
-    var forProtocol = false
     var name: TypeRef!
     var inherits: TypeInheritanceClause?
     var type: Type?
@@ -257,6 +261,10 @@ public class StructDeclaration : Declaration {
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
+    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+        super.init(attrs, mod)
+    }
+
     public override var description: String {
         return "(StructDeclaration \(name) \(genParam) \(inherits) \(body))"
     }
@@ -268,6 +276,10 @@ public class ClassDeclaration : Declaration {
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
+    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+        super.init(attrs, mod)
+    }
+
     public override var description: String {
         return "(ClassDeclaration \(name) \(genParam) \(inherits) \(body)"
     }
@@ -278,6 +290,10 @@ public class ProtocolDeclaration : Declaration {
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
+    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+        super.init(attrs, mod)
+    }
+
     public override var description: String {
         return "(ProtocolDeclaration \(name) \(inherits) \(body))"
     }
@@ -286,8 +302,12 @@ public class ProtocolDeclaration : Declaration {
 public class InitializerDeclaration : Declaration {
     var failable: FailableType!
     var genParam: GenericParameterClause?
-    var params: [ParameterClause]!
+    var params: ParameterClause!
     var body: [Procedure] = []
+
+    override init(_ attrs: [Attribute], _ mods: [Modifier]) {
+        super.init(attrs, mods)
+    }
 
     public override var description: String {
         return "(InitializerDeclaration \(failable) \(genParam) \(params) \(body))"
@@ -299,7 +319,12 @@ public enum FailableType : String {
 }
 
 public class DeinitializerDeclaration : Declaration {
-    var body: [Procedure] = []
+    let body: [Procedure]
+
+    init(_ attrs: [Attribute], _ body: [Procedure]) {
+        self.body = body
+        super.init(attrs)
+    }
 
     public override var description: String {
         return "(DeinitializerDeclaration \(body))"
@@ -311,15 +336,23 @@ public class ExtensionDeclaration : Declaration {
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
 
+    override init(_ mod: Modifier?) {
+        super.init(mod)
+    }
+
     public override var description: String {
         return "(ExtensionDeclaration \(type) \(inherits) \(body))"
     }
 }
 
 public class SubscriptDeclaration : Declaration {
-    var params: [ParameterClause]!
-    var returns: ([Attribute], Type)?
+    var params: ParameterClause!
+    var returns: ([Attribute], Type)!
     var body: VariableBlocks!
+
+    override init(_ attrs: [Attribute], _ mods: [Modifier]) {
+        super.init(attrs, mods)
+    }
 
     public override var description: String {
         return "(SubscriptDeclaration \(params) \(returns) \(body))"
@@ -327,8 +360,14 @@ public class SubscriptDeclaration : Declaration {
 }
 
 public class OperatorDeclaration : Declaration {
-    var kind: OperatorDeclarationKind!
-    var name: OperatorRef!
+    let kind: OperatorDeclarationKind
+    let name: OperatorRef
+
+    public init(_ kind: OperatorDeclarationKind, _ name: OperatorRef!) {
+        self.kind = kind
+        self.name = name
+        super.init()
+    }
 
     public override var description: String {
         return "(OperatorDeclaration \(kind) \(name))"
@@ -336,7 +375,7 @@ public class OperatorDeclaration : Declaration {
 }
 public enum OperatorDeclarationKind {
     case Prefix, Postfix
-    case Infix(precedence: Int, associativity: Associativity)
+    case Infix(precedence: Int64, associativity: Associativity)
 }
 
 public enum Associativity : String {

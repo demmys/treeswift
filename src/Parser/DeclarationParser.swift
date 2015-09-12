@@ -22,7 +22,9 @@ class DeclarationParser : GrammarParser {
         self.gp = gp
     }
 
-    func declaration(parsedAttrs: [Attribute]? = nil) throws -> Declaration {
+    func declaration(
+        parsedAttrs: [Attribute]? = nil
+    ) throws -> Declaration {
         var attrs = try ap.attributes()
         if let pa = parsedAttrs {
             attrs = pa
@@ -159,6 +161,14 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
+    private func declarations() throws -> [Declaration] {
+        var xs: [Declaration] = []
+        while !ts.test([.RightBrace]) {
+            xs.append(try declaration())
+        }
+        return xs
+    }
+
     private func importDeclaration(attrs: [Attribute]) throws -> ImportDeclaration {
         let x = ImportDeclaration(attrs)
         switch ts.match([
@@ -220,7 +230,7 @@ class DeclarationParser : GrammarParser {
         }
     }
 
-    func variableBlockDeclaration(
+    private func variableBlockDeclaration(
         attrs: [Attribute], _ mods: [Modifier], ini: (Pattern, Expression?)
     ) throws -> VariableBlockDeclaration {
         switch ini.0 {
@@ -253,58 +263,36 @@ class DeclarationParser : GrammarParser {
         var x: VariableBlocks!
         switch ts.match([.Get, .Set], ahead: ahead) {
         case .Get:
-            switch ts.match([.Set]) {
-            case .Set:
-                x = .GetterSetterKeyword(getAttrs: attrs, setAttrs: [])
-            case .Atmark:
+            let g = VariableBlock(attrs)
+            g.body = try prp.proceduresBlock()
+            if ts.test([.RightBrace]) {
+                x = .GetterSetter(getter: g, setter: nil)
+            } else {
                 let setAttrs = try ap.attributes()
                 guard ts.test([.Set]) else {
-                    throw ParserError.Error("Expected setter keywork after 'get'", ts.look().info)
+                    throw ParserError.Error("Expected setter clause after getter clause", ts.look().info)
                 }
-                x = .GetterSetterKeyword(getAttrs: attrs, setAttrs: setAttrs)
-            case .RightBrace:
-                x = .GetterKeyword(attrs)
-            default:
-                let g = VariableBlock(attrs)
-                g.body = try prp.proceduresBlock()
-                if ts.test([.RightBrace]) {
-                    x = .GetterSetter(getter: g, setter: nil)
-                } else {
-                    let setAttrs = try ap.attributes()
-                    guard ts.test([.Set]) else {
-                        throw ParserError.Error("Expected setter clause after getter clause", ts.look().info)
-                    }
-                    let s = try setterBlock(setAttrs)
-                    x = .GetterSetter(getter: g, setter: s)
-                }
-            }
-        case .Set:
-            switch ts.match([.Get]) {
-            case .Get:
-                x = .GetterSetterKeyword(getAttrs: [], setAttrs: attrs)
-            case .Atmark:
-                let getAttrs = try ap.attributes()
-                guard ts.test([.Get]) else {
-                    throw ParserError.Error("Expected getter keywork after 'set'", ts.look().info)
-                }
-                x = .GetterSetterKeyword(getAttrs: getAttrs, setAttrs: attrs)
-            default:
-                let s = try setterBlock(attrs)
-                let getAttrs = try ap.attributes()
-                guard ts.test([.Get]) else {
-                    throw ParserError.Error("Expected getter clause after setter clause.", ts.look().info)
-                }
-                let g = VariableBlock(getAttrs)
-                g.body = try prp.proceduresBlock()
+                let s = try setterBlock(setAttrs)
                 x = .GetterSetter(getter: g, setter: s)
             }
+        case .Set:
+            let s = try setterBlock(attrs)
+            let getAttrs = try ap.attributes()
+            guard ts.test([.Get]) else {
+                throw ParserError.Error("Expected getter clause after setter clause.", ts.look().info)
+            }
+            let g = VariableBlock(getAttrs)
+            g.body = try prp.proceduresBlock()
+            x = .GetterSetter(getter: g, setter: s)
         case .Atmark:
             // Expect getter, setter or procedure beggining with attributes
             // To avoid consuming attributes for procedure, use TokenStream.look only
             let (firstAttrs, i) = try ap.lookAfterAttributes()
             switch ts.look(i).kind {
-            case .Get, .Set: x = try getterSetterBlock(firstAttrs, ahead: i)
-            default: break
+            case .Get, .Set:
+                x = try getterSetterBlock(firstAttrs, ahead: i)
+            default:
+                break
             }
             fallthrough
         default:
@@ -391,21 +379,15 @@ class DeclarationParser : GrammarParser {
             throw ParserError.Error("Expected identifier for typealias name.", ts.look().info)
         }
         x.name = try createTypeRef(s)
-        x.inherits = try typeInheritanceClause()
+        guard ts.test([.AssignmentOperator]) else {
+            throw ParserError.Error("Expected '=' for typealias declaration", ts.look().info)
+        }
         x.type = try tp.type()
-        if x.inherits != nil {
-            x.forProtocol = true
-        }
-        if ts.test([.AssignmentOperator]) {
-            x.type = try tp.type()
-        } else {
-            x.forProtocol = true
-        }
         return x
     }
 
     private func functionDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
+        attrs: [Attribute], _ mods: [Modifier], forProtocol: Bool = false
     ) throws -> FunctionDeclaration {
         let x = FunctionDeclaration(attrs, mods)
         x.name = try functionName()
@@ -413,6 +395,12 @@ class DeclarationParser : GrammarParser {
         x.params = try parameterClauses()
         x.throwType = throwType()
         x.returns = try functionResult()
+        if forProtocol {
+            if case .LeftBrace = ts.look().kind {
+                throw ParserError.Error("Declaration in protocol cannot have a body procedures.", ts.look().info)
+            }
+            return x
+        }
         x.body = try prp.proceduresBlock()
         return x
     }
@@ -669,50 +657,296 @@ class DeclarationParser : GrammarParser {
     private func structDeclaration(
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> StructDeclaration {
-        throw ParserError.Error("StructDeclaration parser is not implemented yet.", ts.look().info)
+        let x = StructDeclaration(attrs, mod)
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier.", ts.look().info)
+        }
+        x.name = try createStructRef(s)
+        x.genParam = try gp.genericParameterClause()
+        x.inherits = try typeInheritanceClause()
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for declaration body.", ts.look().info)
+        }
+        x.body = try declarations()
+        return x
     }
 
     private func classDeclaration(
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> ClassDeclaration {
-        throw ParserError.Error("ClassDeclaration parser is not implemented yet.", ts.look().info)
+        let x = ClassDeclaration(attrs, mod)
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier.", ts.look().info)
+        }
+        x.name = try createClassRef(s)
+        x.genParam = try gp.genericParameterClause()
+        x.inherits = try typeInheritanceClause()
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for declaration body.", ts.look().info)
+        }
+        x.body = try declarations()
+        return x
     }
 
     private func protocolDeclaration(
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> ProtocolDeclaration {
-        throw ParserError.Error("ProtocolDeclaration parser is not implemented yet.", ts.look().info)
+        let x = ProtocolDeclaration(attrs, mod)
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier.", ts.look().info)
+        }
+        x.name = try createProtocolRef(s)
+        x.inherits = try typeInheritanceClause()
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for declaration body.", ts.look().info)
+        }
+        x.body = try protocolMemberDeclarations()
+        return x
+    }
+
+    private func protocolMemberDeclarations() throws -> [Declaration] {
+        var xs: [Declaration] = []
+        while !ts.test([.RightBrace]) {
+            xs.append(try protocolMemberDeclaration())
+        }
+        return xs
+    }
+
+    private func protocolMemberDeclaration() throws -> Declaration {
+        let attrs = try ap.attributes()
+        let almod = try ap.accessLevelModifier()
+        var mods = try ap.declarationModifiers()
+        switch ts.match([.Var, .Typealias, .Func, .Init, .Subscript]) {
+        case .Var:
+            if let m = almod {
+                mods.insert(m, atIndex: 0)
+            }
+            return try protocolPropertyDeclaration(attrs, mods)
+        case .Typealias:
+            if mods.count > 0 {
+                throw ParserError.Error("Unexpected declaration modifier before 'typealias'.", ts.look().info)
+            }
+            return try protocolAssociatedTypeDeclaration(attrs, almod)
+        case .Func:
+            if let m = almod {
+                mods.insert(m, atIndex: 0)
+            }
+            return try functionDeclaration(attrs, mods, forProtocol: true)
+        case .Init:
+            if let m = almod {
+                mods.insert(m, atIndex: 0)
+            }
+            return try initializerDeclaration(attrs, mods, forProtocol: true)
+        case .Subscript:
+            if let m = almod {
+                mods.insert(m, atIndex: 0)
+            }
+            return try protocolSubscriptDeclaration(attrs, mods)
+        default:
+            throw ParserError.Error("Expected declaration.", ts.look().info)
+        }
+    }
+
+    private func protocolPropertyDeclaration(
+        attrs: [Attribute], _ mods: [Modifier]
+    ) throws -> VariableBlockDeclaration {
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier.", ts.look().info)
+        }
+        let x = VariableBlockDeclaration(attrs, mods, name: try createValueRef(s))
+        guard let (t, typeAttrs) = try tp.typeAnnotation() else {
+            throw ParserError.Error("Expected type annotation", ts.look().info)
+        }
+        x.specifier = .TypeAnnotation(t, typeAttrs)
+        x.blocks = try getterSetterKeywordBlock()
+        return x
+    }
+
+    private func protocolSubscriptDeclaration(
+        attrs: [Attribute], _ mods: [Modifier]
+    ) throws -> SubscriptDeclaration {
+        let x = SubscriptDeclaration(attrs, mods)
+        x.params = try parameterClause()
+        guard let r = try functionResult() else {
+            throw ParserError.Error("Expected '->' for subscript result type.", ts.look().info)
+        }
+        x.returns = r
+        x.body = try getterSetterKeywordBlock()
+        return x
+    }
+
+    private func getterSetterKeywordBlock() throws -> VariableBlocks {
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected getter or setter keyword clause.", ts.look().info)
+        }
+        var x: VariableBlocks!
+        let attrs = try ap.attributes()
+        switch ts.match([.Get, .Set]) {
+        case .Get:
+            if case .RightBrace = ts.look().kind {
+                x = .GetterKeyword(attrs)
+            } else {
+                let setAttrs = try ap.attributes()
+                guard ts.test([.Set]) else {
+                    throw ParserError.Error("Expected 'set' keyword", ts.look().info)
+                }
+                x = .GetterSetterKeyword(getAttrs: attrs, setAttrs: setAttrs)
+            }
+        case .Set:
+            let getAttrs = try ap.attributes()
+            guard ts.test([.Get]) else {
+                throw ParserError.Error("Expected 'get' keyword", ts.look().info)
+            }
+            x = .GetterSetterKeyword(getAttrs: getAttrs, setAttrs: attrs)
+        default:
+            throw ParserError.Error("Expected 'get' or 'set keyword.", ts.look().info)
+        }
+        guard ts.test([.RightBrace]) else {
+            throw ParserError.Error("Expected '}' at the end of variable block clause", ts.look().info)
+        }
+        return x
+    }
+
+    private func protocolAssociatedTypeDeclaration(
+        attrs: [Attribute], _ mod: Modifier?
+    ) throws -> TypealiasDeclaration {
+        let x = TypealiasDeclaration(attrs, mod)
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier for associated type.", ts.look().info)
+        }
+        x.name = try createTypeRef(s)
+        x.inherits = try typeInheritanceClause()
+        if ts.test([.AssignmentOperator]) {
+            x.type = try tp.type()
+        }
+        return x
     }
 
     private func initializerDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
+        attrs: [Attribute], _ mods: [Modifier], forProtocol: Bool = false
     ) throws -> InitializerDeclaration {
-        throw ParserError.Error("InitializerDeclaration parser is not implemented yet.", ts.look().info)
+        let x = InitializerDeclaration(attrs, mods)
+        switch ts.match([.PostfixQuestion, .PostfixExclamation]) {
+        case .PostfixQuestion:
+            x.failable = .Failable
+        case .PostfixExclamation:
+            x.failable = .ForceUnwrapFailable
+        default:
+            x.failable = .Nothing
+        }
+        x.genParam = try gp.genericParameterClause()
+        x.params = try parameterClause()
+        if forProtocol {
+            if case .LeftBrace = ts.look().kind {
+                throw ParserError.Error("Declaration in protocol cannot have a body procedures.", ts.look().info)
+            }
+            return x
+        }
+        x.body = try prp.proceduresBlock()
+        return x
     }
 
     private func deinitializerDeclaration(
         attrs: [Attribute]
     ) throws -> DeinitializerDeclaration {
-        throw ParserError.Error("DeinitializerDeclaration parser is not implemented yet.", ts.look().info)
+        return DeinitializerDeclaration(attrs, try prp.proceduresBlock())
     }
 
     private func extensionDeclaration(mod: Modifier?) throws -> ExtensionDeclaration {
-        throw ParserError.Error("ExtensionDeclaration parser is not implemented yet.", ts.look().info)
+        let x = ExtensionDeclaration(mod)
+        guard case let .Identifier(s) = ts.match([identifier]) else {
+            throw ParserError.Error("Expected identifier for typealias name.", ts.look().info)
+        }
+        x.type = try tp.identifierType(s)
+        x.inherits = try typeInheritanceClause()
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for extension body.", ts.look().info)
+        }
+        x.body = try declarations()
+        guard ts.test([.RightBrace]) else {
+            throw ParserError.Error("Expected '}' for extension body.", ts.look().info)
+        }
+        return x
     }
 
     private func subscriptDeclaration(
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> SubscriptDeclaration {
-        throw ParserError.Error("SubscriptDeclaration parser is not implemented yet.", ts.look().info)
+        let x = SubscriptDeclaration(attrs, mods)
+        x.params = try parameterClause()
+        guard let r = try functionResult() else {
+            throw ParserError.Error("Expected '->' for subscript result type.", ts.look().info)
+        }
+        x.returns = r
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for subscript body.", ts.look().info)
+        }
+        x.body = try getterSetterBlock()
+        return x
     }
 
     private func operatorDeclaration(
         kind: OperatorDeclarationKind
     ) throws -> OperatorDeclaration {
-        throw ParserError.Error("OperatorDeclaration parser is not implemented yet.", ts.look().info)
+        guard ts.test([.Operator]) else {
+            throw ParserError.Error("Expected 'operator' for operator declaration.", ts.look().info)
+        }
+        guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
+            throw ParserError.Error("Expected operator identifier for operator declaration.", ts.look().info)
+        }
+        let name = try createOperatorRef(s)
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for operator declaration.", ts.look().info)
+        }
+        guard ts.test([.RightBrace]) else {
+            throw ParserError.Error("Expected '}' for operator declaration.", ts.look().info)
+        }
+        return OperatorDeclaration(kind, name)
     }
 
     private func infixOperatorDeclaration() throws -> OperatorDeclaration {
-        throw ParserError.Error("InfixOperatorDeclaration parser is not implemented yet.", ts.look().info)
+        guard ts.test([.Operator]) else {
+            throw ParserError.Error("Expected 'operator' for operator declaration.", ts.look().info)
+        }
+        guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
+            throw ParserError.Error("Expected operator identifier for operator declaration.", ts.look().info)
+        }
+        let name = try createOperatorRef(s)
+        guard ts.test([.LeftBrace]) else {
+            throw ParserError.Error("Expected '{' for operator declaration.", ts.look().info)
+        }
+        let p = try precedenceClause()
+        let a = try associativityClause()
+        guard ts.test([.RightBrace]) else {
+            throw ParserError.Error("Expected '}' for operator declaration.", ts.look().info)
+        }
+        return OperatorDeclaration(.Infix(precedence: p, associativity: a), name)
+    }
+
+    private func precedenceClause() throws -> Int64 {
+        guard ts.test([.Precedence]) else {
+            return 100
+        }
+        guard case let .IntegerLiteral(i, decimalDigits: d)
+            = ts.match([integerLiteral]) where d else {
+            throw ParserError.Error("Expected decimal digits for precedence.", ts.look().info)
+        }
+        return i
+    }
+
+    private func associativityClause() throws -> Associativity {
+        guard ts.test([.Associativity]) else {
+            return .None
+        }
+        switch ts.match([.Left, .Right, .None]) {
+        case .Left:
+            return .Left
+        case .Right:
+            return .Right
+        case .None:
+            return .None
+        default:
+            throw ParserError.Error("Expected 'left', 'right' or 'none' for associativity.", ts.look().info)
+        }
     }
 }
