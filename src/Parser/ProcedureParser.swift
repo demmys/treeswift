@@ -218,13 +218,13 @@ class ProcedureParser : GrammarParser {
             throw ParserError.Error("Expected condition of the flow", ts.look().info)
         case .Let, .Var, .Case:
             repeat {
-                ps.extend(try matchingPattern())
+                ps.appendContentsOf(try matchingPattern())
             } while ts.test([.Comma])
         default:
             ps.append(PatternMatching(.BooleanPattern, try ep.expression(), nil))
             if ts.test([.Comma]) {
                 repeat {
-                    ps.extend(try matchingPattern())
+                    ps.appendContentsOf(try matchingPattern())
                 } while ts.test([.Comma])
             }
         }

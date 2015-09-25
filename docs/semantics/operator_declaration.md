@@ -9,7 +9,7 @@ func encode(operator: (PrefixOperator | PostfixOperator | BinaryOperator)) -> St
     var result = ""
     var scalars = operator.unicodeScalars
     for var i = scalars.startIndex; i != scalars.endIndex; i = i.successor() {
-        result.extend(encodeScalar(scalars[i])
+        result.appendContentsOf(encodeScalar(scalars[i])
     }
     return result
 }

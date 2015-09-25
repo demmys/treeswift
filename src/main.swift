@@ -21,20 +21,20 @@ func prettyPrint(target: CustomStringConvertible) {
         switch c {
         case "(", "[":
             if i == 0 {
-                print(c, appendNewline: false)
+                print(c, terminator: "")
             } else {
                 lastIndentedDepth = ++indent.depth
-                print("\n\(indent.indent)\(c)", appendNewline: false)
+                print("\n\(indent.indent)\(c)", terminator: "")
             }
         case ")", "]":
             if lastIndentedDepth == indent.depth {
-                print(c, appendNewline: false)
+                print(c, terminator: "")
             } else {
-                print("\n\(indent.indent)\(c)", appendNewline: false)
+                print("\n\(indent.indent)\(c)", terminator: "")
             }
             --indent.depth
         default:
-            print(c, appendNewline: false)
+            print(c, terminator: "")
         }
     }
     print("")

@@ -43,7 +43,7 @@ class CharacterStream : CharacterPeeper {
                 return nil
             } else {
                 queue = String(queue[index])
-                queue.extend(file.readString(bufferSize)!)
+                queue.appendContentsOf(file.readString(bufferSize)!)
                 index = queue.startIndex
             }
         }
