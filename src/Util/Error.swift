@@ -1,7 +1,5 @@
 import Darwin
 
-public typealias Error = (String, SourceInfo?)
-
 public struct SourceInfo {
     public var lineNo: Int
     public var charNo: Int
@@ -14,10 +12,66 @@ public struct SourceInfo {
     }
 }
 
-public enum ErrorMessage: String {
+public protocol SourceTrackable {
+    public var sourceInfo: SourceInfo { get }
+}
+
+public enum ErrorKind : String {
+    case Fatal = "fatal"
+    case Error = "error"
+    case Warning = "warning"
+}
+
+public typealias Error = (ErrorKind, ErrorMessage, SourceInfo?)
+
+public enum ErrorReport : ErrorType {
+    case Fatal(ErrorReporter)
+    case Full(ErrorReporter)
+}
+
+public class ErrorReporter {
+    private static var errors: [Error] = []
+
+    public static func hasErrors() -> Bool {
+        return errors.count > 0
+    }
+
+    private static func append(
+        kind: ErrorKind, message: ErrorMessage, source: SourceTrackable?
+    ) throws {
+        errors.append((kind, message, source?.sourceInfo))
+        if case .Fatal = kind {
+            throw ErrorReport.Fatal(self)
+        }
+        if errors.count > 15 {
+            throw ErrorReport.Full(self)
+        }
+    }
+    public static func fatal(message: ErrorMessage, _ source: SourceTrackable?) throws {
+        try append(.Fatal, message, source)
+    }
+    public static func error(message: ErrorMessage, _ source: SourceTrackable?) throws {
+        try append(.Error, message, source)
+    }
+    public static func warning(message: ErrorMessage, _ source: SourceTrackable?) throws {
+        try append(.Warning, message, source)
+    }
+
+    public static func report() {
+        for (kind, msg, info) in errors {
+            if let i = info {
+                print("\(kind): \(i.lineNo):\(i.charNo) \(msg)\n\(i.source!)")
+            } else {
+                print("\(kind): \(msg)")
+            }
+        }
+    }
+}
+
+public enum ErrorMessage {
+    case FileNotFound(String)
+    case FileCanNotRead(String)
     // System errors
-    case NoInputFile = "No input file"
-    case FileNotFound = "File not found"
     case InvalidFileType = "The file is not a textfile"
     // Lexical errors
     case UnexpectedEOF = "Unexpected end of file"
@@ -46,18 +100,12 @@ public enum ErrorMessage: String {
     case ExpectedIn = "Expected the word in"
     case ExpectedWhile = "Expected the word while"
 
-    public func print(target: String, info: SourceInfo? = nil) {
-        var message = "error: \(self.rawValue)"
-        if let i = info {
-            message = "\(target):\(i.lineNo):\(i.charNo) \(message)"
-            if let s = i.source {
-                message = "\(message)\n\t\(s)"
-            }
+    public func format() -> String {
+        switch self {
+        case let .FileNotFound(name):
+            return "No such a file: \(name)"
+        case let .FileCanNotRead(name):
+            return "File cannot read: \(name)"
         }
-        printStderr(message + "\n")
-    }
-
-    private func printStderr(message: String) {
-        fputs(message, stderr)
     }
 }

@@ -42,24 +42,30 @@ func prettyPrint(target: CustomStringConvertible) {
 
 let arguments = Process.arguments
 if arguments.count < 2 {
-    ErrorMessage.NoInputFile.print(Process.arguments[0])
+    print("No input file")
 } else {
     let parser = Parser(Array(arguments[1..<arguments.count]))
-    switch parser.parse() {
-    case let .Succeeded(result):
-        for (fileName, ps) in result {
-            print("----- \(fileName) -----")
-            for p in ps {
-                prettyPrint(p)
+    do {
+        let result = try parser.parse()
+        if ErrorReporter.hasErrors() {
+            print("Some errors found in compile process.")
+            reporter.report()
+        } else {
+            for (fileName, ps) in result {
+                print("----- \(fileName) -----")
+                for p in ps {
+                    prettyPrint(p)
+                }
             }
         }
-    case let .Failed(errors):
-        for (msg, info) in errors {
-            if let i = info {
-                print("\(i.lineNo):\(i.charNo) \(msg)\n\(i.source!)")
-            } else {
-                print("\(msg)")
-            }
-        }
+    } catch let ErrorReport.Fatal(reporter) {
+        print("Compile process aborted because of the fatal error.")
+        reporter.report()
+    } catch let ErrorReport.Full(reporter) {
+        print("Compile process aborted because of too much errors.")
+        reporter.report()
+    } catch let e {
+        print("Compile process aborted because of unexpected error.")
+        print(e)
     }
 }
