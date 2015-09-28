@@ -108,84 +108,84 @@ class GrammarParser {
 
     func getValueRef(name: String) throws -> ValueRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return ValueRef(name)
     }
 
     func createValueRef(name: String) throws -> ValueRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return ValueRef(name)
     }
 
     func createTypeRef(name: String) throws -> TypeRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return TypeRef(name)
     }
 
     func createOperatorRef(name: String) throws -> OperatorRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return OperatorRef(name)
     }
 
     func createEnumRef(name: String) throws -> EnumRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return EnumRef(name)
     }
 
     func createEnumCaseRef(name: String) throws -> EnumCaseRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return EnumCaseRef(name)
     }
 
     func createStructRef(name: String) throws -> StructRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return StructRef(name)
     }
 
     func createClassRef(name: String) throws -> ClassRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return ClassRef(name)
     }
 
     func createProtocolRef(name: String) throws -> ProtocolRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return ProtocolRef(name)
     }
 
     func createExtensionRef(name: String) throws -> ExtensionRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return ExtensionRef(name)
     }
 
     func getImplicitParameterRef(num: Int) throws -> ValueRef {
         if num < 0 {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return ValueRef(String(num))
     }
 
     func getOperatorRef(name: String) throws -> OperatorRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return OperatorRef(name)
     }
@@ -194,7 +194,7 @@ class GrammarParser {
         name: String, withClassName className: String? = nil
     ) throws -> MemberRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         if let c = className {
             return MemberRef("\(c).\(name)")
@@ -204,14 +204,14 @@ class GrammarParser {
 
     func getMemberRef(num: Int) throws -> MemberRef {
         if num < 0 {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return MemberRef(String(num))
     }
 
     func getTypeRef(name: String) throws -> TypeRef {
         if name == "" {
-            throw ParserError.Error("dummy error", ts.look().info)
+            throw ts.fatal(.Dummy)
         }
         return TypeRef(name)
     }

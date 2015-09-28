@@ -75,8 +75,8 @@ class ProcedureParser : GrammarParser {
             // assignment-operation or expression-operation
             x = .OperationProcedure(try assignmentOrExpressionOperation())
         }
-        guard ts.test([.Semicolon, .LineFeed, .EndOfFile]) else {
-            throw ParserError.Error("Continuous procedure must be separated by ';'", ts.look().info)
+        if !ts.test([.Semicolon, .LineFeed, .EndOfFile]) {
+            try ts.error(.ContinuousProcedure)
         }
         return x
     }
@@ -97,32 +97,33 @@ class ProcedureParser : GrammarParser {
         }
         // initializer
         x.ini = try forIni()
-        guard ts.test([.Semicolon]) else {
-            throw ParserError.Error("Expected ';' after initialize statement of ForFlow", ts.look().info)
+        if !ts.test([.Semicolon]) {
+            try ts.error(.ExpectedSemicolonAfterForInit)
         }
         // condition
         if ts.look().kind != .Semicolon {
             x.setCond(try ep.expression())
         }
-        guard ts.test([.Semicolon]) else {
-            throw ParserError.Error("Expected ';' after condition of ForFlow", ts.look().info)
+        if !ts.test([.Semicolon]) {
+            try ts.error(.ExpectedSemicolonAfterForCondition)
         }
         // finalization
         switch ts.look().kind {
         case .RightParenthesis:
             if !parenthesized {
-                throw ParserError.Error("Expected '{' after setting of ForFlow", ts.look().info)
+                try ts.error(.UnexpectedRightParenthesis)
+                ts.next()
             }
         case .LeftBrace:
             if parenthesized {
-                throw ParserError.Error("Expected ')' after setting of parenthesized ForFlow", ts.look().info)
+                try ts.error(.ExpectedRightParenthesisAfterForSetting)
             }
         default:
             x.fin = try assignmentOrExpressionOperation()
         }
         if parenthesized {
-            guard ts.test([.RightParenthesis]) else {
-                throw ParserError.Error("Expected ')' after ForFlow with parenthesis", ts.look().info)
+            if !ts.test([.RightParenthesis]) {
+                try ts.error(.ExpectedRightParenthesisAfterForSetting)
             }
         }
         // block
@@ -137,8 +138,8 @@ class ProcedureParser : GrammarParser {
         case .Atmark, .Modifier, .Class, .Var:
             let attrs = try ap.attributes()
             let mods = try ap.declarationModifiers()
-            guard ts.test([.Var]) else {
-                throw ParserError.Error("Expected 'var' for the declaration in initialize condition.", ts.look().info)
+            if !ts.test([.Var]) {
+                try ts.error(.ExpectedForVariableInit)
             }
             return .VariableDeclaration(try dp.variableDeclaration(attrs, mods))
         default:
@@ -154,8 +155,8 @@ class ProcedureParser : GrammarParser {
         } else {
             p = try pp.declarationalPattern()
         }
-        guard ts.test([.In]) else {
-            throw ParserError.Error("Expected 'in' after pattern of ForInFlow", ts.look().info)
+        if !ts.test([.In]) {
+            try ts.error(.ExpectedInForForPattern)
         }
         let e = try ep.expression()
         if ts.test([.Where]) {
@@ -198,8 +199,8 @@ class ProcedureParser : GrammarParser {
     private func guardFlow() throws -> GuardFlow {
         let x = GuardFlow()
         x.pats = try patternMatchClause()
-        guard ts.test([.Else]) else {
-            throw ParserError.Error("Expected 'else' after condition of GuardFlow", ts.look().info)
+        if !ts.test([.Else]) {
+            try ts.error(.ExpectedElseForGuard)
         }
         x.block = try proceduresBlock()
         return x
@@ -215,7 +216,7 @@ class ProcedureParser : GrammarParser {
         var ps: [PatternMatching] = []
         switch ts.look().kind {
         case .RightBrace, .Else:
-            throw ParserError.Error("Expected condition of the flow", ts.look().info)
+            throw ts.fatal(.ExpectedCondition)
         case .Let, .Var, .Case:
             repeat {
                 ps.appendContentsOf(try matchingPattern())
@@ -240,8 +241,8 @@ class ProcedureParser : GrammarParser {
         case .Case:
             let pm = PatternMatching()
             pm.pat = try pp.conditionalPattern()
-            guard ts.test([.AssignmentOperator]) else {
-                throw ParserError.Error("Expected '=' for the case pattern of pattern matching clause", ts.look().info)
+            if !ts.test([.AssignmentOperator]) {
+                try ts.error(.ExpectedEqualForPatternMatch)
             }
             pm.exp = try ep.expression()
             if ts.test([.Where]) {
@@ -249,7 +250,7 @@ class ProcedureParser : GrammarParser {
             }
             return [pm]
         default:
-            throw ParserError.Error("Expected matching pattern.", ts.look().info)
+            throw ts.fatal(.ExpectedMatchingPattern)
         }
     }
 
@@ -258,8 +259,8 @@ class ProcedureParser : GrammarParser {
         repeat {
             let pm = PatternMatching()
             pm.pat = wrap(try pp.declarationalPattern())
-            guard ts.test([.AssignmentOperator]) else {
-                throw ParserError.Error("Expected '=' after the pattern of optional binding pattern", ts.look().info)
+            if !ts.test([.AssignmentOperator]) {
+                try ts.error(.ExpectedEqualForOptionalBinding)
             }
             pm.exp = try ep.expression()
             pms.append(pm)
@@ -300,8 +301,8 @@ class ProcedureParser : GrammarParser {
     private func flowSwitch(label: String? = nil) throws -> FlowSwitch {
         let x = FlowSwitch(label)
         let cond = try ep.expression()
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' after switch condition.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForFlowSwitch)
         }
         caseFlowsLoop: while true {
             switch ts.match([.Case, .Default]) {
@@ -313,8 +314,8 @@ class ProcedureParser : GrammarParser {
                 break caseFlowsLoop
             }
         }
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' at the end of flow switch.", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterFlowSwitch)
         }
         return x
     }
@@ -331,25 +332,25 @@ class ProcedureParser : GrammarParser {
             }
             x.pats.append(p)
         } while ts.test([.Comma])
-        guard ts.test([.Colon]) else {
-            throw ParserError.Error("Expected ':' after patterns of case flow.", ts.look().info)
+        if !ts.test([.Colon]) {
+            try ts.error(.ExpectedColonAfterCasePattern)
         }
         x.block = try procedures()
         guard x.block.count > 0 else {
-            throw ParserError.Error("Case flow should have at least one procedure.", ts.look().info)
+            throw ts.fatal(.EmptyCaseFlow)
         }
         return x
     }
 
     private func defaultCaseFlow() throws -> CaseFlow {
-        guard ts.test([.Colon]) else {
-            throw ParserError.Error("Expected ':' after 'default' in flow switch.", ts.look().info)
+        if !ts.test([.Colon]) {
+            try ts.error(.ExpectedColonAfterDefault)
         }
         let x = CaseFlow()
         x.pats = [PatternMatching(.IdentityPattern, nil, nil)]
         x.block = try procedures()
         guard x.block.count > 0 else {
-            throw ParserError.Error("Case flow should have at least one procedure.", ts.look().info)
+            throw ts.fatal(.EmptyCaseFlow)
         }
         return x
     }
@@ -390,7 +391,7 @@ class ProcedureParser : GrammarParser {
         case .Switch:
             return .FlowSwitchProcedure(try flowSwitch(label))
         default:
-            throw ParserError.Error("Only loop flows, if flow, and flow switch can have a label", ts.look().info)
+            throw ts.fatal(.LabelWithUnexpectedFlow)
         }
     }
 
@@ -399,8 +400,8 @@ class ProcedureParser : GrammarParser {
         switch k {
         case .AssignmentOperator:
             let p = try pp.declarationalPattern()
-            guard ts.test([.AssignmentOperator]) else {
-                throw ParserError.Error("Expected '=' after pattern in the assignment operation.", ts.look().info)
+            if !ts.test([.AssignmentOperator]) {
+                try ts.error(.ExpectedEqualForAssignment)
             }
             return .AssignmentOperation(p, try ep.expression())
         default:
@@ -409,12 +410,12 @@ class ProcedureParser : GrammarParser {
     }
 
     func proceduresBlock() throws -> [Procedure] {
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' before procedures block", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForProceduresBlock)
         }
         let ps = try procedures()
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' after procedures block", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterProceduresBlock)
         }
         return ps
     }

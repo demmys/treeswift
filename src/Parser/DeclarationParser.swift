@@ -38,7 +38,7 @@ class DeclarationParser : GrammarParser {
         ]) {
         case .Import:
             if almod != nil || mods.count > 0 {
-                throw ParserError.Error("Unexpected modifier before 'import'.", ts.look().info)
+                try ts.error(.ModifierBeforeImport)
             }
             return try importDeclaration(attrs)
         case .Let:
@@ -53,7 +53,7 @@ class DeclarationParser : GrammarParser {
             return try variableDeclaration(attrs, mods)
         case .Typealias:
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'typealias'.", ts.look().info)
+                try ts.error(.ModifierBeforeTypealias)
             }
             return try typealiasDeclaration(attrs, almod)
         case .Func:
@@ -62,31 +62,31 @@ class DeclarationParser : GrammarParser {
             }
             return try functionDeclaration(attrs, mods)
         case .Indirect:
-            guard ts.test([.Enum]) else {
-                throw ParserError.Error("Expected enum declaration after 'indirect'.", ts.look().info)
+            if !ts.test([.Enum]) {
+                try ts.error(.ExpectedEnum)
             }
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'enum'.", ts.look().info)
+                try ts.error(.ModifierBeforeEnum)
             }
             return try enumDeclaration(attrs, almod, isIndirect: true)
         case .Enum:
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'enum'.", ts.look().info)
+                try ts.error(.ModifierBeforeEnum)
             }
             return try enumDeclaration(attrs, almod)
         case .Struct:
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'struct'.", ts.look().info)
+                try ts.error(.ModifierBeforeStruct)
             }
             return try structDeclaration(attrs, almod)
         case .Class:
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'class'.", ts.look().info)
+                try ts.error(.ModifierBeforeClass)
             }
             return try classDeclaration(attrs, almod)
         case .Protocol:
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'protocol'.", ts.look().info)
+                try ts.error(.ModifierBeforeProtocol)
             }
             return try protocolDeclaration(attrs, almod)
         case .Init:
@@ -96,15 +96,15 @@ class DeclarationParser : GrammarParser {
             return try initializerDeclaration(attrs, mods)
         case .Deinit:
             if almod != nil || mods.count > 0 {
-                throw ParserError.Error("Unexpected modifier before 'deinit'.", ts.look().info)
+                try ts.error(.ModifierBeforeDeinit)
             }
             return try deinitializerDeclaration(attrs)
         case .Extension:
             if attrs.count > 0 {
-                throw ParserError.Error("Unexpected attribute before 'extension'.", ts.look().info)
+                try ts.error(.AttributeBeforeExtension)
             }
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'extension'.", ts.look().info)
+                try ts.error(.ModifierBeforeExtension)
             }
             return try extensionDeclaration(almod)
         case .Subscript:
@@ -114,30 +114,30 @@ class DeclarationParser : GrammarParser {
             return try subscriptDeclaration(attrs, mods)
         case .Prefix:
             if attrs.count > 0 {
-                throw ParserError.Error("Unexpected attribute before operator declaration 'prefix'.", ts.look().info)
+                try ts.error(.AttributeBeforeOperator)
             }
             if almod != nil || mods.count > 0 {
-                throw ParserError.Error("Unexpected modifier before operator declaration 'prefix'.", ts.look().info)
+                try ts.error(.ModifierBeforeOperator)
             }
             return try operatorDeclaration(.Prefix)
         case .Postfix:
             if attrs.count > 0 {
-                throw ParserError.Error("Unexpected attribute before operator declaration 'postfix'.", ts.look().info)
+                try ts.error(.AttributeBeforeOperator)
             }
             if almod != nil || mods.count > 0 {
-                throw ParserError.Error("Unexpected modifier before operator declaration 'postfix'.", ts.look().info)
+                try ts.error(.ModifierBeforeOperator)
             }
             return try operatorDeclaration(.Postfix)
         case .Infix:
             if attrs.count > 0 {
-                throw ParserError.Error("Unexpected attribute before operator declaration 'infix'.", ts.look().info)
+                try ts.error(.AttributeBeforeOperator)
             }
             if almod != nil || mods.count > 0 {
-                throw ParserError.Error("Unexpected modifier before operator declaration 'infix'.", ts.look().info)
+                try ts.error(.ModifierBeforeOperator)
             }
             return try infixOperatorDeclaration()
         default:
-            throw ParserError.Error("Expected declaration.", ts.look().info)
+            throw ts.fatal(.ExpectedDeclaration)
         }
     }
 
@@ -153,10 +153,11 @@ class DeclarationParser : GrammarParser {
             }
         }
         repeat {
-            guard case let .Identifier(s) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected identifier for type name.", ts.look().info)
+            if case let .Identifier(s) = ts.match([identifier]) {
+                x.types.append(try tp.identifierType(s))
+            } else {
+                try ts.error(.ExpectedTypeIdentifier)
             }
-            x.types.append(try tp.identifierType(s))
         } while ts.test([.Comma])
         return x
     }
@@ -192,7 +193,7 @@ class DeclarationParser : GrammarParser {
             case let .BinaryOperator(s): x.path.append(s)
             case let .PostfixOperator(s): x.path.append(s)
             default:
-                throw ParserError.Error("Expected path to import.", ts.look().info)
+                try ts.error(.ExpectedPath)
             }
         } while ts.test([.Dot])
         return x
@@ -217,8 +218,8 @@ class DeclarationParser : GrammarParser {
         case .Identifier:
             let inits = try patternInitializerList()
             if ts.test([.LeftBrace]) {
-                guard inits.count == 1 else {
-                    throw ParserError.Error("When the variable has blocks, you can define only one variable in a declaration.", ts.look().info)
+                if inits.count > 1 {
+                    try ts.error(.MultipleVariableWithBlock)
                 }
                 return try variableBlockDeclaration(attrs, mods, ini: inits[0])
             }
@@ -226,7 +227,7 @@ class DeclarationParser : GrammarParser {
                 attrs, mods, isVariable: true, inits: inits
             )
         default:
-            throw ParserError.Error("Expected identifier or declarational pattern for variable declaration.", ts.look().info)
+            throw ts.fatal(.ExpectedVariableIdentifier)
         }
     }
 
@@ -236,7 +237,7 @@ class DeclarationParser : GrammarParser {
         switch ini.0 {
         case let .IdentifierPattern(r):
             guard let e = ini.1 else {
-                throw ParserError.Error("Expected type annotation or initializer for variable declaration with block.", ts.look().info)
+                throw ts.fatal(.ExpectedVariableSpecifierWithBlock)
             }
             let x = VariableBlockDeclaration(attrs, mods, name: r)
             x.specifier = .Initializer(e)
@@ -253,7 +254,7 @@ class DeclarationParser : GrammarParser {
             x.blocks = try getterSetterBlock()
             return x
         default:
-            throw ParserError.Error("Only identifier pattern can appear in the variable declaration with blocks.", ts.look().info)
+            throw ts.fatal(.ExpectedIdentifierPatternWithVariableBlock)
         }
     }
 
@@ -269,8 +270,8 @@ class DeclarationParser : GrammarParser {
                 x = .GetterSetter(getter: g, setter: nil)
             } else {
                 let setAttrs = try ap.attributes()
-                guard ts.test([.Set]) else {
-                    throw ParserError.Error("Expected setter clause after getter clause", ts.look().info)
+                if !ts.test([.Set]) {
+                    try ts.error(.ExpectedSetterAfterGetter)
                 }
                 let s = try setterBlock(setAttrs)
                 x = .GetterSetter(getter: g, setter: s)
@@ -278,8 +279,8 @@ class DeclarationParser : GrammarParser {
         case .Set:
             let s = try setterBlock(attrs)
             let getAttrs = try ap.attributes()
-            guard ts.test([.Get]) else {
-                throw ParserError.Error("Expected getter clause after setter clause.", ts.look().info)
+            if !ts.test([.Get]) {
+                try ts.error(.ExpectedGetterAfterSetter)
             }
             let g = VariableBlock(getAttrs)
             g.body = try prp.proceduresBlock()
@@ -300,8 +301,8 @@ class DeclarationParser : GrammarParser {
             g.body = try prp.procedures()
             x = .GetterSetter(getter: g, setter: nil)
         }
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' at the end of variable block clause", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterVariableBlock)
         }
         return x
     }
@@ -311,11 +312,11 @@ class DeclarationParser : GrammarParser {
         x.attrs = attrs
         if ts.test([.LeftParenthesis]) {
             guard case let .Identifier(s) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected variable name for setter parameter", ts.look().info)
+                throw ts.fatal(.ExpectedSetterVariableName)
             }
             x.param = try createValueRef(s)
-            guard ts.test([.RightParenthesis]) else {
-                throw ParserError.Error("Expected ')' after setter parameter name", ts.look().info)
+            if !ts.test([.RightParenthesis]) {
+                try ts.error(.ExpectedRightParenthesisAfterSetterVariable)
             }
         }
         x.body = try prp.proceduresBlock()
@@ -331,12 +332,12 @@ class DeclarationParser : GrammarParser {
                 return .WillSetDidSet(willSetter: ws, didSetter: nil)
             }
             let didSetAttrs = try ap.attributes()
-            guard ts.test([.DidSet]) else {
-                throw ParserError.Error("Expected did-setter clause after getter clause", ts.look().info)
+            if !ts.test([.DidSet]) {
+                try ts.error(.ExpectedDidSetter)
             }
             let ds = try setterBlock(didSetAttrs)
-            guard ts.test([.RightBrace]) else {
-                throw ParserError.Error("Expected '}' at the end of will-setter, did-setter clause", ts.look().info)
+            if !ts.test([.RightBrace]) {
+                try ts.error(.ExpectedRightBraceAfterDidSetterWillSetter)
             }
             return .WillSetDidSet(willSetter: ws, didSetter: ds)
         case .DidSet:
@@ -345,16 +346,16 @@ class DeclarationParser : GrammarParser {
                 return .WillSetDidSet(willSetter: nil, didSetter: ds)
             }
             let willSetAttrs = try ap.attributes()
-            guard ts.test([.WillSet]) else {
-                throw ParserError.Error("Expected will-setter clause after getter clause", ts.look().info)
+            if !ts.test([.WillSet]) {
+                try ts.error(.ExpectedWillSetter)
             }
             let ws = try setterBlock(willSetAttrs)
-            guard ts.test([.RightBrace]) else {
-                throw ParserError.Error("Expected '}' at the end of will-setter, did-setter clause", ts.look().info)
+            if !ts.test([.RightBrace]) {
+                try ts.error(.ExpectedRightBraceAfterDidSetterWillSetter)
             }
             return .WillSetDidSet(willSetter: ws, didSetter: ds)
         default:
-            throw ParserError.Error("Expected will-setter or did-setter.", ts.look().info)
+            throw ts.fatal(.ExpectedDidSetterWillSetter)
         }
     }
 
@@ -376,11 +377,11 @@ class DeclarationParser : GrammarParser {
     ) throws -> TypealiasDeclaration {
         let x = TypealiasDeclaration(attrs, mod)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier for typealias name.", ts.look().info)
+            throw ts.fatal(.ExpectedTypealiasName)
         }
         x.name = try createTypeRef(s)
-        guard ts.test([.AssignmentOperator]) else {
-            throw ParserError.Error("Expected '=' for typealias declaration", ts.look().info)
+        if !ts.test([.AssignmentOperator]) {
+            try ts.error(.ExpectedTypealiasAssignment)
         }
         x.type = try tp.type()
         return x
@@ -397,7 +398,7 @@ class DeclarationParser : GrammarParser {
         x.returns = try functionResult()
         if forProtocol {
             if case .LeftBrace = ts.look().kind {
-                throw ParserError.Error("Declaration in protocol cannot have a body procedures.", ts.look().info)
+                try ts.error(.ProcedureInDeclarationOfProtocol)
             }
             return x
         }
@@ -418,7 +419,7 @@ class DeclarationParser : GrammarParser {
         case let .PostfixOperator(o):
             return .Operator(try createOperatorRef(o))
         default:
-            throw ParserError.Error("Expected function or operator name.", ts.look().info)
+            throw ts.fatal(.ExpectedFunctionName)
         }
     }
 
@@ -449,8 +450,8 @@ class DeclarationParser : GrammarParser {
     }
 
     func parameterClause() throws -> ParameterClause {
-        guard ts.test([.LeftParenthesis]) else {
-            throw ParserError.Error("Expected '(' for parameter clause.", ts.look().info)
+        if !ts.test([.LeftParenthesis]) {
+            try ts.error(.ExpectedLeftParenthesisForParameter)
         }
         let pc = ParameterClause()
         if ts.test([.RightParenthesis]) {
@@ -466,8 +467,8 @@ class DeclarationParser : GrammarParser {
         default:
             break
         }
-        guard ts.test([.LeftParenthesis]) else {
-            throw ParserError.Error("Expected ')' at the end of parameter.", ts.look().info)
+        if !ts.test([.LeftParenthesis]) {
+            try ts.error(.ExpectedRightParenthesisAfterParameter)
         }
         return pc
     }
@@ -486,7 +487,7 @@ class DeclarationParser : GrammarParser {
                 return try unnamedParameter()
             }
         default:
-            throw ParserError.Error("Expected parameter.", ts.look().info)
+            throw ts.fatal(.ExpectedParameter)
         }
     }
 
@@ -510,12 +511,13 @@ class DeclarationParser : GrammarParser {
                 p.internalName = followName
             }
         case .NotSpecified:
-            throw ParserError.Error("Expected internal parameter name.", ts.look().info)
+            throw ts.fatal(.ExpectedInternalParameterName)
         }
-        guard let a = try tp.typeAnnotation() else {
-            throw ParserError.Error("Expected type annotation after parameter name.", ts.look().info)
+        if let a = try tp.typeAnnotation() {
+            p.type = a
+        } else {
+            try ts.error(.ExpectedParameterNameTypeAnnotation)
         }
-        p.type = a
         if ts.test([.AssignmentOperator]) {
             p.defaultArg = try ep.expression()
         }
@@ -543,13 +545,13 @@ class DeclarationParser : GrammarParser {
     ) throws -> EnumDeclaration {
         let x = EnumDeclaration(attrs, mod, isIndirect: isIndirect)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier.", ts.look().info)
+            throw ts.fatal(.ExpectedEnumName)
         }
         x.name = try createEnumRef(s)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for enum case declarations.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForEnumCase)
         }
         if ts.test([.RightBrace]) {
             return x
@@ -567,12 +569,12 @@ class DeclarationParser : GrammarParser {
             switch x {
             case .UnionStyleMember:
                 if isRawValueStyle {
-                    throw ParserError.Error("Cannot use raw value style enum case with union style enum context.", ts.look().info)
+                    throw ts.fatal(.RawValueStyleEnumWithUnionStyle)
                 }
                 isUnionStyle = true
             case .RawValueStyleMember:
                 if isUnionStyle {
-                    throw ParserError.Error("Cannot use raw value style enum case with union style enum context.", ts.look().info)
+                    throw ts.fatal(.UnionStyleEnumWithRawValueStyle)
                 }
                 isRawValueStyle = true
             default:
@@ -590,16 +592,17 @@ class DeclarationParser : GrammarParser {
         var isIndirect = false
         if ts.test([.Indirect]) {
             if isRawValueStyle {
-                throw ParserError.Error("'indirect' keyword is only valid in union style enum context.", ts.look().info)
+                try ts.error(.IndirectWithRawValueStyle)
             }
             isIndirect = true
             isUnionStyle = true
         }
-        guard ts.test([.Case]) else {
+        if !ts.test([.Case]) {
             if isIndirect {
-                throw ParserError.Error("Expected 'case' for enum case clause", ts.look().info)
+                try ts.error(.ExpectedEnumCaseClause)
+            } else {
+                return .DeclarationMember(try declaration(attrs))
             }
-            return .DeclarationMember(try declaration(attrs))
         }
         return try enumCaseClause(
             attrs, isIndirect,
@@ -614,19 +617,19 @@ class DeclarationParser : GrammarParser {
         let x = EnumCaseClause(attrs)
         repeat {
             guard case let .Identifier(s) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected identifier for enum case name", ts.look().info)
+                throw ts.fatal(.ExpectedEnumCaseName)
             }
             let n = try createEnumCaseRef(s)
             switch ts.match([.LeftParenthesis, .AssignmentOperator]) {
             case .LeftParenthesis:
                 if isRawValueStyle {
-                    throw ParserError.Error("enum case with associated type is only valid in union style enum context.", ts.look().info)
+                    throw ts.fatal(.AssociatedValueWithRawValueStyle)
                 }
                 x.cases.append(UnionStyleEnumCase(n, try tp.tupleType()))
                 isUnionStyle = true
             case .AssignmentOperator:
                 if isUnionStyle {
-                    throw ParserError.Error("enum case with raw value assignment is only valid in raw value style enum context.", ts.look().info)
+                    throw ts.fatal(.RawValueAssignmentWithUnionStyle)
                 }
                 switch ts.match([
                     integerLiteral, floatingPointLiteral, stringLiteral]
@@ -638,7 +641,7 @@ class DeclarationParser : GrammarParser {
                 case let .StringLiteral(s):
                     x.cases.append(RawValueStyleEnumCase(n, .StringLiteral(s)))
                 default:
-                    throw ParserError.Error("Expected literal for raw value", ts.look().info)
+                    throw ts.fatal(.ExpectedLiteralForRawValue)
                 }
                 isRawValueStyle = true
             default:
@@ -659,13 +662,13 @@ class DeclarationParser : GrammarParser {
     ) throws -> StructDeclaration {
         let x = StructDeclaration(attrs, mod)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier.", ts.look().info)
+            throw ts.fatal(.ExpectedStructName)
         }
         x.name = try createStructRef(s)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for declaration body.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try declarations()
         return x
@@ -676,13 +679,13 @@ class DeclarationParser : GrammarParser {
     ) throws -> ClassDeclaration {
         let x = ClassDeclaration(attrs, mod)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier.", ts.look().info)
+            throw ts.fatal(.ExpectedClassName)
         }
         x.name = try createClassRef(s)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for declaration body.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try declarations()
         return x
@@ -693,12 +696,12 @@ class DeclarationParser : GrammarParser {
     ) throws -> ProtocolDeclaration {
         let x = ProtocolDeclaration(attrs, mod)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier.", ts.look().info)
+            throw ts.fatal(.ExpectedProtocolName)
         }
         x.name = try createProtocolRef(s)
         x.inherits = try typeInheritanceClause()
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for declaration body.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try protocolMemberDeclarations()
         return x
@@ -724,7 +727,7 @@ class DeclarationParser : GrammarParser {
             return try protocolPropertyDeclaration(attrs, mods)
         case .Typealias:
             if mods.count > 0 {
-                throw ParserError.Error("Unexpected declaration modifier before 'typealias'.", ts.look().info)
+                try ts.error(.ModifierBeforeTypealias)
             }
             return try protocolAssociatedTypeDeclaration(attrs, almod)
         case .Func:
@@ -743,7 +746,7 @@ class DeclarationParser : GrammarParser {
             }
             return try protocolSubscriptDeclaration(attrs, mods)
         default:
-            throw ParserError.Error("Expected declaration.", ts.look().info)
+            throw ts.fatal(.ExpectedDeclaration)
         }
     }
 
@@ -751,11 +754,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> VariableBlockDeclaration {
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier.", ts.look().info)
+            throw ts.fatal(.ExpectedProtocolName)
         }
         let x = VariableBlockDeclaration(attrs, mods, name: try createValueRef(s))
         guard let (t, typeAttrs) = try tp.typeAnnotation() else {
-            throw ParserError.Error("Expected type annotation", ts.look().info)
+            throw ts.fatal(.ExpectedTypeAnnotationForProtocolProperty)
         }
         x.specifier = .TypeAnnotation(t, typeAttrs)
         x.blocks = try getterSetterKeywordBlock()
@@ -768,7 +771,7 @@ class DeclarationParser : GrammarParser {
         let x = SubscriptDeclaration(attrs, mods)
         x.params = try parameterClause()
         guard let r = try functionResult() else {
-            throw ParserError.Error("Expected '->' for subscript result type.", ts.look().info)
+            throw ts.fatal(.ExpectedFunctionResultArrow)
         }
         x.returns = r
         x.body = try getterSetterKeywordBlock()
@@ -777,7 +780,7 @@ class DeclarationParser : GrammarParser {
 
     private func getterSetterKeywordBlock() throws -> VariableBlocks {
         guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected getter or setter keyword clause.", ts.look().info)
+            throw ts.fatal(.ExpectedGetterSetterKeyword)
         }
         var x: VariableBlocks!
         let attrs = try ap.attributes()
@@ -787,22 +790,22 @@ class DeclarationParser : GrammarParser {
                 x = .GetterKeyword(attrs)
             } else {
                 let setAttrs = try ap.attributes()
-                guard ts.test([.Set]) else {
-                    throw ParserError.Error("Expected 'set' keyword", ts.look().info)
+                if !ts.test([.Set]) {
+                    try ts.error(.ExpectedSetKeyword)
                 }
                 x = .GetterSetterKeyword(getAttrs: attrs, setAttrs: setAttrs)
             }
         case .Set:
             let getAttrs = try ap.attributes()
-            guard ts.test([.Get]) else {
-                throw ParserError.Error("Expected 'get' keyword", ts.look().info)
+            if !ts.test([.Get]) {
+                try ts.error(.ExpectedGetKeyword)
             }
             x = .GetterSetterKeyword(getAttrs: getAttrs, setAttrs: attrs)
         default:
-            throw ParserError.Error("Expected 'get' or 'set keyword.", ts.look().info)
+            throw ts.fatal(.ExpectedGetSetKeyword)
         }
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' at the end of variable block clause", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterVariableBlock)
         }
         return x
     }
@@ -812,7 +815,7 @@ class DeclarationParser : GrammarParser {
     ) throws -> TypealiasDeclaration {
         let x = TypealiasDeclaration(attrs, mod)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier for associated type.", ts.look().info)
+            throw ts.fatal(.ExpectedProtocolAssociatedTypeName)
         }
         x.name = try createTypeRef(s)
         x.inherits = try typeInheritanceClause()
@@ -838,7 +841,7 @@ class DeclarationParser : GrammarParser {
         x.params = try parameterClause()
         if forProtocol {
             if case .LeftBrace = ts.look().kind {
-                throw ParserError.Error("Declaration in protocol cannot have a body procedures.", ts.look().info)
+                try ts.error(.ProcedureInDeclarationOfProtocol)
             }
             return x
         }
@@ -855,16 +858,16 @@ class DeclarationParser : GrammarParser {
     private func extensionDeclaration(mod: Modifier?) throws -> ExtensionDeclaration {
         let x = ExtensionDeclaration(mod)
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier for typealias name.", ts.look().info)
+            throw ts.fatal(.ExpectedExtendedType)
         }
         x.type = try tp.identifierType(s)
         x.inherits = try typeInheritanceClause()
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for extension body.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForExtension)
         }
         x.body = try declarations()
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' for extension body.", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterExtension)
         }
         return x
     }
@@ -875,11 +878,11 @@ class DeclarationParser : GrammarParser {
         let x = SubscriptDeclaration(attrs, mods)
         x.params = try parameterClause()
         guard let r = try functionResult() else {
-            throw ParserError.Error("Expected '->' for subscript result type.", ts.look().info)
+            throw ts.fatal(.ExpectedFunctionResultArrow)
         }
         x.returns = r
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for subscript body.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForSubscript)
         }
         x.body = try getterSetterBlock()
         return x
@@ -888,37 +891,37 @@ class DeclarationParser : GrammarParser {
     private func operatorDeclaration(
         kind: OperatorDeclarationKind
     ) throws -> OperatorDeclaration {
-        guard ts.test([.Operator]) else {
-            throw ParserError.Error("Expected 'operator' for operator declaration.", ts.look().info)
+        if !ts.test([.Operator]) {
+            try ts.error(.ExpectedOperator)
         }
         guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
-            throw ParserError.Error("Expected operator identifier for operator declaration.", ts.look().info)
+            throw ts.fatal(.ExpectedOperatorName)
         }
         let name = try createOperatorRef(s)
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for operator declaration.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForOperator)
         }
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' for operator declaration.", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceForOperator)
         }
         return OperatorDeclaration(kind, name)
     }
 
     private func infixOperatorDeclaration() throws -> OperatorDeclaration {
-        guard ts.test([.Operator]) else {
-            throw ParserError.Error("Expected 'operator' for operator declaration.", ts.look().info)
+        if !ts.test([.Operator]) {
+            try ts.error(.ExpectedOperator)
         }
         guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
-            throw ParserError.Error("Expected operator identifier for operator declaration.", ts.look().info)
+            throw ts.fatal(.ExpectedOperatorName)
         }
         let name = try createOperatorRef(s)
-        guard ts.test([.LeftBrace]) else {
-            throw ParserError.Error("Expected '{' for operator declaration.", ts.look().info)
+        if !ts.test([.LeftBrace]) {
+            try ts.error(.ExpectedLeftBraceForOperator)
         }
         let p = try precedenceClause()
         let a = try associativityClause()
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' for operator declaration.", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceForOperator)
         }
         return OperatorDeclaration(.Infix(precedence: p, associativity: a), name)
     }
@@ -929,7 +932,7 @@ class DeclarationParser : GrammarParser {
         }
         guard case let .IntegerLiteral(i, decimalDigits: d)
             = ts.match([integerLiteral]) where d else {
-            throw ParserError.Error("Expected decimal digits for precedence.", ts.look().info)
+                throw ts.fatal(.ExpectedPrecedence)
         }
         return i
     }
@@ -946,7 +949,7 @@ class DeclarationParser : GrammarParser {
         case .None:
             return .None
         default:
-            throw ParserError.Error("Expected 'left', 'right' or 'none' for associativity.", ts.look().info)
+            throw ts.fatal(.ExpectedAssociativity)
         }
     }
 }

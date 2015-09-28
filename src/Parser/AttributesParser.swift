@@ -3,34 +3,39 @@ class AttributesParser : GrammarParser {
         var i = startIndex
         var attrs: [Attribute] = []
         while case .Atmark = ts.look(i++).kind {
-            attrs.append(try lookAttribute(i))
+            if let a = try lookAttribute(i) {
+                attrs.append(a)
+            }
+            ++i
         }
         return (attrs, i)
     }
 
-    func lookAttribute(startIndex: Int = 0) throws -> Attribute {
+    func lookAttribute(startIndex: Int = 0) throws -> Attribute? {
         let token = ts.look(startIndex)
         if case let .Identifier(s) = token.kind {
             return Attribute(s)
-        } else {
-            throw ParserError.Error("Expected identifier for attribute", token.info)
         }
+        try ts.error(.ExpectedAttributeIdentifier, token: token)
+        return nil
     }
 
     func attributes() throws -> [Attribute] {
         var attrs: [Attribute] = []
         while ts.test([.Atmark]) {
-            attrs.append(try attribute())
+            if let a = try attribute() {
+                attrs.append(a)
+            }
         }
         return attrs
     }
 
-    private func attribute() throws -> Attribute {
+    private func attribute() throws -> Attribute? {
         if case let .Identifier(s) = ts.match([identifier]) {
             return Attribute(s)
-        } else {
-            throw ParserError.Error("Expected identifier for attribute", ts.look().info)
         }
+        try ts.error(.ExpectedAttributeIdentifier)
+        return nil
     }
 
     func declarationModifiers() throws -> [Modifier] {
@@ -71,17 +76,17 @@ class AttributesParser : GrammarParser {
                     if case .LeftParenthesis = ts.look().kind {
                         switch ts.match([.Safe, .Unsafe], ahead: 1) {
                         case .Safe:
-                            guard ts.test([.RightParenthesis]) else {
-                                throw ParserError.Error("Expected ')' after 'safe' for unowned modifier", ts.look().info)
+                            if !ts.test([.RightParenthesis]) {
+                                try ts.error(.ExpectedUnownedSafeModifierRightParenthesis)
                             }
                             return .UnownedSafe
                         case .Unsafe:
-                            guard ts.test([.RightParenthesis]) else {
-                                throw ParserError.Error("Expected ')' after 'unsafe' for unowned modifier", ts.look().info)
+                            if !ts.test([.RightParenthesis]) {
+                                try ts.error(.ExpectedUnownedUnsafeModifierRightParenthesis)
                             }
                             return .UnownedUnsafe
                         default:
-                            throw ParserError.Error("Expected 'safe' or 'unsafe' after '('", ts.look().info)
+                            try ts.error(.ExpectedModifiedUnowned)
                         }
                     }
                     return .Unowned
@@ -139,33 +144,33 @@ class AttributesParser : GrammarParser {
         switch target! {
         case .Internal:
             if case .LeftParenthesis = ts.look().kind {
-                guard ts.test([.Set], ahead: 1) else {
-                    throw ParserError.Error("Expected 'set' after '('", ts.look().info)
+                if !ts.test([.Set], ahead: 1) {
+                    try ts.error(.ExpectedSetModifier)
                 }
-                guard ts.test([.RightParenthesis]) else {
-                    throw ParserError.Error("Expected ')' after 'set' for access modifier", ts.look().info)
+                if !ts.test([.RightParenthesis]) {
+                    try ts.error(.ExpectedRightParenthesisAfterSet)
                 }
                 return .InternalSet
             }
             return .Internal
         case .Private:
             if case .LeftParenthesis = ts.look().kind {
-                guard ts.test([.Set], ahead: 1) else {
-                    throw ParserError.Error("Expected 'set' after '('", ts.look().info)
+                if !ts.test([.Set], ahead: 1) {
+                    try ts.error(.ExpectedSetModifier)
                 }
-                guard ts.test([.RightParenthesis]) else {
-                    throw ParserError.Error("Expected ')' after 'set' for access modifier", ts.look().info)
+                if !ts.test([.RightParenthesis]) {
+                    try ts.error(.ExpectedRightParenthesisAfterSet)
                 }
                 return .PrivateSet
             }
             return .Private
         case .Public:
             if case .LeftParenthesis = ts.look().kind {
-                guard ts.test([.Set], ahead: 1) else {
-                    throw ParserError.Error("Expected 'set' after '('", ts.look().info)
+                if !ts.test([.Set], ahead: 1) {
+                    try ts.error(.ExpectedSetModifier)
                 }
-                guard ts.test([.RightParenthesis]) else {
-                    throw ParserError.Error("Expected ')' after 'set' for access modifier", ts.look().info)
+                if !ts.test([.RightParenthesis]) {
+                    try ts.error(.ExpectedRightParenthesisAfterSet)
                 }
                 return .PublicSet
             }

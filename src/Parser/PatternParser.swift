@@ -16,7 +16,7 @@ class PatternParser : GrammarParser {
         case .LeftParenthesis:
             return .TuplePattern(try declarationalTuplePattern())
         default:
-            throw ParserError.Error("Expected declarational pattern. You can use only identifier patterns, wildcard patterns or tuple patterns here.", ts.look().info)
+            throw ts.fatal(.ExpectedDeclarationalPattern)
         }
     }
 
@@ -38,7 +38,7 @@ class PatternParser : GrammarParser {
             return .TypePattern(try tp.type())
         case .Dot:
             guard case let .Identifier(m) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected identifier after '.' for enum case pattern", ts.look().info)
+                throw ts.fatal(.ExpectedEnumCasePatternIdentifier)
             }
             return .EnumCasePattern(
                 try getMemberRef(m), try conditionalTuplePattern()
@@ -100,7 +100,7 @@ class PatternParser : GrammarParser {
         repeat {
             if case .Colon = ts.look(1).kind {
                 guard case let .Identifier(s) = ts.match([identifier]) else {
-                    throw ParserError.Error("Expected identifier for the label of tuple element", ts.look().info)
+                    throw ts.fatal(.ExpectedTupleLabel)
                 }
                 ts.next()
                 t.append((s, .TuplePattern(try patternParser())))
@@ -108,8 +108,8 @@ class PatternParser : GrammarParser {
             }
             t.append((nil, .TuplePattern(try patternParser())))
         } while ts.test([.Comma])
-        guard ts.test([.RightParenthesis]) else {
-            throw ParserError.Error("Expected ')' at the end of tuple", ts.look().info)
+        if !ts.test([.RightParenthesis]) {
+            try ts.error(.ExpectedRightParenthesisAfterTuple)
         }
         return t
     }

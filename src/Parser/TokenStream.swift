@@ -1,10 +1,14 @@
 import Util
 
-public struct Token {
+public struct Token : SourceTrackable {
     public var kind: TokenKind
-    public var info: SourceInfo
+    private let info: SourceInfo
 
-    init(kind: TokenKind, info: SourceInfo) {
+    public var sourceInfo: SourceInfo {
+        return info
+    }
+
+    private init(kind: TokenKind, info: SourceInfo) {
         self.kind = kind
         self.info = info
     }
@@ -65,6 +69,16 @@ class TokenStream {
         } else {
             return nil
         }
+    }
+
+    func fatal(message: ErrorMessage, token: Token? = nil) -> ErrorReport {
+        return ErrorReporter.fatal(message, token ?? look())
+    }
+    func error(message: ErrorMessage, token: Token? = nil) throws {
+        try ErrorReporter.error(message, token ?? look())
+    }
+    func warning(message: ErrorMessage, token: Token? = nil) {
+        ErrorReporter.warning(message, token ?? look())
     }
 
     func look(ahead: Int = 0, skipLineFeed: Bool = true) -> Token {

@@ -19,10 +19,10 @@ public class Parser {
 
     private func createStream(fileName: String) throws -> TokenStream {
         guard let f = File(name: fileName, mode: "r") else {
-            try ErrorReporter.fatal(.FileNotFound(fileName), nil)
+            throw ErrorReporter.fatal(.FileNotFound(fileName), nil)
         }
         guard let ts = TokenStream(file: f) else {
-            try ErrorReporter.fatal(.FileCanNotRead(fileName), nil)
+            throw ErrorReporter.fatal(.FileCanNotRead(fileName), nil)
         }
         return ts
     }

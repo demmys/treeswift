@@ -14,15 +14,15 @@ class GenericsParser : GrammarParser {
             x.params.append(try genericParameter())
         } while ts.test([.Comma])
         x.reqs = try requirementClause()
-        guard ts.test([.PostfixGraterThan]) else {
-            throw ParserError.Error("Expected '>' at the end of generic parameter clause.", ts.look().info)
+        if !ts.test([.PostfixGraterThan]) {
+            try ts.error(.ExpectedGraterThanAfterGenericParameter)
         }
         return x
     }
 
     func genericParameter() throws -> GenericParameter {
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier for generic parameter.", ts.look().info)
+            throw ts.fatal(.ExpectedGenericParameterName)
         }
         let r = try createTypeRef(s)
         if ts.test([.Colon]) {
@@ -48,7 +48,7 @@ class GenericsParser : GrammarParser {
 
     func requirement() throws -> Requirement {
         guard case let .Identifier(s) = ts.match([identifier]) else {
-            throw ParserError.Error("Expected identifier at the beggining of requirement", ts.look().info)
+            throw ts.fatal(.ExpectedIdentifierForRequirement)
         }
         let i = try tp.identifierType(s)
         switch ts.match([.Colon, binaryOperator]) {
@@ -62,10 +62,10 @@ class GenericsParser : GrammarParser {
             if o == "==" {
                 return .SameType(i, try tp.type())
             } else {
-                throw ParserError.Error("Expected '==' for the same type requirement", ts.look().info)
+                throw ts.fatal(.ExpectedDoubleEqual)
             }
         default:
-            throw ParserError.Error("Expected ':' for the conformance requirement or '==' for the same type requirement", ts.look().info)
+            throw ts.fatal(.ExpectedRequirementSymbol)
         }
     }
 
@@ -77,8 +77,8 @@ class GenericsParser : GrammarParser {
         repeat {
             types.append(try tp.type())
         } while ts.test([.Comma])
-        guard ts.test([.PostfixGraterThan]) else {
-            throw ParserError.Error("Expected '>' at the end of generic argument clause.", ts.look().info)
+        if !ts.test([.PostfixGraterThan]) {
+            try ts.error(.ExpectedGraterThanAfterGenericParameter)
         }
         return types
     }

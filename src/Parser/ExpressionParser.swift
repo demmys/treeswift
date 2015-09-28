@@ -79,8 +79,8 @@ class ExpressionParser : GrammarParser {
         let x = ConditionalExpressionBody()
         x.cond = preExp
         x.trueSide = try expression()
-        guard ts.test([.Colon]) else {
-            throw ParserError.Error("Expected ':' after true condition of conditional expression", ts.look().info)
+        if !ts.test([.Colon]) {
+            try ts.error(.ExpectedColonAfterCondition)
         }
         x.falseSide = try expression()
         return x
@@ -148,8 +148,8 @@ class ExpressionParser : GrammarParser {
             return try postfixMemberExpression()
         case .LeftBracket:
             let es = try expressionList()
-            guard ts.test([.RightBracket]) else {
-                throw ParserError.Error("Expected ']' at the end of subscript expression", ts.look().info)
+            if !ts.test([.RightBracket]) {
+                try ts.error(.ExpectedRightBracketAfterSubscript)
             }
             return .Subscript(es)
         case .PostfixExclamation:
@@ -177,7 +177,7 @@ class ExpressionParser : GrammarParser {
         case .IntegerLiteral(let d, true):
             return .ExplicitUnnamedMember(try getMemberRef(Int(d)))
         default:
-            throw ParserError.Error("Unexpected token after '.'", ts.look().info)
+            throw ts.fatal(.UnexpectedTokenForMember)
         }
     }
 
@@ -228,13 +228,13 @@ class ExpressionParser : GrammarParser {
             return .TupleExpression(try tupleExpression())
         case .Dot:
             guard case let .Identifier(s) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected identifier after the begging of implicit member expression", ts.look().info)
+                throw ts.fatal(.ExpectedImplicitMember)
             }
             return .ImplicitMember(try getMemberRef(s))
         case .Underscore:
             return .Wildcard
         default:
-            throw ParserError.Error("Expected expression", ts.look().info)
+            throw ts.fatal(.ExpectedExpression)
         }
     }
 
@@ -246,29 +246,29 @@ class ExpressionParser : GrammarParser {
         case .RightBracket:
             return try arrayLiteral()
         default:
-            throw ParserError.Error("Parser reached end of file while parsing an array", ts.look().info)
+            throw ts.fatal(.UnexpectedEOFWhileArray)
         }
     }
 
     private func dictionaryLiteral() throws -> ExpressionCore {
         // empty dictionary
         if ts.test([.Colon]) {
-            guard ts.test([.RightBracket]) else {
-                throw ParserError.Error("Expected ']' at the end of dictionary literal", ts.look().info)
+            if !ts.test([.RightBracket]) {
+                try ts.error(.ExpectedRightBracketAfterDictionary)
             }
             return .Dictionary([])
         }
         var es: [(Expression, Expression)] = []
         repeat {
             let key = try expression()
-            guard ts.test([.Colon]) else {
-                throw ParserError.Error("Expected ':' between the key and the value of dictionary literal", ts.look().info)
+            if !ts.test([.Colon]) {
+                try ts.error(.ExpectedColonForDictionary)
             }
             let value = try expression()
             es.append((key, value))
         } while ts.test([.Comma]) && ts.look().kind != .RightBracket
-        guard ts.test([.RightBracket]) else {
-            throw ParserError.Error("Expected ']' at the end of dictionary literal", ts.look().info)
+        if !ts.test([.RightBracket]) {
+            try ts.error(.ExpectedRightBracketAfterDictionary)
         }
         return .Dictionary(es)
     }
@@ -282,8 +282,8 @@ class ExpressionParser : GrammarParser {
         repeat {
             es.append(try expression())
         } while ts.test([.Comma]) && ts.look().kind != .RightBracket
-        guard ts.test([.RightBracket]) else {
-            throw ParserError.Error("Expected ']' at the end of array literal", ts.look().info)
+        if !ts.test([.RightBracket]) {
+            try ts.error(.ExpectedRightBracketAfterArray)
         }
         return .Array(es)
     }
@@ -297,12 +297,12 @@ class ExpressionParser : GrammarParser {
             case .Init:
                 return .SelfInitializer
             default:
-                throw ParserError.Error("Expected member name or 'init' after dot", ts.look().info)
+                throw ts.fatal(.ExpectedMember)
             }
         case .LeftBracket:
             let es = try expressionList()
-            guard ts.test([.RightBracket]) else {
-                throw ParserError.Error("Expected '[' at the end of subscript expression", ts.look().info)
+            if !ts.test([.RightBracket]) {
+                try ts.error(.ExpectedRightBracketAfterSubscript)
             }
             return .SelfSubscript(es)
         default:
@@ -319,16 +319,16 @@ class ExpressionParser : GrammarParser {
             case .Init:
                 return .SuperClassInitializer
             default:
-                throw ParserError.Error("Expected member name or 'init' after dot", ts.look().info)
+                throw ts.fatal(.ExpectedMember)
             }
         case .LeftBracket:
             let es = try expressionList()
-            guard ts.test([.RightBracket]) else {
-                throw ParserError.Error("Expected '[' at the end of subscript expression", ts.look().info)
+            if !ts.test([.RightBracket]) {
+                try ts.error(.ExpectedRightBracketAfterSubscript)
             }
             return .SuperClassSubscript(es)
         default:
-            throw ParserError.Error("Expected member expression or subscript expression after 'super'", ts.look().info)
+            throw ts.fatal(.ExpectedSuperMember)
         }
     }
 
@@ -349,7 +349,7 @@ class ExpressionParser : GrammarParser {
             }
         case .LeftParenthesis:
             guard let i = findParenthesisClose(1) else {
-                throw ParserError.Error("'(' not closed before end of file.", ts.look().info)
+                throw ts.fatal(.NotClosedLeftParenthesis)
             }
             switch ts.look(i).kind {
             case .Arrow, .In:
@@ -374,8 +374,8 @@ class ExpressionParser : GrammarParser {
             c.body = try closureExpressionTail()
             return .ClosureExpression(c)
         }
-        guard ts.test([.In]) else {
-            throw ParserError.Error("Expected 'in' after closure signature.", ts.look().info)
+        if !ts.test([.In]) {
+            try ts.error(.ExpectedInForClosureSignature)
         }
         c.body = try closureExpressionTail()
         return .ClosureExpression(c)
@@ -385,7 +385,7 @@ class ExpressionParser : GrammarParser {
         var list = [try createValueRef(first)]
         while ts.test([.Comma]) {
             guard case let .Identifier(s) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected identifier after ',' of parameter list.", ts.look().info)
+                throw ts.fatal(.ExpectedParameterName)
             }
             list.append(try createValueRef(s))
         }
@@ -409,8 +409,8 @@ class ExpressionParser : GrammarParser {
                         s = .Unowned
                         break specifierSwitch
                     }
-                    guard ts.test([.RightParenthesis]) else {
-                        throw ParserError.Error("Expected ')' after 'safe' or 'unsafe' for unowned modifier", ts.look().info)
+                    if !ts.test([.RightParenthesis]) {
+                        try ts.error(.ExpectedUnownedSafeUnsafeModifierRightParenthesis)
                     }
                 } else {
                     s = .Unowned
@@ -425,8 +425,8 @@ class ExpressionParser : GrammarParser {
 
     private func closureExpressionTail() throws -> [Procedure] {
         let ps = try pp.procedures()
-        guard ts.test([.RightBrace]) else {
-            throw ParserError.Error("Expected '}' at the end of closure", ts.look().info)
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterClosure)
         }
         return ps
     }
@@ -440,7 +440,7 @@ class ExpressionParser : GrammarParser {
         repeat {
             if case .Colon = ts.look(1).kind {
                 guard case let .Identifier(s) = ts.match([identifier]) else {
-                    throw ParserError.Error("Expected identifier for the label of tuple element", ts.look().info)
+                    throw ts.fatal(.ExpectedTupleLabel)
                 }
                 ts.next()
                 t.append((s, try expression()))
@@ -448,8 +448,8 @@ class ExpressionParser : GrammarParser {
             }
             t.append((nil, try expression()))
         } while ts.test([.Comma])
-        guard ts.test([.RightParenthesis]) else {
-            throw ParserError.Error("Expected ')' at the end of tuple", ts.look().info)
+        if !ts.test([.RightParenthesis]) {
+            try ts.error(.ExpectedRightParenthesisAfterTuple)
         }
         return t
     }

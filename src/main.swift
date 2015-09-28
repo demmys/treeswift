@@ -49,7 +49,7 @@ if arguments.count < 2 {
         let result = try parser.parse()
         if ErrorReporter.hasErrors() {
             print("Some errors found in compile process.")
-            reporter.report()
+            ErrorReporter.report()
         } else {
             for (fileName, ps) in result {
                 print("----- \(fileName) -----")
@@ -58,12 +58,12 @@ if arguments.count < 2 {
                 }
             }
         }
-    } catch let ErrorReport.Fatal(reporter) {
+    } catch ErrorReport.Fatal {
         print("Compile process aborted because of the fatal error.")
-        reporter.report()
-    } catch let ErrorReport.Full(reporter) {
+        ErrorReporter.report()
+    } catch ErrorReport.Full {
         print("Compile process aborted because of too much errors.")
-        reporter.report()
+        ErrorReporter.report()
     } catch let e {
         print("Compile process aborted because of unexpected error.")
         print(e)

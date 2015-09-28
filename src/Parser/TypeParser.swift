@@ -32,7 +32,7 @@ class TypeParser : GrammarParser {
         case .Protocol:
             return try protocolCompositionType()
         default:
-            throw ParserError.Error("Expected type", ts.look().info)
+            throw ts.fatal(.ExpectedType)
         }
     }
 
@@ -48,7 +48,7 @@ class TypeParser : GrammarParser {
         case .Colon:
             return DictionaryType(t, try type())
         default:
-            throw ParserError.Error("Expected ']' for array type or ':' for dictionary type", ts.look().info)
+            throw ts.fatal(.ExpectedSymbolForAggregator)
         }
     }
 
@@ -65,14 +65,14 @@ class TypeParser : GrammarParser {
         case .PrefixOperator("..."), .BinaryOperator("..."), .PostfixOperator("..."):
             ts.next()
             x.variadic = true
-            guard ts.test([.RightParenthesis]) else {
-                throw ParserError.Error("Expected ')' at the end of tuple type", ts.look().info)
+            if !ts.test([.RightParenthesis]) {
+                try ts.error(.ExpectedRightParenthesisAfterTupleType)
             }
             return x
         case .RightParenthesis:
             return x
         default:
-            throw ParserError.Error("Expected ')' at the end of tuple type", ts.look().info)
+            throw ts.fatal(.ExpectedRightParenthesisAfterTupleType)
         }
     }
 
@@ -117,8 +117,8 @@ class TypeParser : GrammarParser {
     }
 
     func protocolCompositionType() throws -> ProtocolCompositionType {
-        guard ts.test([.PrefixLessThan]) else {
-            throw ParserError.Error("Expected following '<' for protocol composition type", ts.look().info)
+        if !ts.test([.PrefixLessThan]) {
+            try ts.error(.ExpectedLessThanForProtocolCompositionType)
         }
         let x = ProtocolCompositionType()
         // empty list
@@ -127,12 +127,12 @@ class TypeParser : GrammarParser {
         }
         repeat {
             guard case let .Identifier(s) = ts.match([identifier]) else {
-                throw ParserError.Error("Expected type identifier for element of protocol composition type", ts.look().info)
+                throw ts.fatal(.ExpectedTypeIdentifierForProtocolCompositionType)
             }
             x.types.append(try identifierType(s))
         } while ts.test([.Comma])
-        guard ts.test([.PostfixGraterThan]) else {
-            throw ParserError.Error("Expected '>' at the end of protocol composition type", ts.look().info)
+        if !ts.test([.PostfixGraterThan]) {
+            try ts.error(.ExpectedGraterThanAfterProtocolCompositionType)
         }
         return x
     }
@@ -158,7 +158,7 @@ class TypeParser : GrammarParser {
             case .PROTOCOL:
                 return MetaProtocol(t)
             default:
-                throw ParserError.Error("Expected 'Type' or 'Protocol' for metatype type", ts.look().info)
+                throw ts.fatal(.ExpectedMetatypeType)
             }
         default:
             return t
