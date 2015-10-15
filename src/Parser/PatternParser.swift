@@ -82,15 +82,15 @@ class PatternParser : GrammarParser {
     }
 
     func declarationalTuplePattern() throws -> PatternTuple {
-        return try tuplePattern(declarationalTuplePattern)
+        return try tuplePattern(declarationalPattern)
     }
 
     func conditionalTuplePattern() throws -> PatternTuple {
-        return try tuplePattern(conditionalTuplePattern)
+        return try tuplePattern(conditionalPattern)
     }
 
     func tuplePattern(
-        patternParser: () throws -> PatternTuple
+        patternParser: () throws -> Pattern
     ) throws -> PatternTuple {
         // unit
         if ts.test([.RightParenthesis]) {
@@ -103,10 +103,10 @@ class PatternParser : GrammarParser {
                     throw ts.fatal(.ExpectedTupleLabel)
                 }
                 ts.next()
-                t.append((s, .TuplePattern(try patternParser())))
+                t.append((s, try patternParser()))
                 continue
             }
-            t.append((nil, .TuplePattern(try patternParser())))
+            t.append((nil, try patternParser()))
         } while ts.test([.Comma])
         if !ts.test([.RightParenthesis]) {
             try ts.error(.ExpectedRightParenthesisAfterTuple)
