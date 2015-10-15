@@ -177,6 +177,7 @@ public enum ErrorMessage {
     // PatternParser
     case ExpectedDeclarationalPattern
     case ExpectedEnumCasePatternIdentifier
+    case NestedBindingPattern
     // ProcedureParser
     case ContinuousProcedure
     case ExpectedSemicolonAfterForInit
@@ -426,6 +427,8 @@ public enum ErrorMessage {
             return "Expected declarational pattern. You can use only identifier patterns, wildcard patterns or tuple patterns here."
         case .ExpectedEnumCasePatternIdentifier:
             return "Expected identifier after '.' for enum case pattern"
+        case .NestedBindingPattern:
+            return "You cannot use 'let' or 'var' inside of another 'let' or 'var'"
         // ProcedureParser
         case .ContinuousProcedure:
             return "Continuous procedure must be separated by ';'"

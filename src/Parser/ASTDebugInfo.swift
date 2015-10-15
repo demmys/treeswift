@@ -304,6 +304,7 @@ extension ExpressionCore : CustomStringConvertible {
         let post = ")"
         switch self {
         case let .Value(r, genArgs: ts): return "\(pre) value \(r) \(ts)\(post)"
+        case let .BindingValue(r): return "\(pre) value \(r)\(post)"
         case let .Integer(i): return "\(pre) integer \(i)\(post)"
         case let .FloatingPoint(d): return "\(pre) floating-point \(d)\(post)"
         case let .StringExpression(s): return "\(pre) string \(s)\(post)"

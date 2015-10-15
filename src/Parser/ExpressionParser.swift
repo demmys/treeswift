@@ -27,10 +27,10 @@ class ExpressionParser : GrammarParser {
         return x
     }
 
-    func expression() throws -> Expression {
+    func expression(valueBinding: Bool = false) throws -> Expression {
         let x = Expression()
         x.tryType = tryOperator()
-        x.body = try expressionBody()
+        x.body = try expressionBody(valueBinding)
         return x
     }
 
@@ -44,11 +44,11 @@ class ExpressionParser : GrammarParser {
         return .Nothing
     }
 
-    private func expressionBody() throws -> ExpressionBody {
-        let preExp = try expressionUnit()
+    private func expressionBody(valueBinding: Bool) throws -> ExpressionBody {
+        let preExp = try expressionUnit(valueBinding)
         switch ts.match([binaryOperator, .BinaryQuestion, .Is, .As]) {
         case let .BinaryOperator(s):
-            return try binaryExpressionBody(preExp, s)
+            return try binaryExpressionBody(preExp, s, valueBinding: valueBinding)
         case .BinaryQuestion:
             return try conditionalExpressionBody(preExp)
         case .Is:
@@ -64,12 +64,13 @@ class ExpressionParser : GrammarParser {
 
     private func binaryExpressionBody(
         preExp: ExpressionUnit,
-        _ s: String
+        _ s: String,
+        valueBinding: Bool
     ) throws -> BinaryExpressionBody {
         let x = BinaryExpressionBody()
         x.left = preExp
         x.op = try getOperatorRef(s)
-        x.right = try expressionBody()
+        x.right = try expressionBody(valueBinding)
         return x
     }
 
@@ -113,10 +114,10 @@ class ExpressionParser : GrammarParser {
         return x
     }
 
-    private func expressionUnit() throws -> ExpressionUnit {
+    private func expressionUnit(valueBinding: Bool) throws -> ExpressionUnit {
         let x = ExpressionUnit()
         x.pre = try expressionPrefix()
-        x.core = try expressionCore()
+        x.core = try expressionCore(valueBinding)
         while let ep = try expressionPostfix() {
             x.posts.append(ep)
         }
@@ -181,7 +182,7 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func expressionCore() throws -> ExpressionCore {
+    private func expressionCore(valueBinding: Bool) throws -> ExpressionCore {
         switch ts.match([
             identifier, implicitParameterName, integerLiteral, floatingPointLiteral,
             stringLiteral, booleanLiteral, .Nil, .LeftBracket,
@@ -189,6 +190,9 @@ class ExpressionParser : GrammarParser {
             .`Self`, .Super, .LeftBrace, .LeftParenthesis, .Dot, .Underscore
         ]) {
         case let .Identifier(s):
+            if valueBinding {
+                return .BindingValue(try createBindingRef(s))
+            }
             return .Value(
                 try getValueRef(s),
                 genArgs: try gp.genericArgumentClause()

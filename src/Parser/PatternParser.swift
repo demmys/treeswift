@@ -20,20 +20,26 @@ class PatternParser : GrammarParser {
         }
     }
 
-    func conditionalPattern() throws -> Pattern {
-        return try containerPattern(try primaryPattern())
+    func conditionalPattern(valueBinding: Bool = false) throws -> Pattern {
+        return try containerPattern(try primaryPattern(valueBinding))
     }
 
-    func primaryPattern() throws -> Pattern {
+    private func primaryPattern(valueBinding: Bool) throws -> Pattern {
         switch ts.match([.Underscore, .LeftParenthesis, .Var, .Let, .Is, .Dot]) {
         case .Underscore:
             return try wildcardPattern()
         case .LeftParenthesis:
-            return .TuplePattern(try conditionalTuplePattern())
+            return .TuplePattern(try conditionalTuplePattern(true))
         case .Var:
-            return .VariableBindingPattern(try conditionalPattern())
+            if valueBinding {
+                throw ts.fatal(.NestedBindingPattern)
+            }
+            return .VariableBindingPattern(try conditionalPattern(true))
         case .Let:
-            return .ConstantBindingPattern(try conditionalPattern())
+            if valueBinding {
+                throw ts.fatal(.NestedBindingPattern)
+            }
+            return .ConstantBindingPattern(try conditionalPattern(true))
         case .Is:
             return .TypePattern(try tp.type())
         case .Dot:
@@ -41,22 +47,22 @@ class PatternParser : GrammarParser {
                 throw ts.fatal(.ExpectedEnumCasePatternIdentifier)
             }
             return .EnumCasePattern(
-                try getMemberRef(m), try conditionalTuplePattern()
+                try getMemberRef(m), try conditionalTuplePattern(true)
             )
         case let .Identifier(s):
             if let m = testEnumCasePattern(s) {
                 return .EnumCasePattern(
                     try getMemberRef(m, withClassName: s),
-                    try conditionalTuplePattern()
+                    try conditionalTuplePattern(true)
                 )
             }
             fallthrough
         default:
-            return .ExpressionPattern(try ep.expression())
+            return .ExpressionPattern(try ep.expression(true))
         }
     }
 
-    func testEnumCasePattern(s: String) -> String? {
+    private func testEnumCasePattern(s: String) -> String? {
         guard isEnum(s), case .Dot = ts.look(1).kind else {
             return nil
         }
@@ -67,29 +73,29 @@ class PatternParser : GrammarParser {
         return s
     }
 
-    func identifierPattern(s: String) throws -> Pattern {
+    private func identifierPattern(s: String) throws -> Pattern {
         if let (type, attrs) = try tp.typeAnnotation() {
             return .TypedIdentifierPattern(try createValueRef(s), type, attrs)
         }
         return .IdentifierPattern(try createValueRef(s))
     }
 
-    func wildcardPattern() throws -> Pattern {
+    private func wildcardPattern() throws -> Pattern {
         if let (type, attrs) = try tp.typeAnnotation() {
             return .TypedWildcardPattern(type, attrs)
         }
         return .WildcardPattern
     }
 
-    func declarationalTuplePattern() throws -> PatternTuple {
+    private func declarationalTuplePattern() throws -> PatternTuple {
         return try tuplePattern(declarationalPattern)
     }
 
-    func conditionalTuplePattern() throws -> PatternTuple {
-        return try tuplePattern(conditionalPattern)
+    private func conditionalTuplePattern(valueBinding: Bool) throws -> PatternTuple {
+        return try tuplePattern({ try self.conditionalPattern(valueBinding) })
     }
 
-    func tuplePattern(
+    private func tuplePattern(
         patternParser: () throws -> Pattern
     ) throws -> PatternTuple {
         // unit
@@ -114,7 +120,7 @@ class PatternParser : GrammarParser {
         return t
     }
 
-    func containerPattern(p: Pattern) throws -> Pattern {
+    private func containerPattern(p: Pattern) throws -> Pattern {
         switch ts.match([.PostfixQuestion, .As]) {
         case .PostfixQuestion:
             return try containerPattern(.OptionalPattern(p))

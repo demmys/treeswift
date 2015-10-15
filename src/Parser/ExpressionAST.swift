@@ -80,6 +80,7 @@ public enum ExpressionPostfix {
 // primary-expression
 public enum ExpressionCore {
     case Value(ValueRef, genArgs: [Type]?)
+    case BindingValue(BindingRef)
     case Integer(Int64)
     case FloatingPoint(Double)
     case StringExpression(String)

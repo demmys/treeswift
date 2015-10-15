@@ -10,6 +10,18 @@ public class ValueRef : CustomStringConvertible {
     } }
 }
 
+public class BindingRef : CustomStringConvertible {
+    let name: String
+
+    init(_ n: String) {
+        name = n
+    }
+
+    public var description: String { get {
+        return "(BindingRef \(name))"
+    } }
+}
+
 public class OperatorRef : CustomStringConvertible {
     let name: String
 

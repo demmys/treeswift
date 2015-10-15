@@ -120,6 +120,13 @@ class GrammarParser {
         return ValueRef(name)
     }
 
+    func createBindingRef(name: String) throws -> BindingRef {
+        if name == "" {
+            throw ts.fatal(.Dummy)
+        }
+        return BindingRef(name)
+    }
+
     func createTypeRef(name: String) throws -> TypeRef {
         if name == "" {
             throw ts.fatal(.Dummy)
