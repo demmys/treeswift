@@ -11,7 +11,7 @@ primary-pattern -> wildcard-pattern
                  | conditional-tuple-pattern
                  | value-binding-pattern
                  | enum-case-pattern
-                 | type-matching-pattern
+                 | type-pattern
                  | expression-pattern
 
 wildcard-pattern -> Underscore type-annotation?
