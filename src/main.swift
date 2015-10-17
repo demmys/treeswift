@@ -47,6 +47,7 @@ if arguments.count < 2 {
     let parser = Parser(Array(arguments[1..<arguments.count]))
     do {
         let result = try parser.parse()
+        ErrorReporter.report()
         for (fileName, ps) in result {
             print("----- \(fileName) -----")
             for p in ps {

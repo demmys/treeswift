@@ -25,14 +25,12 @@ class TokenStream {
         var cp: CharacterPeeper {
             return _cs
         }
-        let fileName: String
 
         init?(file: File) {
             guard let cs = CharacterStream(file) else {
                 return nil
             }
             _cs = cs
-            fileName = file.name
         }
 
         mutating func consume(consumed: CharacterClass? = nil, n: Int = 1) {
@@ -47,8 +45,7 @@ class TokenStream {
 
         func generateSourceInfo() -> SourceInfo {
             return SourceInfo(
-                fileName: fileName, seekNo: _cs.seekNo,
-                lineNo: _cs.lineNo, charNo: _cs.charNo
+                seekNo: _cs.seekNo, lineNo: _cs.lineNo, charNo: _cs.charNo
             )
         }
     }

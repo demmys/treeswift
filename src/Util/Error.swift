@@ -1,13 +1,11 @@
 import Darwin
 
 public struct SourceInfo {
-    public var fileName: String
     public var seekNo: Int
     public var lineNo: Int
     public var charNo: Int
 
-    public init(fileName: String, seekNo: Int, lineNo: Int, charNo: Int) {
-        self.fileName = fileName
+    public init(seekNo: Int, lineNo: Int, charNo: Int) {
         self.seekNo = seekNo
         self.lineNo = lineNo
         self.charNo = charNo
@@ -34,10 +32,16 @@ public enum ErrorReport : ErrorType {
 
 public class ErrorReporter {
     private static var errors: [Error] = []
+    private static var bundledErrors: [(String, [Error])] = []
     private static var errorCount: Int = 0
 
     public static func hasErrors() -> Bool {
-        return errors.count > 0
+        return errorCount > 0
+    }
+
+    public static func bundle(fileName: String) {
+        bundledErrors.append((fileName, errors))
+        errors = []
     }
 
     public static func fatal(
@@ -58,17 +62,36 @@ public class ErrorReporter {
     }
 
     public static func report() {
-        for (kind, msg, info) in errors {
-            if let i = info {
-                print("\(kind): \(i.lineNo):\(i.charNo) \(msg)")
-            } else {
-                print("\(kind): \(msg)")
+        for (fileName, errors) in bundledErrors {
+            for (kind, msg, info) in errors {
+                if let i = info {
+                    print("\(fileName):\(i.lineNo):\(i.charNo) \(kind): \(msg)")
+                    if let file = File(name: fileName, mode: "r") {
+                        if file.seek(i.seekNo - i.charNo, whence: .SeekSet) {
+                            if let line = file.readLine() {
+                                print(line, terminator: "")
+                                printMarker(i.charNo)
+                                continue
+                            }
+                        }
+                    }
+                    print("(system error: failed to load the source)")
+                } else {
+                    print("\(fileName): \(kind): \(msg)")
+                }
             }
         }
     }
+
+    private static func printMarker(charNo: Int) {
+        for var i = 0; i < charNo - 1; ++i {
+            print(" ", terminator: "")
+        }
+        print("^")
+    }
 }
 
-public enum ErrorMessage {
+public enum ErrorMessage : CustomStringConvertible {
     case Dummy
     case FileNotFound(String)
     case FileCanNotRead(String)
@@ -212,7 +235,7 @@ public enum ErrorMessage {
     case ExpectedGraterThanAfterProtocolCompositionType
     case ExpectedMetatypeType
 
-    public func format() -> String {
+    public var description: String {
         switch self {
         case .Dummy:
             return "dummy error"

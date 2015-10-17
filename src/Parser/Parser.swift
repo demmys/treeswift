@@ -11,8 +11,14 @@ public class Parser {
     public func parse() throws -> [String:[Procedure]] {
         var result: [String:[Procedure]] = [:]
         for fileName in fileNames {
-            ts = try createStream(fileName)
-            result[fileName] = try topLevelDeclaration()
+            do {
+                ts = try createStream(fileName)
+                result[fileName] = try topLevelDeclaration()
+                ErrorReporter.bundle(fileName)
+            } catch let e {
+                ErrorReporter.bundle(fileName)
+                throw e
+            }
         }
         if ErrorReporter.hasErrors() {
             throw ErrorReport.Found
