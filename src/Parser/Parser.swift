@@ -14,6 +14,9 @@ public class Parser {
             ts = try createStream(fileName)
             result[fileName] = try topLevelDeclaration()
         }
+        if ErrorReporter.hasErrors() {
+            throw ErrorReport.Found
+        }
         return result
     }
 
@@ -52,19 +55,4 @@ public class Parser {
         )
         return try parser.procedures()
     }
-
-    /*
-    private func mergeAST(tlds: [TopLevelDeclaration]) throws -> TopLevelDeclaration {
-        // TODO
-    }
-
-    private func topLevelDeclaration() throws -> TopLevelDeclaration {
-        let sp = StatementParser(ts)
-        let b = TopLevelDeclarationBuilder()
-        while ts.look().kind != .EndOfFile {
-            b.add(try sp.statement())
-        }
-        return b.build()
-    }
-    */
 }

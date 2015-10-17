@@ -16,26 +16,23 @@ public struct Token : SourceTrackable {
 
 class TokenStream {
     private struct Context {
-        var source: String? = nil
         // set `CharacterClass.LineFeed` to `prev`
         // in order to remove line feed in the head of the file
         var prev: CharacterClass = .LineFeed
         var exprev: CharacterClass = .LineFeed
 
-        let cp: CharacterPeeper
-        let lineNo: () -> Int
-        let charNo: () -> Int
-        let _consume: () -> ()
-
-        init(cs: CharacterStream) {
-            cp = cs
-            lineNo = { cs.lineNo }
-            charNo = { cs.charNo }
-            _consume = { cs.consume() }
+        let _cs: CharacterStream
+        var cp: CharacterPeeper {
+            return _cs
         }
+        let fileName: String
 
-        mutating func reset() {
-            source = nil
+        init?(file: File) {
+            guard let cs = CharacterStream(file) else {
+                return nil
+            }
+            _cs = cs
+            fileName = file.name
         }
 
         mutating func consume(consumed: CharacterClass? = nil, n: Int = 1) {
@@ -44,14 +41,15 @@ class TokenStream {
                 prev = cc
             }
             for var i = 0; i < n; ++i {
-                let c = cp.look()!
-                if source == nil {
-                    source = String(c)
-                } else {
-                    source!.append(c)
-                }
-                _consume()
+                _cs.consume()
             }
+        }
+
+        func generateSourceInfo() -> SourceInfo {
+            return SourceInfo(
+                fileName: fileName, seekNo: _cs.seekNo,
+                lineNo: _cs.lineNo, charNo: _cs.charNo
+            )
         }
     }
 
@@ -61,14 +59,13 @@ class TokenStream {
     private var classifier: CharacterClassifier!
 
     init?(file: File) {
-        if let cs = CharacterStream(file) {
-            ctx = Context(cs: cs)
-            classifier = CharacterClassifier(cp: cs)
-            queue = [load()]
-            index = 0
-        } else {
+        guard let ctx = Context(file: file) else {
             return nil
         }
+        self.ctx = ctx
+        classifier = CharacterClassifier(cp: ctx.cp)
+        queue = [load()]
+        index = 0
     }
 
     func fatal(message: ErrorMessage, token: Token? = nil) -> ErrorReport {
@@ -128,13 +125,12 @@ class TokenStream {
     }
 
     private func load(classified: CharacterClass? = nil) -> Token {
-        var info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
-        func produce(kind: TokenKind) -> Token {
-            info.source = ctx.source
-            ctx.reset()
-            return Token(kind: kind, info: info)
+        var info = ctx.generateSourceInfo()
+        let produce = { (kind: TokenKind) in Token(kind: kind, info: info) }
+        let refreshAndProduce = { (kind: TokenKind) -> Token in
+            info = self.ctx.generateSourceInfo()
+            return produce(kind)
         }
-
         let head = classified ?? classifier.classify()
         switch head {
         case .CarriageReturn:
@@ -158,7 +154,6 @@ class TokenStream {
                     if cc == .LineFeed {
                         ctx.consume()
                     } else {
-                        ctx.reset()
                         return load(cc)
                     }
                 }
@@ -176,7 +171,6 @@ class TokenStream {
                     if cc == .Space {
                         ctx.consume()
                     } else {
-                        ctx.reset()
                         return load(cc)
                     }
                 }
@@ -233,7 +227,6 @@ class TokenStream {
                 switch cc {
                 case .LineFeed, .EndOfFile:
                     // a comment produces nothing
-                    ctx.reset()
                     // duplicative line feeds will be ignored
                     // in the lexical analyzation of line feed
                     return load(cc)
@@ -261,24 +254,20 @@ class TokenStream {
                     }
                     --depth
                 case .EndOfFile:
-                    info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
-                    return produce(.Error(.UnexpectedEOF))
+                    return refreshAndProduce(.Error(.UnexpectedEOF))
                 default:
                     // ignore comment characters
                     ctx.consume()
                 }
             }
             // a comment produces nothing
-            ctx.reset()
             return load()
         case .BlockCommentTail:
-            info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
             ctx.consume(n: 2)
-            return produce(.Error(.ReservedToken))
+            return refreshAndProduce(.Error(.ReservedToken))
         case .OperatorFollow, .IdentifierFollow, .BackSlash, .Others:
-            info = SourceInfo(lineNo: ctx.lineNo(), charNo: ctx.charNo())
             ctx.consume()
-            return produce(.Error(.InvalidToken))
+            return refreshAndProduce(.Error(.InvalidToken))
         case .LessThan, .GraterThan, .Ampersand, .Question, .Exclamation:
             return produce(
                 composerParse(head, composer: OperatorComposer(prev: ctx.prev))

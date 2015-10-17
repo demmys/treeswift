@@ -1,14 +1,16 @@
 import Darwin
 
 public struct SourceInfo {
+    public var fileName: String
+    public var seekNo: Int
     public var lineNo: Int
     public var charNo: Int
-    public var source: String?
 
-    public init(lineNo: Int, charNo: Int, source: String? = nil) {
+    public init(fileName: String, seekNo: Int, lineNo: Int, charNo: Int) {
+        self.fileName = fileName
+        self.seekNo = seekNo
         self.lineNo = lineNo
         self.charNo = charNo
-        self.source = source
     }
 }
 
@@ -27,6 +29,7 @@ public typealias Error = (ErrorKind, ErrorMessage, SourceInfo?)
 public enum ErrorReport : ErrorType {
     case Fatal
     case Full
+    case Found
 }
 
 public class ErrorReporter {
@@ -57,7 +60,7 @@ public class ErrorReporter {
     public static func report() {
         for (kind, msg, info) in errors {
             if let i = info {
-                print("\(kind): \(i.lineNo):\(i.charNo) \(msg)\n\(i.source!)")
+                print("\(kind): \(i.lineNo):\(i.charNo) \(msg)")
             } else {
                 print("\(kind): \(msg)")
             }

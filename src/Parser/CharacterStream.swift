@@ -14,6 +14,7 @@ class CharacterStream : CharacterPeeper {
 
     var lineNo: Int = 1
     var charNo: Int = 1
+    var seekNo: Int = 1
 
     init?(_ file: File) {
         self.file = file
@@ -61,8 +62,9 @@ class CharacterStream : CharacterPeeper {
             case "\0", "\u{000b}", "\u{000c}":
                 break
             default:
-                ++charNo;
+                ++charNo
             }
+            ++seekNo
         }
         index = index.successor()
     }
