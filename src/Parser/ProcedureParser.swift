@@ -65,12 +65,12 @@ class ProcedureParser : GrammarParser {
              .Postfix:
             x = .DeclarationProcedure(try dp.declaration()) 
         case let .Identifier(s):
-            // labeled-procedure or expression-operation
+            // labeled-procedure, assignment-operation or expression-operation
             if case .Colon = ts.look(1).kind {
                 ts.next(2)
                 x = try labeledProcedure(s)
             }
-            x = .OperationProcedure(.ExpressionOperation(try ep.expression()))
+            x = .OperationProcedure(try assignmentOrExpressionOperation())
         default:
             // assignment-operation or expression-operation
             x = .OperationProcedure(try assignmentOrExpressionOperation())
@@ -396,7 +396,7 @@ class ProcedureParser : GrammarParser {
     }
 
     private func assignmentOrExpressionOperation() throws -> Operation {
-        let (_, k) = find([.AssignmentOperator, .Semicolon, .LineFeed])
+        let (_, k) = find([.AssignmentOperator, .Semicolon, .LineFeed], startIndex: 1)
         switch k {
         case .AssignmentOperator:
             let p = try pp.declarationalPattern()

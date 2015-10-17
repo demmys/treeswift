@@ -94,25 +94,25 @@ class AttributesParser : GrammarParser {
                     return try accessLevelModifier(k)
             }
         case .Class:
-            if case .Identifier = ts.look().kind {
+            if case .Identifier = ts.look(1).kind {
                 return nil
             }
             ts.next()
             return .Class
         case .Infix:
-            if case .Operator = ts.look().kind {
+            if case .Operator = ts.look(1).kind {
                 return nil
             }
             ts.next()
             return .Infix
         case .Prefix:
-            if case .Operator = ts.look().kind {
+            if case .Operator = ts.look(1).kind {
                 return nil
             }
             ts.next()
             return .Prefix
         case .Postfix:
-            if case .Operator = ts.look().kind {
+            if case .Operator = ts.look(1).kind {
                 return nil
             }
             ts.next()

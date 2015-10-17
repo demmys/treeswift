@@ -467,7 +467,7 @@ class DeclarationParser : GrammarParser {
         default:
             break
         }
-        if !ts.test([.LeftParenthesis]) {
+        if !ts.test([.RightParenthesis]) {
             try ts.error(.ExpectedRightParenthesisAfterParameter)
         }
         return pc
