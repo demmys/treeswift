@@ -123,7 +123,7 @@ class TokenStream {
 
     private func load(classified: CharacterClass? = nil) -> Token {
         var info = ctx.generateSourceInfo()
-        let produce = { (kind: TokenKind) in Token(kind: kind, info: info) }
+        let produce = { Token(kind: $0, info: info) }
         let refreshAndProduce = { (kind: TokenKind) -> Token in
             info = self.ctx.generateSourceInfo()
             return produce(kind)

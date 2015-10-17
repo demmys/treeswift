@@ -16,10 +16,19 @@ public protocol SourceTrackable {
     var sourceInfo: SourceInfo { get }
 }
 
-public enum ErrorKind : String {
-    case Fatal = "fatal"
-    case Error = "error"
-    case Warning = "warning"
+public enum ErrorKind : CustomStringConvertible {
+    case Fatal, Error, Warning
+
+    public var description: String {
+        switch self {
+        case .Fatal:
+            return "fatal"
+        case .Error:
+            return "error"
+        case .Warning:
+            return "warning"
+        }
+    }
 }
 
 public typealias Error = (ErrorKind, ErrorMessage, SourceInfo?)
