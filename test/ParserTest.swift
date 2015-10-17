@@ -11,8 +11,9 @@ class ParserTest : TestUnit {
 
     private func inexistentFile() throws {
         let parser = Parser(["inexistentfile"])
-        if case .Succeeded = parser.parse() {
+        do {
+            try parser.parse()
             throw FailureReason.Text("Parser could parse.")
-        }
+        } catch _ {}
     }
 }
