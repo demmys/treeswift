@@ -104,6 +104,12 @@ public enum ErrorMessage : CustomStringConvertible {
     case Dummy
     case FileNotFound(String)
     case FileCanNotRead(String)
+    // ScopeManager
+    case ScopeTypeMismatch
+    case LeavingGlobalScope
+    case VariableAlreadyExist(String)
+    case InvalidVariableScope
+    case VariableNotExist(String)
     // TokenStream
     case UnexpectedEOF
     case InvalidToken
@@ -253,12 +259,23 @@ public enum ErrorMessage : CustomStringConvertible {
         case let .FileCanNotRead(name):
             return "File cannot read: \(name)"
         // TokenStream
-        case UnexpectedEOF:
+        case .UnexpectedEOF:
             return "Unexpected end of file"
-        case InvalidToken:
+        case .InvalidToken:
             return "Invalid token"
-        case ReservedToken:
+        case .ReservedToken:
             return "Reserved token"
+        // ScopeManager
+        case .ScopeTypeMismatch:
+            return "<system error> leaving scope type mismatch"
+        case .LeavingGlobalScope:
+            return "<system error> leaving global scope"
+        case let .VariableAlreadyExist(name):
+            return "Constant or variable name '\(name)' already used"
+        case .InvalidVariableScope:
+            return "You cannot declare a constant or a variable in this scope"
+        case let .VariableNotExist(name):
+            return "Constant or variable '\(name)' not exists in this scope"
         // AttributesParser
         case .ExpectedAttributeIdentifier:
             return "Expected identifier for attribute"
