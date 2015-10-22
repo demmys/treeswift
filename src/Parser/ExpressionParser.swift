@@ -337,6 +337,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func closureExpression() throws -> ExpressionCore {
+        ScopeManager.enterScope(.Function)
         let c = Closure()
         switch ts.match([.LeftBracket]) {
         case .LeftBracket:
@@ -432,6 +433,7 @@ class ExpressionParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterClosure)
         }
+        try ScopeManager.leaveScope(.Function, ts.look())
         return ps
     }
 

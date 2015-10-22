@@ -86,6 +86,7 @@ class ProcedureParser : GrammarParser {
         guard case .Semicolon = k else {
             return try forInFlow()
         }
+        ScopeManager.enterScope(.For)
         var parenthesized = false
         let x = ForFlow(label)
         if case .LeftParenthesis = ts.look().kind,
@@ -128,6 +129,7 @@ class ProcedureParser : GrammarParser {
         }
         // block
         x.block = try proceduresBlock()
+        try ScopeManager.leaveScope(.For, ts.look())
         return x
     }
 
@@ -148,6 +150,7 @@ class ProcedureParser : GrammarParser {
     }
 
     private func forInFlow(label: String? = nil) throws -> ForInFlow {
+        ScopeManager.enterScope(.ForIn)
         let x = ForInFlow(label)
         var p: Pattern!
         if ts.test([.Case]) {
@@ -165,24 +168,30 @@ class ProcedureParser : GrammarParser {
             x.pats = [PatternMatching(p, e, nil)]
         }
         x.block = try proceduresBlock()
+        try ScopeManager.leaveScope(.ForIn, ts.look())
         return x
     }
 
     private func whileFlow(label: String? = nil) throws -> WhileFlow {
+        ScopeManager.enterScope(.While)
         let x = WhileFlow(label)
         x.pats = try patternMatchClause()
         x.block = try proceduresBlock()
+        try ScopeManager.leaveScope(.While, ts.look())
         return x
     }
 
     private func repeatWhileFlow(label: String? = nil) throws -> RepeatWhileFlow {
+        ScopeManager.enterScope(.RepeatWhile)
         let x = RepeatWhileFlow(label)
         x.block = try proceduresBlock()
         x.setCond(try ep.expression())
+        try ScopeManager.leaveScope(.RepeatWhile, ts.look())
         return x
     }
 
     private func ifFlow(label: String? = nil) throws -> IfFlow {
+        ScopeManager.enterScope(.If)
         let x = IfFlow(label)
         x.pats = try patternMatchClause()
         x.block = try proceduresBlock()
@@ -193,22 +202,27 @@ class ProcedureParser : GrammarParser {
                 x.els = .Else(try proceduresBlock())
             }
         }
+        try ScopeManager.leaveScope(.If, ts.look())
         return x
     }
 
     private func guardFlow() throws -> GuardFlow {
+        ScopeManager.enterScope(.Guard)
         let x = GuardFlow()
         x.pats = try patternMatchClause()
         if !ts.test([.Else]) {
             try ts.error(.ExpectedElseForGuard)
         }
         x.block = try proceduresBlock()
+        try ScopeManager.leaveScope(.Guard, ts.look())
         return x
     }
 
     private func deferFlow() throws -> DeferFlow {
+        ScopeManager.enterScope(.Defer)
         let x = DeferFlow()
         x.block = try proceduresBlock()
+        try ScopeManager.leaveScope(.Defer, ts.look())
         return x
     }
 
@@ -275,9 +289,12 @@ class ProcedureParser : GrammarParser {
     }
 
     private func doFlow() throws -> DoFlow {
+        ScopeManager.enterScope(.Do)
         let x = DoFlow()
         x.block = try proceduresBlock()
+        try ScopeManager.leaveScope(.Do, ts.look())
         while ts.test([.Catch]) {
+            ScopeManager.enterScope(.Catch)
             let c = CatchFlow()
             switch ts.match([.Where]) {
             case .Where:
@@ -294,6 +311,7 @@ class ProcedureParser : GrammarParser {
             }
             c.block = try proceduresBlock()
             x.catches.append(c)
+            try ScopeManager.leaveScope(.Catch, ts.look())
         }
         return x
     }
@@ -321,6 +339,7 @@ class ProcedureParser : GrammarParser {
     }
 
     private func caseFlow(cond: Expression) throws -> CaseFlow {
+        ScopeManager.enterScope(.Case)
         let x = CaseFlow()
         x.pats = []
         repeat {
@@ -339,10 +358,12 @@ class ProcedureParser : GrammarParser {
         guard x.block.count > 0 else {
             throw ts.fatal(.EmptyCaseFlow)
         }
+        try ScopeManager.leaveScope(.Case, ts.look())
         return x
     }
 
     private func defaultCaseFlow() throws -> CaseFlow {
+        ScopeManager.enterScope(.Case)
         if !ts.test([.Colon]) {
             try ts.error(.ExpectedColonAfterDefault)
         }
@@ -352,6 +373,7 @@ class ProcedureParser : GrammarParser {
         guard x.block.count > 0 else {
             throw ts.fatal(.EmptyCaseFlow)
         }
+        try ScopeManager.leaveScope(.Case, ts.look())
         return x
     }
 

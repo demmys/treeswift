@@ -264,8 +264,10 @@ class DeclarationParser : GrammarParser {
         var x: VariableBlocks!
         switch ts.match([.Get, .Set], ahead: ahead) {
         case .Get:
+            ScopeManager.enterScope(.Function)
             let g = VariableBlock(attrs)
             g.body = try prp.proceduresBlock()
+            try ScopeManager.leaveScope(.Function, ts.look())
             if ts.test([.RightBrace]) {
                 x = .GetterSetter(getter: g, setter: nil)
             } else {
@@ -282,8 +284,10 @@ class DeclarationParser : GrammarParser {
             if !ts.test([.Get]) {
                 try ts.error(.ExpectedGetterAfterSetter)
             }
+            ScopeManager.enterScope(.Function)
             let g = VariableBlock(getAttrs)
             g.body = try prp.proceduresBlock()
+            try ScopeManager.leaveScope(.Function, ts.look())
             x = .GetterSetter(getter: g, setter: s)
         case .Atmark:
             // Expect getter, setter or procedure beggining with attributes
@@ -308,6 +312,7 @@ class DeclarationParser : GrammarParser {
     }
 
     private func setterBlock(attrs: [Attribute] = []) throws -> VariableBlock {
+        ScopeManager.enterScope(.Function)
         let x = VariableBlock()
         x.attrs = attrs
         if ts.test([.LeftParenthesis]) {
@@ -320,6 +325,7 @@ class DeclarationParser : GrammarParser {
             }
         }
         x.body = try prp.proceduresBlock()
+        try ScopeManager.leaveScope(.Function, ts.look())
         return x
     }
 
@@ -392,6 +398,7 @@ class DeclarationParser : GrammarParser {
     ) throws -> FunctionDeclaration {
         let x = FunctionDeclaration(attrs, mods)
         x.name = try functionName()
+        ScopeManager.enterScope(.Function)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClauses()
         x.throwType = throwType()
@@ -400,9 +407,11 @@ class DeclarationParser : GrammarParser {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInDeclarationOfProtocol)
             }
+            try ScopeManager.leaveScope(.Function, ts.look())
             return x
         }
         x.body = try prp.proceduresBlock()
+        try ScopeManager.leaveScope(.Function, ts.look())
         return x
     }
 
@@ -548,15 +557,18 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedEnumName)
         }
         x.name = try createEnumRef(s)
+        ScopeManager.enterScope(.Enum)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForEnumCase)
         }
         if ts.test([.RightBrace]) {
+            try ScopeManager.leaveScope(.Enum, ts.look())
             return x
         }
         x.members = try enumMembers(isIndirect)
+        try ScopeManager.leaveScope(.Enum, ts.look())
         return x
     }
 
@@ -665,12 +677,14 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedStructName)
         }
         x.name = try createStructRef(s)
+        ScopeManager.enterScope(.Struct)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try declarations()
+        try ScopeManager.leaveScope(.Struct, ts.look())
         return x
     }
 
@@ -682,12 +696,14 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedClassName)
         }
         x.name = try createClassRef(s)
+        ScopeManager.enterScope(.Class)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try declarations()
+        try ScopeManager.leaveScope(.Class, ts.look())
         return x
     }
 
@@ -699,11 +715,13 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedProtocolName)
         }
         x.name = try createProtocolRef(s)
+        ScopeManager.enterScope(.Protocol)
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try protocolMemberDeclarations()
+        try ScopeManager.leaveScope(.Protocol, ts.look())
         return x
     }
 
@@ -837,22 +855,28 @@ class DeclarationParser : GrammarParser {
         default:
             x.failable = .Nothing
         }
+        ScopeManager.enterScope(.Function)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClause()
         if forProtocol {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInDeclarationOfProtocol)
             }
+            try ScopeManager.leaveScope(.Function, ts.look())
             return x
         }
         x.body = try prp.proceduresBlock()
+        try ScopeManager.leaveScope(.Function, ts.look())
         return x
     }
 
     private func deinitializerDeclaration(
         attrs: [Attribute]
     ) throws -> DeinitializerDeclaration {
-        return DeinitializerDeclaration(attrs, try prp.proceduresBlock())
+        ScopeManager.enterScope(.Function)
+        let x = DeinitializerDeclaration(attrs, try prp.proceduresBlock())
+        try ScopeManager.leaveScope(.Function, ts.look())
+        return x
     }
 
     private func extensionDeclaration(mod: Modifier?) throws -> ExtensionDeclaration {
@@ -861,6 +885,7 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedExtendedType)
         }
         x.type = try tp.identifierType(s)
+        ScopeManager.enterScope(.Extension)
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForExtension)
@@ -869,6 +894,7 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterExtension)
         }
+        try ScopeManager.leaveScope(.Extension, ts.look())
         return x
     }
 
@@ -876,6 +902,7 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> SubscriptDeclaration {
         let x = SubscriptDeclaration(attrs, mods)
+        ScopeManager.enterScope(.Function)
         x.params = try parameterClause()
         guard let r = try functionResult() else {
             throw ts.fatal(.ExpectedFunctionResultArrow)
@@ -885,6 +912,7 @@ class DeclarationParser : GrammarParser {
             try ts.error(.ExpectedLeftBraceForSubscript)
         }
         x.body = try getterSetterBlock()
+        try ScopeManager.leaveScope(.Function, ts.look())
         return x
     }
 

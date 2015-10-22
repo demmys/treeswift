@@ -3,6 +3,7 @@ import Util
 public enum ScopeType {
     case Global, File
     case For, ForIn, While, RepeatWhile, If, Guard, Defer, Do, Catch, Case
+    case Function, Enum, Struct, Class, Protocol, Extension
 }
 
 private class Scope {
@@ -53,6 +54,48 @@ private class FlowScope : Scope {
     }
 }
 
+private class FunctionScope : Scope {
+    init() {
+        super.init(.Function)
+        values = [:]
+    }
+}
+
+private class EnumScope : Scope {
+    init() {
+        super.init(.Enum)
+        values = nil
+    }
+}
+
+private class StructScope : Scope {
+    init() {
+        super.init(.Struct)
+        values = [:]
+    }
+}
+
+private class ClassScope : Scope {
+    init() {
+        super.init(.Class)
+        values = [:]
+    }
+}
+
+private class ProtocolScope : Scope {
+    init() {
+        super.init(.Protocol)
+        values = nil
+    }
+}
+
+private class ExtensionScope : Scope {
+    init() {
+        super.init(.Extension)
+        values = nil
+    }
+}
+
 public class ScopeManager {
     private static var globalScope: GlobalScope = GlobalScope()
     private static var scopeStack: [Scope] = []
@@ -68,10 +111,22 @@ public class ScopeManager {
         case .For, .ForIn, .While, .RepeatWhile, .If,
              .Guard, .Defer, .Do, .Catch, .Case:
             currentScope = FlowScope(type)
+        case .Function:
+            currentScope = FunctionScope()
+        case .Enum:
+            currentScope = EnumScope()
+        case .Struct:
+            currentScope = StructScope()
+        case .Class:
+            currentScope = ClassScope()
+        case .Protocol:
+            currentScope = ProtocolScope()
+        case .Extension:
+            currentScope = ExtensionScope()
         }
     }
 
-    public static func leaveScope(type: ScopeType, _ source: SourceTrackable) throws {
+    public static func leaveScope(type: ScopeType, _ source: SourceTrackable?) throws {
         guard currentScope.type != type else {
             throw ErrorReporter.fatal(.ScopeTypeMismatch, source)
         }

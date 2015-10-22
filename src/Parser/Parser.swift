@@ -13,7 +13,9 @@ public class Parser {
         for fileName in fileNames {
             do {
                 ts = try createStream(fileName)
+                ScopeManager.enterScope(.File)
                 result[fileName] = try topLevelDeclaration()
+                try ScopeManager.leaveScope(.File, nil)
                 ErrorReporter.bundle(fileName)
             } catch let e {
                 ErrorReporter.bundle(fileName)
