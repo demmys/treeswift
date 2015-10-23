@@ -110,9 +110,18 @@ public enum ErrorMessage : CustomStringConvertible {
     // ScopeManager
     case ScopeTypeMismatch
     case LeavingGlobalScope
-    case VariableAlreadyExist(String)
     case InvalidVariableScope
+    case VariableAlreadyExist(String)
     case VariableNotExist(String)
+    case InvalidEnumScope
+    case EnumAlreadyExist(String)
+    case EnumNotExist(String)
+    case InvalidStructScope
+    case StructAlreadyExist(String)
+    case StructNotExist(String)
+    case InvalidClassScope
+    case ClassAlreadyExist(String)
+    case ClassNotExist(String)
     // TokenStream
     case UnexpectedEOF
     case InvalidToken
@@ -274,12 +283,30 @@ public enum ErrorMessage : CustomStringConvertible {
             return "<system error> leaving scope type mismatch"
         case .LeavingGlobalScope:
             return "<system error> leaving global scope"
-        case let .VariableAlreadyExist(name):
-            return "Constant or variable name '\(name)' already used"
         case .InvalidVariableScope:
             return "You cannot declare a constant or a variable in this scope"
+        case let .VariableAlreadyExist(name):
+            return "Constant or variable with name '\(name)' already exists"
         case let .VariableNotExist(name):
             return "Constant or variable '\(name)' not exists in this scope"
+        case .InvalidEnumScope:
+            return "You cannot declare an enum in this scope"
+        case let .EnumAlreadyExist(name):
+            return "Enum with name '\(name)' already exists"
+        case let .EnumNotExist(name):
+            return "Enum '\(name)' not exists in this scope"
+        case .InvalidStructScope:
+            return "You cannot declare a struct in this scope"
+        case let .StructAlreadyExist(name):
+            return "Struct with name '\(name)' already exists"
+        case let .StructNotExist(name):
+            return "Struct '\(name)' not exists in this scope"
+        case .InvalidClassScope:
+            return "You cannot declare a class in this scope"
+        case let .ClassAlreadyExist(name):
+            return "Class with name '\(name)' already exists"
+        case let .ClassNotExist(name):
+            return "Class '\(name)' not exists in this scope"
         // AttributesParser
         case .ExpectedAttributeIdentifier:
             return "Expected identifier for attribute"

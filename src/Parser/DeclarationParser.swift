@@ -585,10 +585,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool = false
     ) throws -> EnumDeclaration {
         let x = EnumDeclaration(attrs, mod, isIndirect: isIndirect)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedEnumName)
         }
-        x.name = try createEnumRef(s)
+        x.name = try ScopeManager.createEnum(s, trackable)
         ScopeManager.enterScope(.Enum)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
@@ -705,10 +706,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> StructDeclaration {
         let x = StructDeclaration(attrs, mod)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedStructName)
         }
-        x.name = try createStructRef(s)
+        x.name = try ScopeManager.createStruct(s, trackable)
         ScopeManager.enterScope(.Struct)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
@@ -724,10 +726,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> ClassDeclaration {
         let x = ClassDeclaration(attrs, mod)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedClassName)
         }
-        x.name = try createClassRef(s)
+        x.name = try ScopeManager.createClass(s, trackable)
         ScopeManager.enterScope(.Class)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()

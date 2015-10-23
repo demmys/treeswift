@@ -120,32 +120,11 @@ class GrammarParser {
         return OperatorRef(name)
     }
 
-    func createEnumRef(name: String) throws -> EnumRef {
-        if name == "" {
-            throw ts.fatal(.Dummy)
-        }
-        return EnumRef(name)
-    }
-
     func createEnumCaseRef(name: String) throws -> EnumCaseRef {
         if name == "" {
             throw ts.fatal(.Dummy)
         }
         return EnumCaseRef(name)
-    }
-
-    func createStructRef(name: String) throws -> StructRef {
-        if name == "" {
-            throw ts.fatal(.Dummy)
-        }
-        return StructRef(name)
-    }
-
-    func createClassRef(name: String) throws -> ClassRef {
-        if name == "" {
-            throw ts.fatal(.Dummy)
-        }
-        return ClassRef(name)
     }
 
     func createProtocolRef(name: String) throws -> ProtocolRef {

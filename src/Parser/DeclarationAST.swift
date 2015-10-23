@@ -183,7 +183,7 @@ public enum ParameterName {
 public class EnumDeclaration : Declaration {
     var isIndirect: Bool
     var isRawValueStyle = false
-    var name: EnumRef!
+    var name: EnumInst!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
     var members: [EnumMember]!
@@ -259,7 +259,7 @@ public enum RawValueLiteral {
 }
 
 public class StructDeclaration : Declaration {
-    var name: StructRef!
+    var name: StructInst!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
@@ -274,7 +274,7 @@ public class StructDeclaration : Declaration {
 }
 
 public class ClassDeclaration : Declaration {
-    var name: ClassRef!
+    var name: ClassInst!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
