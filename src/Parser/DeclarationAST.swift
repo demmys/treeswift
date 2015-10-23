@@ -1,3 +1,5 @@
+import Util
+
 public class Declaration : CustomStringConvertible {
     var attrs: [Attribute] = []
     var mods: [Modifier] = []
@@ -70,11 +72,11 @@ public class PatternInitializerDeclaration : Declaration {
 }
 
 public class VariableBlockDeclaration : Declaration {
-    var name: ValueRef!
+    var name: ValueInst!
     var specifier: VariableBlockSpecifier!
     var blocks: VariableBlocks!
 
-    init(_ attrs: [Attribute], _ mods: [Modifier], name: ValueRef) {
+    init(_ attrs: [Attribute], _ mods: [Modifier], name: ValueInst) {
         super.init(attrs, mods)
         self.name = name
     }
@@ -99,7 +101,7 @@ public enum VariableBlocks {
 
 public class VariableBlock {
     var attrs: [Attribute] = []
-    var param: ValueRef?
+    var param: ValueInst?
     var body: [Procedure]!
 
     init() {}
@@ -140,7 +142,7 @@ public class FunctionDeclaration : Declaration {
 }
 
 public enum FunctionReference {
-    case Function(ValueRef)
+    case Function(ValueInst)
     case Operator(OperatorRef)
 }
 
@@ -173,7 +175,8 @@ public class NamedParameter {
 
 public enum ParameterName {
     case NotSpecified
-    case Specified(ValueRef)
+    case Specified(String, SourceInfo)
+    case SpecifiedInst(ValueInst)
     case Needless
 }
 

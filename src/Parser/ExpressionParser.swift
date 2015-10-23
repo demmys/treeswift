@@ -1,3 +1,5 @@
+import Util
+
 class ExpressionParser : GrammarParser {
     private var tp: TypeParser!
     private var gp: GenericsParser!
@@ -183,6 +185,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func expressionCore(valueBinding: Bool) throws -> ExpressionCore {
+        let trackable = ts.look()
         switch ts.match([
             identifier, implicitParameterName, integerLiteral, floatingPointLiteral,
             stringLiteral, booleanLiteral, .Nil, .LeftBracket,
@@ -191,15 +194,15 @@ class ExpressionParser : GrammarParser {
         ]) {
         case let .Identifier(s):
             if valueBinding {
-                return .BindingValue(try createBindingRef(s))
+                return .BindingValue(try ScopeManager.createValue(s, trackable))
             }
             return .Value(
-                try getValueRef(s),
+                try ScopeManager.getValue(s, trackable),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .ImplicitParameterName(i):
             return .Value(
-                try getImplicitParameterRef(i),
+                try ScopeManager.getValue(String(i), trackable), // TODO
                 genArgs: try gp.genericArgumentClause()
             )
         case let .IntegerLiteral(i, _):
@@ -342,12 +345,13 @@ class ExpressionParser : GrammarParser {
         switch ts.match([.LeftBracket]) {
         case .LeftBracket:
             try captureClause(c)
+            let info = ts.look().sourceInfo
             switch ts.match([identifier]) {
             case .LeftParenthesis:
                 c.params = .ExplicitTyped(try dp.parameterClause())
                 c.returns = try dp.functionResult()
             case let .Identifier(s):
-                c.params = try identifierList(s)
+                c.params = try identifierList(s, info)
                 c.returns = try dp.functionResult()
             default:
                 break
@@ -366,10 +370,11 @@ class ExpressionParser : GrammarParser {
                 return .ClosureExpression(c)
             }
         case let .Identifier(s):
+            let info = ts.look().sourceInfo
             switch ts.look().kind {
             case .Comma, .Arrow, .In:
                 ts.next()
-                c.params = try identifierList(s)
+                c.params = try identifierList(s, info)
                 c.returns = try dp.functionResult()
             default:
                 c.body = try closureExpressionTail()
@@ -386,13 +391,16 @@ class ExpressionParser : GrammarParser {
         return .ClosureExpression(c)
     }
 
-    private func identifierList(first: String) throws -> ClosureParameters {
-        var list = [try createValueRef(first)]
+    private func identifierList(
+        first: String, _ info: SourceInfo
+    ) throws -> ClosureParameters {
+        var list = [try ScopeManager.createValue(first, info, isVariable: false)]
         while ts.test([.Comma]) {
+            let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedParameterName)
             }
-            list.append(try createValueRef(s))
+            list.append(try ScopeManager.createValue(s, trackable, isVariable: false))
         }
         return .ImplicitTyped(list)
     }

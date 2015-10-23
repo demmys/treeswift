@@ -165,7 +165,8 @@ extension ParameterName : CustomStringConvertible {
         let name = "parameter-name:"
         switch self {
         case .NotSpecified: return "\(name) not-specified"
-        case let .Specified(r): return "\(name) specified \(r)"
+        case let .Specified(s, _): return "\(name) specified \(s)"
+        case let .SpecifiedInst(i): return "\(name) specified-inst \(i)"
         case .Needless: return "\(name) needless"
         }
     }

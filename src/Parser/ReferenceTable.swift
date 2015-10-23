@@ -1,15 +1,3 @@
-public class ValueRef : CustomStringConvertible {
-    let name: String
-
-    init(_ n: String) {
-        name = n
-    }
-
-    public var description: String { get {
-        return "(ValueRef \(name))"
-    } }
-}
-
 public class BindingRef : CustomStringConvertible {
     let name: String
 

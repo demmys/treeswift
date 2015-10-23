@@ -15,7 +15,7 @@ private class Scope {
     }
 
     func createValue(
-        name: String, _ source: SourceTrackable, isVariable: Bool
+        name: String, _ source: SourceTrackable, _ isVariable: Bool?
     ) throws -> ValueInst {
         guard values != nil else {
             throw ErrorReporter.fatal(.InvalidVariableScope, source)
@@ -137,9 +137,9 @@ public class ScopeManager {
     }
 
     public static func createValue(
-        name: String, _ source: SourceTrackable, isVariable: Bool = false
+        name: String, _ source: SourceTrackable, isVariable: Bool? = nil
     ) throws -> ValueInst {
-        return try currentScope.createValue(name, source, isVariable: isVariable)
+        return try currentScope.createValue(name, source, isVariable)
     }
 
     public static func getValue(
@@ -177,11 +177,17 @@ public class Inst : SourceTrackable {
     }
 }
 
-public class ValueInst : Inst {
-    private let isVariable: Bool
+public class ValueInst : Inst, CustomStringConvertible {
+    public var isVariable: Bool!
 
-    public init(_ name: String, _ source: SourceTrackable, isVariable: Bool) {
-        self.isVariable = isVariable
+    public init(
+        _ name: String, _ source: SourceTrackable, isVariable: Bool? = nil
+    ) {
         super.init(name, source)
+        self.isVariable = isVariable
+    }
+
+    public var description: String {
+        return "(ValueInst \(name) is-variable: \(isVariable))"
     }
 }

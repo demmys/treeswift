@@ -235,16 +235,16 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mods: [Modifier], ini: (Pattern, Expression?)
     ) throws -> VariableBlockDeclaration {
         switch ini.0 {
-        case let .IdentifierPattern(r):
+        case let .IdentifierPattern(v):
             guard let e = ini.1 else {
                 throw ts.fatal(.ExpectedVariableSpecifierWithBlock)
             }
-            let x = VariableBlockDeclaration(attrs, mods, name: r)
+            let x = VariableBlockDeclaration(attrs, mods, name: v)
             x.specifier = .Initializer(e)
             x.blocks = try willSetDidSetBlock()
             return x
-        case let .TypedIdentifierPattern(r, t, attrs):
-            let x = VariableBlockDeclaration(attrs, mods, name: r)
+        case let .TypedIdentifierPattern(v, t, attrs):
+            let x = VariableBlockDeclaration(attrs, mods, name: v)
             if let e = ini.1 {
                 x.specifier = .TypedInitializer(t, attrs, e)
                 x.blocks = try willSetDidSetBlock()
@@ -316,10 +316,11 @@ class DeclarationParser : GrammarParser {
         let x = VariableBlock()
         x.attrs = attrs
         if ts.test([.LeftParenthesis]) {
+            let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedSetterVariableName)
             }
-            x.param = try createValueRef(s)
+            x.param = try ScopeManager.createValue(s, trackable, isVariable: false)
             if !ts.test([.RightParenthesis]) {
                 try ts.error(.ExpectedRightParenthesisAfterSetterVariable)
             }
@@ -416,11 +417,12 @@ class DeclarationParser : GrammarParser {
     }
 
     private func functionName() throws -> FunctionReference {
+        let trackable = ts.look()
         switch ts.match([
             identifier, prefixOperator, binaryOperator, postfixOperator
         ]) {
         case let .Identifier(s):
-            return .Function(try createValueRef(s))
+            return .Function(try ScopeManager.createValue(s, trackable, isVariable: false))
         case let .PrefixOperator(o):
             return .Operator(try createOperatorRef(o))
         case let .BinaryOperator(o):
@@ -505,22 +507,51 @@ class DeclarationParser : GrammarParser {
         if ts.test([.InOut]) {
             p.isInout = true
         }
+        var isVariable = false
         if case .Var = ts.match([.Var, .Let]) {
-            p.isVariable = true
+            isVariable = true
         }
         let name = try parameterName()
         let followName = try parameterName()
         switch name {
-        case .Specified, .Needless:
-            if case .NotSpecified = followName {
-                p.externalName = .NotSpecified
-                p.internalName = name
-            } else {
-                p.externalName = name
-                p.internalName = followName
-            }
         case .NotSpecified:
             throw ts.fatal(.ExpectedInternalParameterName)
+        case let .Specified(s, i):
+            switch followName {
+            case .NotSpecified:
+                p.externalName = .NotSpecified
+                p.internalName = .SpecifiedInst(
+                    try ScopeManager.createValue(s, i, isVariable: isVariable)
+                )
+            case let .Specified(s, i):
+                p.externalName = name
+                p.internalName = .SpecifiedInst(
+                    try ScopeManager.createValue(s, i, isVariable: isVariable)
+                )
+            case .Needless:
+                p.externalName = name
+                p.internalName = .Needless
+            default:
+                throw ts.fatal(.UnexpectedParameterType)
+            }
+        case .Needless:
+            switch followName {
+            case .NotSpecified:
+                p.externalName = .NotSpecified
+                p.internalName = .Needless
+            case let .Specified(s, i):
+                p.externalName = .Needless
+                p.internalName = .SpecifiedInst(
+                    try ScopeManager.createValue(s, i, isVariable: isVariable)
+                )
+            case .Needless:
+                p.externalName = .Needless
+                p.internalName = .Needless
+            default:
+                throw ts.fatal(.UnexpectedParameterType)
+            }
+        default:
+            throw ts.fatal(.UnexpectedParameterType)
         }
         if let a = try tp.typeAnnotation() {
             p.type = a
@@ -534,9 +565,10 @@ class DeclarationParser : GrammarParser {
     }
 
     private func parameterName() throws -> ParameterName {
+        let info = ts.look().sourceInfo
         switch ts.match([identifier, .Underscore]) {
         case let .Identifier(s):
-            return .Specified(try createValueRef(s))
+            return .Specified(s, info)
         case .Underscore:
             return .Needless
         default:
@@ -771,10 +803,13 @@ class DeclarationParser : GrammarParser {
     private func protocolPropertyDeclaration(
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> VariableBlockDeclaration {
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedProtocolName)
         }
-        let x = VariableBlockDeclaration(attrs, mods, name: try createValueRef(s))
+        let x = VariableBlockDeclaration(
+            attrs, mods, name: try ScopeManager.createValue(s, trackable)
+        )
         guard let (t, typeAttrs) = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForProtocolProperty)
         }

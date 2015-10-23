@@ -106,27 +106,6 @@ class GrammarParser {
         }
     }
 
-    func getValueRef(name: String) throws -> ValueRef {
-        if name == "" {
-            throw ts.fatal(.Dummy)
-        }
-        return ValueRef(name)
-    }
-
-    func createValueRef(name: String) throws -> ValueRef {
-        if name == "" {
-            throw ts.fatal(.Dummy)
-        }
-        return ValueRef(name)
-    }
-
-    func createBindingRef(name: String) throws -> BindingRef {
-        if name == "" {
-            throw ts.fatal(.Dummy)
-        }
-        return BindingRef(name)
-    }
-
     func createTypeRef(name: String) throws -> TypeRef {
         if name == "" {
             throw ts.fatal(.Dummy)
@@ -181,13 +160,6 @@ class GrammarParser {
             throw ts.fatal(.Dummy)
         }
         return ExtensionRef(name)
-    }
-
-    func getImplicitParameterRef(num: Int) throws -> ValueRef {
-        if num < 0 {
-            throw ts.fatal(.Dummy)
-        }
-        return ValueRef(String(num))
     }
 
     func getOperatorRef(name: String) throws -> OperatorRef {

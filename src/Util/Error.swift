@@ -1,6 +1,13 @@
 import Darwin
 
-public struct SourceInfo {
+public protocol SourceTrackable {
+    var sourceInfo: SourceInfo { get }
+}
+
+public struct SourceInfo : SourceTrackable {
+    public var sourceInfo: SourceInfo {
+        return self
+    }
     public var seekNo: Int
     public var lineNo: Int
     public var charNo: Int
@@ -10,10 +17,6 @@ public struct SourceInfo {
         self.lineNo = lineNo
         self.charNo = charNo
     }
-}
-
-public protocol SourceTrackable {
-    var sourceInfo: SourceInfo { get }
 }
 
 public enum ErrorKind : CustomStringConvertible {
@@ -158,6 +161,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedRightParenthesisAfterParameter
     case ExpectedParameter
     case ExpectedInternalParameterName
+    case UnexpectedParameterType
     case ExpectedParameterNameTypeAnnotation
     case ExpectedEnumName
     case ExpectedLeftBraceForEnumCase
@@ -362,6 +366,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected parameter."
         case .ExpectedInternalParameterName:
             return "Expected internal parameter name."
+        case .UnexpectedParameterType:
+            return "<system error> Unexpected parameter type."
         case .ExpectedParameterNameTypeAnnotation:
             return "Expected type annotation after parameter name."
         case .ExpectedEnumName:

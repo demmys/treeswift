@@ -79,8 +79,8 @@ public enum ExpressionPostfix {
 
 // primary-expression
 public enum ExpressionCore {
-    case Value(ValueRef, genArgs: [Type]?)
-    case BindingValue(BindingRef)
+    case Value(ValueInst, genArgs: [Type]?)
+    case BindingValue(ValueInst)
     case Integer(Int64)
     case FloatingPoint(Double)
     case StringExpression(String)
@@ -114,7 +114,7 @@ public enum CaptureSpecifier {
 public enum ClosureParameters {
     case NotProvided
     case ExplicitTyped(ParameterClause)
-    case ImplicitTyped([ValueRef])
+    case ImplicitTyped([ValueInst])
 }
 
 public typealias Tuple = [(String?, Expression)]

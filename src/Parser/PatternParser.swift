@@ -1,3 +1,5 @@
+import Util
+
 class PatternParser : GrammarParser {
     private var tp: TypeParser!
     private var ep: ExpressionParser!
@@ -8,9 +10,10 @@ class PatternParser : GrammarParser {
     }
 
     func declarationalPattern() throws -> Pattern {
+        let info = ts.look().sourceInfo
         switch ts.match([identifier, .Underscore, .LeftParenthesis]) {
         case let .Identifier(s):
-            return try identifierPattern(s)
+            return try identifierPattern(s, info)
         case .Underscore:
             return try wildcardPattern()
         case .LeftParenthesis:
@@ -73,11 +76,11 @@ class PatternParser : GrammarParser {
         return s
     }
 
-    private func identifierPattern(s: String) throws -> Pattern {
+    private func identifierPattern(s: String, _ info: SourceInfo) throws -> Pattern {
         if let (type, attrs) = try tp.typeAnnotation() {
-            return .TypedIdentifierPattern(try createValueRef(s), type, attrs)
+            return .TypedIdentifierPattern(try ScopeManager.createValue(s, info), type, attrs)
         }
-        return .IdentifierPattern(try createValueRef(s))
+        return .IdentifierPattern(try ScopeManager.createValue(s, info))
     }
 
     private func wildcardPattern() throws -> Pattern {
