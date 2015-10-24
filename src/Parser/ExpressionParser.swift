@@ -366,8 +366,7 @@ class ExpressionParser : GrammarParser {
                 c.returns = try dp.functionResult()
             default:
                 c.params = .NotProvided
-                c.body = try closureExpressionTail()
-                return .ClosureExpression(c)
+                return try closureExpressionTail(c)
             }
         case let .Identifier(s):
             let info = ts.look().sourceInfo
@@ -377,18 +376,15 @@ class ExpressionParser : GrammarParser {
                 c.params = try identifierList(s, info)
                 c.returns = try dp.functionResult()
             default:
-                c.body = try closureExpressionTail()
-                return .ClosureExpression(c)
+                return try closureExpressionTail(c)
             }
         default:
-            c.body = try closureExpressionTail()
-            return .ClosureExpression(c)
+            return try closureExpressionTail(c)
         }
         if !ts.test([.In]) {
             try ts.error(.ExpectedInForClosureSignature)
         }
-        c.body = try closureExpressionTail()
-        return .ClosureExpression(c)
+        return try closureExpressionTail(c)
     }
 
     private func identifierList(
@@ -436,13 +432,13 @@ class ExpressionParser : GrammarParser {
         } while ts.test([.Comma])
     }
 
-    private func closureExpressionTail() throws -> [Procedure] {
-        let ps = try pp.procedures()
+    private func closureExpressionTail(c: Closure) throws -> ExpressionCore {
+        c.body = try pp.procedures()
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterClosure)
         }
-        try ScopeManager.leaveScope(.Function, ts.look())
-        return ps
+        c.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        return .ClosureExpression(c)
     }
 
     private func tupleExpression() throws -> Tuple {

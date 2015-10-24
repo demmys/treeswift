@@ -48,9 +48,9 @@ if arguments.count < 2 {
     do {
         let result = try parser.parse()
         ErrorReporter.report()
-        for (fileName, ps) in result {
+        for (fileName, tld) in result {
             print("----- \(fileName) -----")
-            for p in ps {
+            for p in tld.procedures {
                 prettyPrint(p)
             }
         }

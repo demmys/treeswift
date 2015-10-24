@@ -6,18 +6,24 @@ public enum ScopeType {
     case Function, Enum, Struct, Class, Protocol, Extension
 }
 
-private class Scope {
-    let type: ScopeType
-    var values: [String:ValueInst]?
-    var enums: [String:EnumInst]?
-    var structs: [String:StructInst]?
-    var classes: [String:ClassInst]?
+public protocol ScopeTrackable {
+    var scope: Scope { get }
+}
 
-    init(_ type: ScopeType) {
+public class Scope {
+    private let type: ScopeType
+    private let parent: Scope?
+    private var values: [String:ValueInst]?
+    private var enums: [String:EnumInst]?
+    private var structs: [String:StructInst]?
+    private var classes: [String:ClassInst]?
+
+    private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
+        self.parent = parent
     }
 
-    func createValue(
+    private func createValue(
         name: String, _ source: SourceTrackable, _ isVariable: Bool?
     ) throws -> ValueInst {
         guard values != nil else {
@@ -86,7 +92,7 @@ private class Scope {
 
 private class GlobalScope : Scope {
     init() {
-        super.init(.Global)
+        super.init(.Global, nil)
         values = [:]
         enums = [:]
         structs = [:]
@@ -95,8 +101,8 @@ private class GlobalScope : Scope {
 }
 
 private class FileScope : Scope {
-    init() {
-        super.init(.File)
+    init(_ parent: Scope) {
+        super.init(.File, parent)
         values = [:]
         enums = [:]
         structs = [:]
@@ -105,8 +111,8 @@ private class FileScope : Scope {
 }
 
 private class FlowScope : Scope {
-    override init(_ type: ScopeType) {
-        super.init(type)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         values = [:]
         enums = [:]
         structs = [:]
@@ -115,8 +121,8 @@ private class FlowScope : Scope {
 }
 
 private class FunctionScope : Scope {
-    init() {
-        super.init(.Function)
+    init(_ parent: Scope) {
+        super.init(.Function, parent)
         values = [:]
         enums = [:]
         structs = [:]
@@ -125,8 +131,8 @@ private class FunctionScope : Scope {
 }
 
 private class EnumScope : Scope {
-    init() {
-        super.init(.Enum)
+    init(_ parent: Scope) {
+        super.init(.Enum, parent)
         values = nil
         enums = [:]
         structs = [:]
@@ -135,8 +141,8 @@ private class EnumScope : Scope {
 }
 
 private class StructScope : Scope {
-    init() {
-        super.init(.Struct)
+    init(_ parent: Scope) {
+        super.init(.Struct, parent)
         values = [:]
         enums = [:]
         structs = [:]
@@ -145,8 +151,8 @@ private class StructScope : Scope {
 }
 
 private class ClassScope : Scope {
-    init() {
-        super.init(.Class)
+    init(_ parent: Scope) {
+        super.init(.Class, parent)
         values = [:]
         enums = [:]
         structs = [:]
@@ -155,8 +161,8 @@ private class ClassScope : Scope {
 }
 
 private class ProtocolScope : Scope {
-    init() {
-        super.init(.Protocol)
+    init(_ parent: Scope) {
+        super.init(.Protocol, parent)
         values = nil
         enums = nil
         structs = nil
@@ -165,8 +171,8 @@ private class ProtocolScope : Scope {
 }
 
 private class ExtensionScope : Scope {
-    init() {
-        super.init(.Extension)
+    init(_ parent: Scope) {
+        super.init(.Extension, parent)
         values = nil
         enums = [:]
         structs = [:]
@@ -176,42 +182,44 @@ private class ExtensionScope : Scope {
 
 public class ScopeManager {
     private static var globalScope: GlobalScope = GlobalScope()
-    private static var scopeStack: [Scope] = []
     private static var currentScope: Scope = globalScope
 
     public static func enterScope(type: ScopeType) {
-        scopeStack.append(currentScope)
         switch type {
         case .Global:
             assert(false, "<system error> duplicated global scope")
         case .File:
-            currentScope = FileScope()
+            currentScope = FileScope(currentScope)
         case .For, .ForIn, .While, .RepeatWhile, .If,
              .Guard, .Defer, .Do, .Catch, .Case:
-            currentScope = FlowScope(type)
+            currentScope = FlowScope(type, currentScope)
         case .Function:
-            currentScope = FunctionScope()
+            currentScope = FunctionScope(currentScope)
         case .Enum:
-            currentScope = EnumScope()
+            currentScope = EnumScope(currentScope)
         case .Struct:
-            currentScope = StructScope()
+            currentScope = StructScope(currentScope)
         case .Class:
-            currentScope = ClassScope()
+            currentScope = ClassScope(currentScope)
         case .Protocol:
-            currentScope = ProtocolScope()
+            currentScope = ProtocolScope(currentScope)
         case .Extension:
-            currentScope = ExtensionScope()
+            currentScope = ExtensionScope(currentScope)
         }
     }
 
-    public static func leaveScope(type: ScopeType, _ source: SourceTrackable?) throws {
+    public static func leaveScope(
+        type: ScopeType, _ source: SourceTrackable?
+    ) throws -> Scope {
         guard currentScope.type != type else {
             throw ErrorReporter.fatal(.ScopeTypeMismatch, source)
         }
-        guard let s = scopeStack.popLast() else {
+        guard let s = currentScope.parent else {
             throw ErrorReporter.fatal(.LeavingGlobalScope, source)
         }
+        let past = currentScope
         currentScope = s
+        return past
     }
 
     public static func createValue(
@@ -275,11 +283,8 @@ public class ScopeManager {
     }
 
     private static func findInst<T : Inst>(findScope: Scope -> T?) -> T? {
-        if let inst = findScope(currentScope) {
-            return inst
-        }
-        for var i = scopeStack.endIndex; i >= 0; --i {
-            if let inst = findScope(scopeStack[i]) {
+        for var s: Scope? = currentScope; s != nil; s = s?.parent {
+            if let inst = findScope(s!) {
                 return inst
             }
         }

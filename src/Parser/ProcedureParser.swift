@@ -129,7 +129,7 @@ class ProcedureParser : GrammarParser {
         }
         // block
         x.block = try proceduresBlock()
-        try ScopeManager.leaveScope(.For, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.For, ts.look())
         return x
     }
 
@@ -168,7 +168,7 @@ class ProcedureParser : GrammarParser {
             x.pats = [PatternMatching(p, e, nil)]
         }
         x.block = try proceduresBlock()
-        try ScopeManager.leaveScope(.ForIn, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.ForIn, ts.look())
         return x
     }
 
@@ -177,7 +177,7 @@ class ProcedureParser : GrammarParser {
         let x = WhileFlow(label)
         x.pats = try patternMatchClause()
         x.block = try proceduresBlock()
-        try ScopeManager.leaveScope(.While, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.While, ts.look())
         return x
     }
 
@@ -186,7 +186,7 @@ class ProcedureParser : GrammarParser {
         let x = RepeatWhileFlow(label)
         x.block = try proceduresBlock()
         x.setCond(try ep.expression())
-        try ScopeManager.leaveScope(.RepeatWhile, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.RepeatWhile, ts.look())
         return x
     }
 
@@ -202,7 +202,7 @@ class ProcedureParser : GrammarParser {
                 x.els = .Else(try proceduresBlock())
             }
         }
-        try ScopeManager.leaveScope(.If, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.If, ts.look())
         return x
     }
 
@@ -214,7 +214,7 @@ class ProcedureParser : GrammarParser {
             try ts.error(.ExpectedElseForGuard)
         }
         x.block = try proceduresBlock()
-        try ScopeManager.leaveScope(.Guard, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Guard, ts.look())
         return x
     }
 
@@ -222,7 +222,7 @@ class ProcedureParser : GrammarParser {
         ScopeManager.enterScope(.Defer)
         let x = DeferFlow()
         x.block = try proceduresBlock()
-        try ScopeManager.leaveScope(.Defer, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Defer, ts.look())
         return x
     }
 
@@ -292,7 +292,7 @@ class ProcedureParser : GrammarParser {
         ScopeManager.enterScope(.Do)
         let x = DoFlow()
         x.block = try proceduresBlock()
-        try ScopeManager.leaveScope(.Do, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Do, ts.look())
         while ts.test([.Catch]) {
             ScopeManager.enterScope(.Catch)
             let c = CatchFlow()
@@ -311,7 +311,7 @@ class ProcedureParser : GrammarParser {
             }
             c.block = try proceduresBlock()
             x.catches.append(c)
-            try ScopeManager.leaveScope(.Catch, ts.look())
+            c.associatedScope = try ScopeManager.leaveScope(.Catch, ts.look())
         }
         return x
     }
@@ -358,7 +358,7 @@ class ProcedureParser : GrammarParser {
         guard x.block.count > 0 else {
             throw ts.fatal(.EmptyCaseFlow)
         }
-        try ScopeManager.leaveScope(.Case, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Case, ts.look())
         return x
     }
 
@@ -373,7 +373,7 @@ class ProcedureParser : GrammarParser {
         guard x.block.count > 0 else {
             throw ts.fatal(.EmptyCaseFlow)
         }
-        try ScopeManager.leaveScope(.Case, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Case, ts.look())
         return x
     }
 

@@ -15,13 +15,13 @@ public enum Operation {
     case ThrowOperation(Expression)
 }
 
-public class Flow : CustomStringConvertible {
+public class Flow : ScopeTrackable, CustomStringConvertible {
     var pats: [PatternMatching]!
     var block: [Procedure]!
+    var associatedScope: Scope!
 
-    public var description: String { get {
-        return "<<error: no description provided>>"
-    } }
+    public var scope: Scope { return associatedScope }
+    public var description: String { return "<<error: no description provided>>" }
 }
 
 public class PatternMatching {

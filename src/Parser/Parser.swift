@@ -8,14 +8,12 @@ public class Parser {
         self.fileNames = fileNames
     }
 
-    public func parse() throws -> [String:[Procedure]] {
-        var result: [String:[Procedure]] = [:]
+    public func parse() throws -> [String:TopLevelDeclaration] {
+        var result: [String:TopLevelDeclaration] = [:]
         for fileName in fileNames {
             do {
                 ts = try createStream(fileName)
-                ScopeManager.enterScope(.File)
                 result[fileName] = try topLevelDeclaration()
-                try ScopeManager.leaveScope(.File, nil)
                 ErrorReporter.bundle(fileName)
             } catch let e {
                 ErrorReporter.bundle(fileName)
@@ -38,7 +36,7 @@ public class Parser {
         return ts
     }
 
-    private func topLevelDeclaration() throws -> [Procedure] {
+    private func topLevelDeclaration() throws -> TopLevelDeclaration {
         let ap = AttributesParser(ts)
         let gp = GenericsParser(ts)
         let tp = TypeParser(ts)
@@ -61,6 +59,25 @@ public class Parser {
             declarationParser: dp, patternParser: pp,expressionParser: ep,
             attributesParser: ap
         )
-        return try parser.procedures()
+        ScopeManager.enterScope(.File)
+        return TopLevelDeclaration(
+            procedures: try parser.procedures(),
+            fileScope: try ScopeManager.leaveScope(.File, nil)
+        )
+    }
+}
+
+public class TopLevelDeclaration : ScopeTrackable, CustomStringConvertible {
+    public let procedures: [Procedure]
+    public let fileScope: Scope
+
+    public init(procedures: [Procedure], fileScope: Scope) {
+        self.procedures = procedures
+        self.fileScope = fileScope
+    }
+
+    public var scope: Scope { return fileScope }
+    public var description: String {
+        return "(TopLevelDeclaration \(procedures))"
     }
 }

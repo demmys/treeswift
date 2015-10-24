@@ -99,15 +99,18 @@ public enum VariableBlocks {
     case WillSetDidSet(willSetter: VariableBlock?, didSetter: VariableBlock?)
 }
 
-public class VariableBlock {
+public class VariableBlock : ScopeTrackable {
     var attrs: [Attribute] = []
     var param: ValueInst?
     var body: [Procedure]!
+    var associatedScope: Scope!
 
     init() {}
     init(_ attrs: [Attribute]) {
         self.attrs = attrs
     }
+
+    public var scope: Scope { return associatedScope }
 }
 
 public class TypealiasDeclaration : Declaration {
@@ -124,18 +127,20 @@ public class TypealiasDeclaration : Declaration {
     }
 }
 
-public class FunctionDeclaration : Declaration {
+public class FunctionDeclaration : Declaration, ScopeTrackable {
     var name: FunctionReference!
     var genParam: GenericParameterClause?
     var params: [ParameterClause]!
     var throwType: ThrowType!
     var returns: ([Attribute], Type)?
     var body: [Procedure] = []
+    var associatedScope: Scope!
 
     override init(_ attrs: [Attribute], _ mods: [Modifier]) {
         super.init(attrs, mods)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(FunctionDeclaration \(attrs) \(mods) \(throwType) \(name) \(genParam) \(params) \(returns) \(body))"
     }
@@ -180,19 +185,21 @@ public enum ParameterName {
     case Needless
 }
 
-public class EnumDeclaration : Declaration {
+public class EnumDeclaration : Declaration, ScopeTrackable {
     var isIndirect: Bool
     var isRawValueStyle = false
     var name: EnumInst!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
     var members: [EnumMember]!
+    var associatedScope: Scope!
 
     init(_ attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool) {
         self.isIndirect = isIndirect
         super.init(attrs, mod)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(mods) \(name) \(genParam) \(inherits) \(members))"
     }
@@ -258,60 +265,68 @@ public enum RawValueLiteral {
     case StringLiteral(String)
 }
 
-public class StructDeclaration : Declaration {
+public class StructDeclaration : Declaration, ScopeTrackable {
     var name: StructInst!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
+    var associatedScope: Scope!
 
     override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(StructDeclaration \(name) \(genParam) \(inherits) \(body))"
     }
 }
 
-public class ClassDeclaration : Declaration {
+public class ClassDeclaration : Declaration, ScopeTrackable {
     var name: ClassInst!
     var genParam: GenericParameterClause?
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
+    var associatedScope: Scope!
 
     override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(ClassDeclaration \(name) \(genParam) \(inherits) \(body)"
     }
 }
 
-public class ProtocolDeclaration : Declaration {
+public class ProtocolDeclaration : Declaration, ScopeTrackable {
     var name: ProtocolRef!
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
+    var associatedScope: Scope!
 
     override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(ProtocolDeclaration \(name) \(inherits) \(body))"
     }
 }
 
-public class InitializerDeclaration : Declaration {
+public class InitializerDeclaration : Declaration, ScopeTrackable {
     var failable: FailableType!
     var genParam: GenericParameterClause?
     var params: ParameterClause!
     var body: [Procedure] = []
+    var associatedScope: Scope!
 
     override init(_ attrs: [Attribute], _ mods: [Modifier]) {
         super.init(attrs, mods)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(InitializerDeclaration \(failable) \(genParam) \(params) \(body))"
     }
@@ -321,42 +336,48 @@ public enum FailableType : String {
     case Nothing, Failable, ForceUnwrapFailable
 }
 
-public class DeinitializerDeclaration : Declaration {
+public class DeinitializerDeclaration : Declaration, ScopeTrackable {
     let body: [Procedure]
+    var associatedScope: Scope!
 
     init(_ attrs: [Attribute], _ body: [Procedure]) {
         self.body = body
         super.init(attrs)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(DeinitializerDeclaration \(body))"
     }
 }
 
-public class ExtensionDeclaration : Declaration {
+public class ExtensionDeclaration : Declaration, ScopeTrackable {
     var type: IdentifierType!
     var inherits: TypeInheritanceClause?
     var body: [Declaration] = []
+    var associatedScope: Scope!
 
     override init(_ mod: Modifier?) {
         super.init(mod)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(ExtensionDeclaration \(type) \(inherits) \(body))"
     }
 }
 
-public class SubscriptDeclaration : Declaration {
+public class SubscriptDeclaration : Declaration, ScopeTrackable {
     var params: ParameterClause!
     var returns: ([Attribute], Type)!
     var body: VariableBlocks!
+    var associatedScope: Scope!
 
     override init(_ attrs: [Attribute], _ mods: [Modifier]) {
         super.init(attrs, mods)
     }
 
+    public var scope: Scope { return associatedScope }
     public override var description: String {
         return "(SubscriptDeclaration \(params) \(returns) \(body))"
     }

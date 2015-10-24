@@ -100,11 +100,14 @@ public enum ExpressionCore {
     case Wildcard
 }
 
-public class Closure {
+public class Closure : ScopeTrackable {
     var caps: [(CaptureSpecifier, Expression)] = []
     var params: ClosureParameters!
     var returns: ([Attribute], Type)?
     var body: [Procedure]!
+    var associatedScope: Scope!
+
+    public var scope: Scope { return associatedScope }
 }
 
 public enum CaptureSpecifier {
