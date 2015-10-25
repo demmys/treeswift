@@ -1,10 +1,8 @@
-import Util
-
 public class Declaration : CustomStringConvertible {
-    var attrs: [Attribute] = []
-    var mods: [Modifier] = []
+    public var attrs: [Attribute] = []
+    public var mods: [Modifier] = []
 
-    init() {}
+    public init() {}
     private init(_ attrs: [Attribute], _ mods: [Modifier]) {
         self.attrs = attrs
         self.mods = mods
@@ -30,17 +28,17 @@ public class Declaration : CustomStringConvertible {
 }
 
 public class TypeInheritanceClause {
-    var classRequirement = false
-    var types: [IdentifierType] = []
+    public var classRequirement = false
+    public var types: [IdentifierType] = []
 
-    init() {}
+    public init() {}
 }
 
 public class ImportDeclaration : Declaration {
-    var kind: ImportKind?
-    var path: [String] = []
+    public var kind: ImportKind?
+    public var path: [String] = []
 
-    override init(_ attrs: [Attribute]) {
+    public override init(_ attrs: [Attribute]) {
         super.init(attrs)
     }
 
@@ -54,10 +52,10 @@ public enum ImportKind : String {
 }
 
 public class PatternInitializerDeclaration : Declaration {
-    var isVariable = false
-    var inits: [(Pattern, Expression?)] = []
+    public var isVariable = false
+    public var inits: [(Pattern, Expression?)] = []
 
-    init(
+    public init(
         _ attrs: [Attribute], _ mods: [Modifier],
         isVariable: Bool, inits: [(Pattern, Expression?)]
     ) {
@@ -72,11 +70,11 @@ public class PatternInitializerDeclaration : Declaration {
 }
 
 public class VariableBlockDeclaration : Declaration {
-    var name: ValueInst!
-    var specifier: VariableBlockSpecifier!
-    var blocks: VariableBlocks!
+    public var name: ValueInst!
+    public var specifier: VariableBlockSpecifier!
+    public var blocks: VariableBlocks!
 
-    init(_ attrs: [Attribute], _ mods: [Modifier], name: ValueInst) {
+    public init(_ attrs: [Attribute], _ mods: [Modifier], name: ValueInst) {
         super.init(attrs, mods)
         self.name = name
     }
@@ -100,13 +98,13 @@ public enum VariableBlocks {
 }
 
 public class VariableBlock : ScopeTrackable {
-    var attrs: [Attribute] = []
-    var param: ValueInst?
-    var body: [Procedure]!
-    var associatedScope: Scope!
+    public var attrs: [Attribute] = []
+    public var param: ValueInst?
+    public var body: [Procedure]!
+    public var associatedScope: Scope!
 
-    init() {}
-    init(_ attrs: [Attribute]) {
+    public init() {}
+    public init(_ attrs: [Attribute]) {
         self.attrs = attrs
     }
 
@@ -114,11 +112,11 @@ public class VariableBlock : ScopeTrackable {
 }
 
 public class TypealiasDeclaration : Declaration {
-    var name: TypeRef!
-    var inherits: TypeInheritanceClause?
-    var type: Type?
+    public var name: TypeRef!
+    public var inherits: TypeInheritanceClause?
+    public var type: Type?
 
-    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
@@ -128,15 +126,15 @@ public class TypealiasDeclaration : Declaration {
 }
 
 public class FunctionDeclaration : Declaration, ScopeTrackable {
-    var name: FunctionReference!
-    var genParam: GenericParameterClause?
-    var params: [ParameterClause]!
-    var throwType: ThrowType!
-    var returns: ([Attribute], Type)?
-    var body: [Procedure] = []
-    var associatedScope: Scope!
+    public var name: FunctionReference!
+    public var genParam: GenericParameterClause?
+    public var params: [ParameterClause]!
+    public var throwType: ThrowType!
+    public var returns: ([Attribute], Type)?
+    public var body: [Procedure] = []
+    public var associatedScope: Scope!
 
-    override init(_ attrs: [Attribute], _ mods: [Modifier]) {
+    public override init(_ attrs: [Attribute], _ mods: [Modifier]) {
         super.init(attrs, mods)
     }
 
@@ -156,10 +154,10 @@ public enum ThrowType : String {
 }
 
 public class ParameterClause {
-    var body: [Parameter] = []
-    var isVariadic = false
+    public var body: [Parameter] = []
+    public var isVariadic = false
 
-    init() {}
+    public init() {}
 }
 
 public enum Parameter {
@@ -168,14 +166,14 @@ public enum Parameter {
 }
 
 public class NamedParameter {
-    var isInout = false
-    var isVariable = false
-    var externalName: ParameterName!
-    var internalName: ParameterName!
-    var type: (Type, [Attribute])!
-    var defaultArg: Expression?
+    public var isInout = false
+    public var isVariable = false
+    public var externalName: ParameterName!
+    public var internalName: ParameterName!
+    public var type: (Type, [Attribute])!
+    public var defaultArg: Expression?
 
-    init() {}
+    public init() {}
 }
 
 public enum ParameterName {
@@ -186,15 +184,15 @@ public enum ParameterName {
 }
 
 public class EnumDeclaration : Declaration, ScopeTrackable {
-    var isIndirect: Bool
-    var isRawValueStyle = false
-    var name: EnumInst!
-    var genParam: GenericParameterClause?
-    var inherits: TypeInheritanceClause?
-    var members: [EnumMember]!
-    var associatedScope: Scope!
+    public var isIndirect: Bool
+    public var isRawValueStyle = false
+    public var name: EnumInst!
+    public var genParam: GenericParameterClause?
+    public var inherits: TypeInheritanceClause?
+    public var members: [EnumMember]!
+    public var associatedScope: Scope!
 
-    init(_ attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool) {
+    public init(_ attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool) {
         self.isIndirect = isIndirect
         super.init(attrs, mod)
     }
@@ -213,18 +211,18 @@ public enum EnumMember {
 }
 
 public class EnumCaseClause {
-    var attrs: [Attribute]
-    var cases: [EnumCase] = []
+    public var attrs: [Attribute]
+    public var cases: [EnumCase] = []
 
-    init(_ attrs: [Attribute]) {
+    public init(_ attrs: [Attribute]) {
         self.attrs = attrs
     }
 }
 
 public class EnumCase : CustomStringConvertible {
-    var name: EnumCaseRef!
+    public var name: EnumCaseRef!
 
-    init(_ name: EnumCaseRef) {
+    public init(_ name: EnumCaseRef) {
         self.name = name
     }
 
@@ -234,9 +232,9 @@ public class EnumCase : CustomStringConvertible {
 }
 
 public class UnionStyleEnumCase : EnumCase {
-    var tuple: TupleType!
+    public var tuple: TupleType!
 
-    init(_ name: EnumCaseRef, _ tuple: TupleType) {
+    public init(_ name: EnumCaseRef, _ tuple: TupleType) {
         super.init(name)
         self.tuple = tuple
     }
@@ -247,9 +245,9 @@ public class UnionStyleEnumCase : EnumCase {
 }
 
 public class RawValueStyleEnumCase : EnumCase {
-    var value: RawValueLiteral!
+    public var value: RawValueLiteral!
 
-    init(_ name: EnumCaseRef, _ value: RawValueLiteral) {
+    public init(_ name: EnumCaseRef, _ value: RawValueLiteral) {
         super.init(name)
         self.value = value
     }
@@ -266,13 +264,13 @@ public enum RawValueLiteral {
 }
 
 public class StructDeclaration : Declaration, ScopeTrackable {
-    var name: StructInst!
-    var genParam: GenericParameterClause?
-    var inherits: TypeInheritanceClause?
-    var body: [Declaration] = []
-    var associatedScope: Scope!
+    public var name: StructInst!
+    public var genParam: GenericParameterClause?
+    public var inherits: TypeInheritanceClause?
+    public var body: [Declaration] = []
+    public var associatedScope: Scope!
 
-    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
@@ -283,13 +281,13 @@ public class StructDeclaration : Declaration, ScopeTrackable {
 }
 
 public class ClassDeclaration : Declaration, ScopeTrackable {
-    var name: ClassInst!
-    var genParam: GenericParameterClause?
-    var inherits: TypeInheritanceClause?
-    var body: [Declaration] = []
-    var associatedScope: Scope!
+    public var name: ClassInst!
+    public var genParam: GenericParameterClause?
+    public var inherits: TypeInheritanceClause?
+    public var body: [Declaration] = []
+    public var associatedScope: Scope!
 
-    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
@@ -300,12 +298,12 @@ public class ClassDeclaration : Declaration, ScopeTrackable {
 }
 
 public class ProtocolDeclaration : Declaration, ScopeTrackable {
-    var name: ProtocolRef!
-    var inherits: TypeInheritanceClause?
-    var body: [Declaration] = []
-    var associatedScope: Scope!
+    public var name: ProtocolRef!
+    public var inherits: TypeInheritanceClause?
+    public var body: [Declaration] = []
+    public var associatedScope: Scope!
 
-    override init(_ attrs: [Attribute], _ mod: Modifier?) {
+    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
         super.init(attrs, mod)
     }
 
@@ -316,13 +314,13 @@ public class ProtocolDeclaration : Declaration, ScopeTrackable {
 }
 
 public class InitializerDeclaration : Declaration, ScopeTrackable {
-    var failable: FailableType!
-    var genParam: GenericParameterClause?
-    var params: ParameterClause!
-    var body: [Procedure] = []
-    var associatedScope: Scope!
+    public var failable: FailableType!
+    public var genParam: GenericParameterClause?
+    public var params: ParameterClause!
+    public var body: [Procedure] = []
+    public var associatedScope: Scope!
 
-    override init(_ attrs: [Attribute], _ mods: [Modifier]) {
+    public override init(_ attrs: [Attribute], _ mods: [Modifier]) {
         super.init(attrs, mods)
     }
 
@@ -337,10 +335,10 @@ public enum FailableType : String {
 }
 
 public class DeinitializerDeclaration : Declaration, ScopeTrackable {
-    let body: [Procedure]
-    var associatedScope: Scope!
+    public let body: [Procedure]
+    public var associatedScope: Scope!
 
-    init(_ attrs: [Attribute], _ body: [Procedure]) {
+    public init(_ attrs: [Attribute], _ body: [Procedure]) {
         self.body = body
         super.init(attrs)
     }
@@ -352,12 +350,12 @@ public class DeinitializerDeclaration : Declaration, ScopeTrackable {
 }
 
 public class ExtensionDeclaration : Declaration, ScopeTrackable {
-    var type: IdentifierType!
-    var inherits: TypeInheritanceClause?
-    var body: [Declaration] = []
-    var associatedScope: Scope!
+    public var type: IdentifierType!
+    public var inherits: TypeInheritanceClause?
+    public var body: [Declaration] = []
+    public var associatedScope: Scope!
 
-    override init(_ mod: Modifier?) {
+    public override init(_ mod: Modifier?) {
         super.init(mod)
     }
 
@@ -368,12 +366,12 @@ public class ExtensionDeclaration : Declaration, ScopeTrackable {
 }
 
 public class SubscriptDeclaration : Declaration, ScopeTrackable {
-    var params: ParameterClause!
-    var returns: ([Attribute], Type)!
-    var body: VariableBlocks!
-    var associatedScope: Scope!
+    public var params: ParameterClause!
+    public var returns: ([Attribute], Type)!
+    public var body: VariableBlocks!
+    public var associatedScope: Scope!
 
-    override init(_ attrs: [Attribute], _ mods: [Modifier]) {
+    public override init(_ attrs: [Attribute], _ mods: [Modifier]) {
         super.init(attrs, mods)
     }
 
@@ -384,8 +382,8 @@ public class SubscriptDeclaration : Declaration, ScopeTrackable {
 }
 
 public class OperatorDeclaration : Declaration {
-    let kind: OperatorDeclarationKind
-    let name: OperatorRef
+    public let kind: OperatorDeclarationKind
+    public let name: OperatorRef
 
     public init(_ kind: OperatorDeclarationKind, _ name: OperatorRef!) {
         self.kind = kind

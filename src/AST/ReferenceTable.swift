@@ -1,7 +1,7 @@
 public class BindingRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -11,9 +11,9 @@ public class BindingRef : CustomStringConvertible {
 }
 
 public class OperatorRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -23,9 +23,9 @@ public class OperatorRef : CustomStringConvertible {
 }
 
 public class ClassRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -35,9 +35,9 @@ public class ClassRef : CustomStringConvertible {
 }
 
 public class StructRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -47,9 +47,9 @@ public class StructRef : CustomStringConvertible {
 }
 
 public class EnumRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -59,9 +59,9 @@ public class EnumRef : CustomStringConvertible {
 }
 
 public class EnumCaseRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -71,9 +71,9 @@ public class EnumCaseRef : CustomStringConvertible {
 }
 
 public class ProtocolRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -83,9 +83,9 @@ public class ProtocolRef : CustomStringConvertible {
 }
 
 public class MemberRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -95,9 +95,9 @@ public class MemberRef : CustomStringConvertible {
 }
 
 public class TypeRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 
@@ -107,9 +107,9 @@ public class TypeRef : CustomStringConvertible {
 }
 
 public class ExtensionRef : CustomStringConvertible {
-    let name: String
+    public let name: String
 
-    init(_ n: String) {
+    public init(_ n: String) {
         name = n
     }
 

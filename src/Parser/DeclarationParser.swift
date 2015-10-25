@@ -1,3 +1,5 @@
+import AST
+
 class DeclarationParser : GrammarParser {
     private var prp: ProcedureParser!
     private var ptp: PatternParser!
@@ -589,7 +591,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedEnumName)
         }
-        x.name = try ScopeManager.createEnum(s, trackable)
+        x.name = try ScopeManager.createEnum(s, trackable, node: x)
         ScopeManager.enterScope(.Enum)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
@@ -710,7 +712,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedStructName)
         }
-        x.name = try ScopeManager.createStruct(s, trackable)
+        x.name = try ScopeManager.createStruct(s, trackable, node: x)
         ScopeManager.enterScope(.Struct)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
@@ -730,7 +732,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedClassName)
         }
-        x.name = try ScopeManager.createClass(s, trackable)
+        x.name = try ScopeManager.createClass(s, trackable, node: x)
         ScopeManager.enterScope(.Class)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()

@@ -1,3 +1,5 @@
+import AST
+
 class GenericsParser : GrammarParser {
     private var tp: TypeParser!
 

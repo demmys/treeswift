@@ -16,21 +16,23 @@ public enum Operation {
 }
 
 public class Flow : ScopeTrackable, CustomStringConvertible {
-    var pats: [PatternMatching]!
-    var block: [Procedure]!
-    var associatedScope: Scope!
+    public var pats: [PatternMatching]!
+    public var block: [Procedure]!
+    public var associatedScope: Scope!
+
+    public init() {}
 
     public var scope: Scope { return associatedScope }
     public var description: String { return "<<error: no description provided>>" }
 }
 
 public class PatternMatching {
-    var pat: Pattern!
-    var exp: Expression?
-    var rest: Expression?
+    public var pat: Pattern!
+    public var exp: Expression?
+    public var rest: Expression?
 
-    init() {}
-    init(_ pat: Pattern, _ exp: Expression?, _ rest: Expression?) {
+    public init() {}
+    public init(_ pat: Pattern, _ exp: Expression?, _ rest: Expression?) {
         self.pat = pat
         self.exp = exp
         self.rest = rest
@@ -38,15 +40,15 @@ public class PatternMatching {
 }
 
 public class ForFlow : Flow {
-    var label: String?
-    var ini: ForInit?
-    var fin: Operation?
+    public var label: String?
+    public var ini: ForInit?
+    public var fin: Operation?
 
-    init(_ label: String?) {
+    public init(_ label: String?) {
         self.label = label
     }
 
-    func setCond(c: Expression) {
+    public func setCond(c: Expression) {
         pats = [PatternMatching(.BooleanPattern, c, nil)]
     }
 
@@ -61,9 +63,9 @@ public enum ForInit {
 }
 
 public class ForInFlow : Flow {
-    var label: String?
+    public var label: String?
 
-    init(_ label: String?) {
+    public init(_ label: String?) {
         self.label = label
     }
 
@@ -73,9 +75,9 @@ public class ForInFlow : Flow {
 }
 
 public class WhileFlow : Flow {
-    var label: String?
+    public var label: String?
 
-    init(_ label: String?) {
+    public init(_ label: String?) {
         self.label = label
     }
 
@@ -85,13 +87,13 @@ public class WhileFlow : Flow {
 }
 
 public class RepeatWhileFlow : Flow {
-    var label: String?
+    public var label: String?
 
-    init(_ label: String?) {
+    public init(_ label: String?) {
         self.label = label
     }
 
-    func setCond(c: Expression) {
+    public func setCond(c: Expression) {
         pats = [PatternMatching(.BooleanPattern, c, nil)]
     }
 
@@ -101,10 +103,10 @@ public class RepeatWhileFlow : Flow {
 }
 
 public class IfFlow : Flow {
-    var label: String?
-    var els: ElseClause?
+    public var label: String?
+    public var els: ElseClause?
 
-    init(_ label: String?) {
+    public init(_ label: String?) {
         self.label = label
     }
 
@@ -131,7 +133,7 @@ public class DeferFlow : Flow {
 }
 
 public class DoFlow : Flow {
-    var catches: [CatchFlow] = []
+    public var catches: [CatchFlow] = []
 
     public override var description: String { get {
         return "(DoFlow \(block) \(catches))"
@@ -145,10 +147,10 @@ public class CatchFlow : Flow {
 }
 
 public class FlowSwitch {
-    var label: String?
-    var cases: [CaseFlow] = []
+    public var label: String?
+    public var cases: [CaseFlow] = []
 
-    init(_ label: String?) {
+    public init(_ label: String?) {
         self.label = label
     }
 }

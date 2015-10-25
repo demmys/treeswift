@@ -1,4 +1,5 @@
 import Util
+import AST
 
 protocol CharacterPeeper {
     func look() -> Character?

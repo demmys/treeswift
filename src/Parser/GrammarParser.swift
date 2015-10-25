@@ -1,3 +1,5 @@
+import AST
+
 class GrammarParser {
     let integerLiteral = TokenKind.IntegerLiteral(0, decimalDigits: true)
     let floatingPointLiteral = TokenKind.FloatingPointLiteral(0)

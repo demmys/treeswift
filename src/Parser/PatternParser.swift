@@ -1,4 +1,5 @@
 import Util
+import AST
 
 class PatternParser : GrammarParser {
     private var tp: TypeParser!

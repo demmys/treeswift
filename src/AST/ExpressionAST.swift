@@ -1,6 +1,8 @@
 public class Expression {
-    var tryType: TryType!
-    var body: ExpressionBody!
+    public var tryType: TryType!
+    public var body: ExpressionBody!
+
+    public init() {}
 }
 
 public enum TryType : String {
@@ -8,15 +10,17 @@ public enum TryType : String {
 }
 
 public class ExpressionBody : CustomStringConvertible {
-    var unit: ExpressionUnit!
-    var left: ExpressionUnit! {
+    public var unit: ExpressionUnit!
+    public var left: ExpressionUnit! {
         get { return unit }
         set(l) { unit = l }
     }
-    var cond: ExpressionUnit! {
+    public var cond: ExpressionUnit! {
         get { return unit }
         set(c) { unit = c }
     }
+
+    public init() {}
 
     public var description: String { get {
         return "(ExpressionBody \(unit))"
@@ -24,28 +28,34 @@ public class ExpressionBody : CustomStringConvertible {
 }
 
 public class BinaryExpressionBody : ExpressionBody {
-    var op: OperatorRef!
-    var right: ExpressionBody!
+    public var op: OperatorRef!
+    public var right: ExpressionBody!
 
-    override public var description: String { get {
+    public override init() {}
+
+    public override var description: String { get {
         return "(BinaryExpressionBody \(left) \(op) \(right))"
     } }
 }
 
 public class ConditionalExpressionBody : ExpressionBody {
-    var trueSide: Expression!
-    var falseSide: Expression!
+    public var trueSide: Expression!
+    public var falseSide: Expression!
 
-    override public var description: String { get {
+    public override init() {}
+
+    public override var description: String { get {
         return "(ConditionalExpressionBody \(cond) \(trueSide) \(falseSide))"
     } }
 }
 
 public class TypeCastingExpressionBody : ExpressionBody {
-    var castType: CastType!
-    var type: Type!
+    public var castType: CastType!
+    public var type: Type!
 
-    override public var description: String { get {
+    public override init() {}
+
+    public override var description: String { get {
         return "(TypeCastingExpressionBody \(castType) \(type))"
     } }
 }
@@ -56,9 +66,11 @@ public enum CastType {
 
 // prefix-expression
 public class ExpressionUnit {
-    var pre: ExpressionPrefix!
-    var core: ExpressionCore!
-    var posts: [ExpressionPostfix] = []
+    public var pre: ExpressionPrefix!
+    public var core: ExpressionCore!
+    public var posts: [ExpressionPostfix] = []
+
+    public init() {}
 }
 
 public enum ExpressionPrefix {
@@ -79,8 +91,9 @@ public enum ExpressionPostfix {
 
 // primary-expression
 public enum ExpressionCore {
-    case Value(ValueInst, genArgs: [Type]?)
-    case BindingValue(ValueInst)
+    case Value(UnresolvedValueRef, genArgs: [Type]?)
+    case BindingValue(UnresolvedValueRef)
+    case ImplicitParameter(UnresolvedImplicitParameterRef, genArgs: [Type]?)
     case Integer(Int64)
     case FloatingPoint(Double)
     case StringExpression(String)
@@ -101,11 +114,13 @@ public enum ExpressionCore {
 }
 
 public class Closure : ScopeTrackable {
-    var caps: [(CaptureSpecifier, Expression)] = []
-    var params: ClosureParameters!
-    var returns: ([Attribute], Type)?
-    var body: [Procedure]!
-    var associatedScope: Scope!
+    public var caps: [(CaptureSpecifier, Expression)] = []
+    public var params: ClosureParameters!
+    public var returns: ([Attribute], Type)?
+    public var body: [Procedure]!
+    public var associatedScope: Scope!
+
+    public init() {}
 
     public var scope: Scope { return associatedScope }
 }

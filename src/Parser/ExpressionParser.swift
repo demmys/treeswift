@@ -1,4 +1,5 @@
 import Util
+import AST
 
 class ExpressionParser : GrammarParser {
     private var tp: TypeParser!
@@ -194,15 +195,17 @@ class ExpressionParser : GrammarParser {
         ]) {
         case let .Identifier(s):
             if valueBinding {
-                return .BindingValue(try ScopeManager.createValue(s, trackable))
+                return .BindingValue(
+                    try ScopeManager.createUnresolvedValueRef(s, trackable)
+                )
             }
             return .Value(
-                try ScopeManager.getValue(s, trackable),
+                try ScopeManager.createUnresolvedValueRef(s, trackable),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .ImplicitParameterName(i):
-            return .Value(
-                try ScopeManager.getValue(String(i), trackable), // TODO
+            return .ImplicitParameter(
+                try ScopeManager.createUnresolvedImplicitParameterRef(i, trackable),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .IntegerLiteral(i, _):

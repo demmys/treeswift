@@ -1,8 +1,8 @@
 public class GenericParameterClause {
-    var params: [GenericParameter] = []
-    var reqs: [Requirement] = []
+    public var params: [GenericParameter] = []
+    public var reqs: [Requirement] = []
 
-    init() {}
+    public init() {}
 }
 
 public enum GenericParameter {

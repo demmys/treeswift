@@ -1,3 +1,5 @@
+import AST
+
 class ProcedureParser : GrammarParser {
     private var dp: DeclarationParser!
     private var pp: PatternParser!

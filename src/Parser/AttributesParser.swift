@@ -1,3 +1,5 @@
+import AST
+
 class AttributesParser : GrammarParser {
     func lookAfterAttributes(startIndex: Int = 0) throws -> ([Attribute], Int) {
         var i = startIndex

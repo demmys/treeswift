@@ -1,7 +1,7 @@
 public class Attribute {
     let attr: String
 
-    init(_ a: String) {
+    public init(_ a: String) {
         attr = a
     }
 }

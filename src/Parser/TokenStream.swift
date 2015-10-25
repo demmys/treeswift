@@ -1,4 +1,5 @@
 import Util
+import AST
 
 public struct Token : SourceTrackable {
     public var kind: TokenKind

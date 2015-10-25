@@ -1,4 +1,5 @@
 import Darwin
+import Util
 
 public protocol SourceTrackable {
     var sourceInfo: SourceInfo { get }
@@ -110,18 +111,11 @@ public enum ErrorMessage : CustomStringConvertible {
     // ScopeManager
     case ScopeTypeMismatch
     case LeavingGlobalScope
-    case InvalidVariableScope
-    case VariableAlreadyExist(String)
-    case VariableNotExist(String)
-    case InvalidEnumScope
-    case EnumAlreadyExist(String)
-    case EnumNotExist(String)
-    case InvalidStructScope
-    case StructAlreadyExist(String)
-    case StructNotExist(String)
-    case InvalidClassScope
-    case ClassAlreadyExist(String)
-    case ClassNotExist(String)
+    case InvalidScope(Inst.Type)
+    case AlreadyExist(Inst.Type, String)
+    case InvalidRefScope(UnresolvedRef.Type)
+    case InvalidImplicitParameterRefScope
+    case NotExist(Inst.Type, String)
     // TokenStream
     case UnexpectedEOF
     case InvalidToken
@@ -283,30 +277,54 @@ public enum ErrorMessage : CustomStringConvertible {
             return "<system error> leaving scope type mismatch"
         case .LeavingGlobalScope:
             return "<system error> leaving global scope"
-        case .InvalidVariableScope:
-            return "You cannot declare a constant or a variable in this scope"
-        case let .VariableAlreadyExist(name):
-            return "Constant or variable with name '\(name)' already exists"
-        case let .VariableNotExist(name):
-            return "Constant or variable '\(name)' not exists in this scope"
-        case .InvalidEnumScope:
-            return "You cannot declare an enum in this scope"
-        case let .EnumAlreadyExist(name):
-            return "Enum with name '\(name)' already exists"
-        case let .EnumNotExist(name):
-            return "Enum '\(name)' not exists in this scope"
-        case .InvalidStructScope:
-            return "You cannot declare a struct in this scope"
-        case let .StructAlreadyExist(name):
-            return "Struct with name '\(name)' already exists"
-        case let .StructNotExist(name):
-            return "Struct '\(name)' not exists in this scope"
-        case .InvalidClassScope:
-            return "You cannot declare a class in this scope"
-        case let .ClassAlreadyExist(name):
-            return "Class with name '\(name)' already exists"
-        case let .ClassNotExist(name):
-            return "Class '\(name)' not exists in this scope"
+        case let .InvalidScope(type):
+            switch type {
+            case is ValueInst.Type:
+                return "You cannot declare a constant or a variable in this scope"
+            case is EnumInst.Type:
+                return "You cannot declare an enum in this scope"
+            case is StructInst.Type:
+                return "You cannot declare a struct in this scope"
+            case is ClassInst.Type:
+                return "You cannot declare a class in this scope"
+            default:
+                return "You cannot declare <instance type error> in this scope"
+            }
+        case let .AlreadyExist(type, name):
+            switch type {
+            case is ValueInst.Type:
+                return "Constant or variable with name '\(name)' already exists"
+            case is EnumInst.Type:
+                return "Enum with name '\(name)' already exists"
+            case is StructInst.Type:
+                return "Struct with name '\(name)' already exists"
+            case is ClassInst.Type:
+                return "Class with name '\(name)' already exists"
+            default:
+                return "<instance type error> with name '\(name)' already exists"
+            }
+        case let .InvalidRefScope(type):
+            switch type {
+            case is UnresolvedValueRef.Type:
+                return "You cannot refer a constant or a variable in this scope"
+            default:
+                return "You cannot refer <instance type error> in this scope"
+            }
+        case .InvalidImplicitParameterRefScope:
+            return "You cannot refer an implicit parameter in this scope"
+        case let .NotExist(type, name):
+            switch type {
+            case is ValueInst.Type:
+                return "Constant or variable '\(name)' not exists in this scope"
+            case is EnumInst.Type:
+                return "Enum '\(name)' not exists in this scope"
+            case is StructInst.Type:
+                return "Struct '\(name)' not exists in this scope"
+            case is ClassInst.Type:
+                return "Class '\(name)' not exists in this scope"
+            default:
+                return "<instance type error> '\(name)' not exists in this scope"
+            }
         // AttributesParser
         case .ExpectedAttributeIdentifier:
             return "Expected identifier for attribute"

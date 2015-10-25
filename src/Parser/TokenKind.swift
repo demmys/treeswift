@@ -1,4 +1,5 @@
 import Util
+import AST
 
 public enum ModifierKind {
     case Convenience, Dynamic, Final, Lazy, Mutating, Nonmutating
