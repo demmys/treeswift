@@ -10,7 +10,7 @@ class PatternParser : GrammarParser {
         self.ep = ep
     }
 
-    func declarationalPattern() throws -> Pattern {
+    func declarativePattern() throws -> Pattern {
         let info = ts.look().sourceInfo
         switch ts.match([identifier, .Underscore, .LeftParenthesis]) {
         case let .Identifier(s):
@@ -18,9 +18,9 @@ class PatternParser : GrammarParser {
         case .Underscore:
             return try wildcardPattern()
         case .LeftParenthesis:
-            return .TuplePattern(try declarationalTuplePattern())
+            return .TuplePattern(try declarativeTuplePattern())
         default:
-            throw ts.fatal(.ExpectedDeclarationalPattern)
+            throw ts.fatal(.ExpectedDeclarativePattern)
         }
     }
 
@@ -91,8 +91,8 @@ class PatternParser : GrammarParser {
         return .WildcardPattern
     }
 
-    private func declarationalTuplePattern() throws -> PatternTuple {
-        return try tuplePattern(declarationalPattern)
+    private func declarativeTuplePattern() throws -> PatternTuple {
+        return try tuplePattern(declarativePattern)
     }
 
     private func conditionalTuplePattern(valueBinding: Bool) throws -> PatternTuple {

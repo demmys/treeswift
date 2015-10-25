@@ -158,7 +158,7 @@ class ProcedureParser : GrammarParser {
         if ts.test([.Case]) {
             p = try pp.conditionalPattern()
         } else {
-            p = try pp.declarationalPattern()
+            p = try pp.declarativePattern()
         }
         if !ts.test([.In]) {
             try ts.error(.ExpectedInForForPattern)
@@ -274,7 +274,7 @@ class ProcedureParser : GrammarParser {
         var pms: [PatternMatching] = []
         repeat {
             let pm = PatternMatching()
-            pm.pat = wrap(try pp.declarationalPattern())
+            pm.pat = wrap(try pp.declarativePattern())
             if !ts.test([.AssignmentOperator]) {
                 try ts.error(.ExpectedEqualForOptionalBinding)
             }
@@ -423,7 +423,7 @@ class ProcedureParser : GrammarParser {
         let (_, k) = find([.AssignmentOperator, .Semicolon, .LineFeed], startIndex: 1)
         switch k {
         case .AssignmentOperator:
-            let p = try pp.declarationalPattern()
+            let p = try pp.declarativePattern()
             if !ts.test([.AssignmentOperator]) {
                 try ts.error(.ExpectedEqualForAssignment)
             }

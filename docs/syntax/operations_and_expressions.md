@@ -9,7 +9,7 @@ operation -> expression
            | return-operation
            | throw-operation
 
-assignment-operation -> declarational-pattern AssignmentOperator expression
+assignment-operation -> declarative-pattern AssignmentOperator expression
 
 break-operation -> Break Identifier?
 

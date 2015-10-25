@@ -371,7 +371,7 @@ class DeclarationParser : GrammarParser {
     private func patternInitializerList() throws -> [(Pattern, Expression?)] {
         var pi: [(Pattern, Expression?)] = []
         repeat {
-            let p = try ptp.declarationalPattern()
+            let p = try ptp.declarativePattern()
             if ts.test([.AssignmentOperator]) {
                 pi.append((p, try ep.expression()))
             } else {

@@ -223,7 +223,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedDoubleEqual
     case ExpectedRequirementSymbol
     // PatternParser
-    case ExpectedDeclarationalPattern
+    case ExpectedDeclarativePattern
     case ExpectedEnumCasePatternIdentifier
     case NestedBindingPattern
     // ProcedureParser
@@ -372,7 +372,7 @@ public enum ErrorMessage : CustomStringConvertible {
         case .MultipleVariableWithBlock:
             return "When the variable has blocks, you can define only one variable in a declaration."
         case .ExpectedVariableIdentifier:
-            return "Expected identifier or declarational pattern for variable declaration."
+            return "Expected identifier or declarative pattern for variable declaration."
         case .ExpectedVariableSpecifierWithBlock:
             return "Expected type annotation or initializer for variable declaration with block."
         case .ExpectedIdentifierPatternWithVariableBlock:
@@ -526,8 +526,8 @@ public enum ErrorMessage : CustomStringConvertible {
         case .ExpectedRequirementSymbol:
             return "Expected ':' for the conformance requirement or '==' for the same type requirement"
         // PatternParser
-        case .ExpectedDeclarationalPattern:
-            return "Expected declarational pattern. You can use only identifier patterns, wildcard patterns or tuple patterns here."
+        case .ExpectedDeclarativePattern:
+            return "Expected declarative pattern. You can use only identifier patterns, wildcard patterns or tuple patterns here."
         case .ExpectedEnumCasePatternIdentifier:
             return "Expected identifier after '.' for enum case pattern"
         case .NestedBindingPattern:

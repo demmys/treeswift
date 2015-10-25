@@ -49,7 +49,7 @@ for-finalize     -> expression
                   | assignment-operation
 
 for-in-flow    -> For for-in-pattern In expression requirement-clause? procedure-block
-for-in-pattern -> declarational-pattern
+for-in-pattern -> declarative-pattern
                 | Case conditional-pattern
 
 while-flow    -> While pattern-match-clause procedures-block
@@ -100,7 +100,7 @@ matching-pattern  -> optional-binding-pattern-list
 optional-binding-pattern-list         -> optional-binding optional-binding-pattern-list-tail? restraint?
 optional-binding                      -> Let optional-binding-body
                                        | Var optional-binding-body
-optional-binding-body                 -> declarational-pattern AssignmentOperator expression
+optional-binding-body                 -> declarative-pattern AssignmentOperator expression
 optional-binding-pattern-list-tail    -> Comma optional-binding-body optional-binding-pattern-list-tail?
 
 case-pattern -> Case conditional-pattern AssignmentOperator expression restraint?

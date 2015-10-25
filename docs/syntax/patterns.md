@@ -1,9 +1,9 @@
 ### Patterns
 
 ```
-declarational-pattern -> identifier-pattern
+declarative-pattern -> identifier-pattern
                        | wildcard-pattern
-                       | declarational-tuple-pattern
+                       | declarative-tuple-pattern
 
 conditional-pattern -> primary-pattern pattern-postfixes?
 
@@ -21,11 +21,11 @@ identifier-pattern -> Identifier type-annotation?
 value-binding-pattern -> Var conditional-pattern
                        | Let conditional-pattern
 
-declarational-tuple-pattern               -> LeftParenthesis declarational-tuple-pattern-elements? RightParenthesis type-annotation?
-declarational-tuple-pattern-elements      -> declarational-tuple-pattern-element declarational-tuple-pattern-elements-tail?
-declarational-tuple-pattern-elements-tail -> Comma declarational-tuple-pattern-element
-declarational-tuple-pattern-element       -> declarational-pattern
-                                           | Identifier Colon declarational-pattern
+declarative-tuple-pattern               -> LeftParenthesis declarative-tuple-pattern-elements? RightParenthesis type-annotation?
+declarative-tuple-pattern-elements      -> declarative-tuple-pattern-element declarative-tuple-pattern-elements-tail?
+declarative-tuple-pattern-elements-tail -> Comma declarative-tuple-pattern-element
+declarative-tuple-pattern-element       -> declarative-pattern
+                                           | Identifier Colon declarative-pattern
 
 conditional-tuple-pattern               -> LeftParenthesis conditional-tuple-pattern-elements? RightParenthesis type-annotation?
 conditional-tuple-pattern-elements      -> conditional-tuple-pattern-element tuple-pattern-elements-tail?
