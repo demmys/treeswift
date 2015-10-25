@@ -32,8 +32,8 @@ public class Scope {
     private var enums: [String:EnumInst]?
     private var structs: [String:StructInst]?
     private var classes: [String:ClassInst]?
-    private var valueRefs: [String:UnresolvedValueRef]?
-    private var implicitParameterRefs: [Int:UnresolvedImplicitParameterRef]?
+    private var valueRefs: [String:ValueRef]?
+    private var implicitParameterRefs: [Int:ImplicitParameterRef]?
 
     private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
@@ -55,7 +55,7 @@ public class Scope {
         return i
     }
 
-    private func createUnresolvedRef<T : UnresolvedRef>(
+    private func createRef<T : Ref>(
         inout refs: [String:T]?, _ name: String, _ source: SourceTrackable,
         _ constructor: () -> T
     ) throws -> T {
@@ -75,21 +75,21 @@ public class Scope {
         )
     }
 
-    private func createUnresolvedValueRef(
+    private func createValueRef(
         name: String, _ source: SourceTrackable
-    ) throws -> UnresolvedValueRef {
-        return try createUnresolvedRef(
-            &valueRefs, name, source, { UnresolvedValueRef(name, source) }
+    ) throws -> ValueRef {
+        return try createRef(
+            &valueRefs, name, source, { ValueRef(name, source) }
         )
     }
 
-    public func createUnresolvedImplicitParameterRef(
+    public func createImplicitParameterRef(
         index: Int, _ source: SourceTrackable
-    ) throws -> UnresolvedImplicitParameterRef {
+    ) throws -> ImplicitParameterRef {
         guard implicitParameterRefs != nil else {
             throw ErrorReporter.fatal(.InvalidImplicitParameterRefScope, source)
         }
-        let i = UnresolvedImplicitParameterRef(index, source)
+        let i = ImplicitParameterRef(index, source)
         implicitParameterRefs?[index] = i
         return i
     }
@@ -289,16 +289,16 @@ public class ScopeManager {
         return try currentScope.createValue(name, source, isVariable: isVariable)
     }
 
-    public static func createUnresolvedValueRef(
+    public static func createValueRef(
         name: String, _ source: SourceTrackable
-    ) throws -> UnresolvedValueRef {
-        return try currentScope.createUnresolvedValueRef(name, source)
+    ) throws -> ValueRef {
+        return try currentScope.createValueRef(name, source)
     }
 
-    public static func createUnresolvedImplicitParameterRef(
+    public static func createImplicitParameterRef(
         index: Int, _ source: SourceTrackable
-    ) throws -> UnresolvedImplicitParameterRef {
-        return try currentScope.createUnresolvedImplicitParameterRef(index, source)
+    ) throws -> ImplicitParameterRef {
+        return try currentScope.createImplicitParameterRef(index, source)
     }
 
     public static func createEnum(
@@ -393,7 +393,7 @@ public class ClassInst : Inst, CustomStringConvertible {
     }
 }
 
-public class UnresolvedRef : SourceTrackable {
+public class Ref : SourceTrackable {
     private let name: String
     private let info: SourceInfo
     public var sourceInfo: SourceInfo {
@@ -406,13 +406,13 @@ public class UnresolvedRef : SourceTrackable {
     }
 }
 
-public class UnresolvedValueRef : UnresolvedRef, CustomStringConvertible {
+public class ValueRef : Ref, CustomStringConvertible {
     public var description: String {
-        return "(UnresolvedValueRef \(index))"
+        return "(ValueRef \(index))"
     }
 }
 
-public class UnresolvedImplicitParameterRef : SourceTrackable, CustomStringConvertible {
+public class ImplicitParameterRef : SourceTrackable, CustomStringConvertible {
     private let index: Int
     private let info: SourceInfo
     public var sourceInfo: SourceInfo {
@@ -425,6 +425,6 @@ public class UnresolvedImplicitParameterRef : SourceTrackable, CustomStringConve
     }
 
     public var description: String {
-        return "(UnresolvedImplicitParameterRef \(index))"
+        return "(ImplicitParameterRef \(index))"
     }
 }

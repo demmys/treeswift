@@ -91,9 +91,9 @@ public enum ExpressionPostfix {
 
 // primary-expression
 public enum ExpressionCore {
-    case Value(UnresolvedValueRef, genArgs: [Type]?)
-    case BindingValue(UnresolvedValueRef)
-    case ImplicitParameter(UnresolvedImplicitParameterRef, genArgs: [Type]?)
+    case Value(ValueRef, genArgs: [Type]?)
+    case BindingValue(ValueRef)
+    case ImplicitParameter(ImplicitParameterRef, genArgs: [Type]?)
     case Integer(Int64)
     case FloatingPoint(Double)
     case StringExpression(String)

@@ -113,7 +113,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case LeavingGlobalScope
     case InvalidScope(Inst.Type)
     case AlreadyExist(Inst.Type, String)
-    case InvalidRefScope(UnresolvedRef.Type)
+    case InvalidRefScope(Ref.Type)
     case InvalidImplicitParameterRefScope
     case NotExist(Inst.Type, String)
     // TokenStream
@@ -305,7 +305,7 @@ public enum ErrorMessage : CustomStringConvertible {
             }
         case let .InvalidRefScope(type):
             switch type {
-            case is UnresolvedValueRef.Type:
+            case is ValueRef.Type:
                 return "You cannot refer a constant or a variable in this scope"
             default:
                 return "You cannot refer <instance type error> in this scope"

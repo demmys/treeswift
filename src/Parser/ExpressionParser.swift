@@ -196,16 +196,16 @@ class ExpressionParser : GrammarParser {
         case let .Identifier(s):
             if valueBinding {
                 return .BindingValue(
-                    try ScopeManager.createUnresolvedValueRef(s, trackable)
+                    try ScopeManager.createValueRef(s, trackable)
                 )
             }
             return .Value(
-                try ScopeManager.createUnresolvedValueRef(s, trackable),
+                try ScopeManager.createValueRef(s, trackable),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .ImplicitParameterName(i):
             return .ImplicitParameter(
-                try ScopeManager.createUnresolvedImplicitParameterRef(i, trackable),
+                try ScopeManager.createImplicitParameterRef(i, trackable),
                 genArgs: try gp.genericArgumentClause()
             )
         case let .IntegerLiteral(i, _):
