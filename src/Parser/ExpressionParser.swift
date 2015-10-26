@@ -363,13 +363,12 @@ class ExpressionParser : GrammarParser {
             guard let i = findParenthesisClose(1) else {
                 throw ts.fatal(.NotClosedLeftParenthesis)
             }
-            switch ts.look(i).kind {
+            switch ts.look(i + 1).kind {
             case .Arrow, .In:
                 c.params = .ExplicitTyped(try dp.parameterClause())
                 c.returns = try dp.functionResult()
             default:
                 c.params = .NotProvided
-                return try closureExpressionTail(c)
             }
         case let .Identifier(s):
             let info = ts.look().sourceInfo
@@ -379,10 +378,10 @@ class ExpressionParser : GrammarParser {
                 c.params = try identifierList(s, info)
                 c.returns = try dp.functionResult()
             default:
-                return try closureExpressionTail(c)
+                break
             }
         default:
-            return try closureExpressionTail(c)
+            break
         }
         if !ts.test([.In]) {
             try ts.error(.ExpectedInForClosureSignature)

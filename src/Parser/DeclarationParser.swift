@@ -369,6 +369,7 @@ class DeclarationParser : GrammarParser {
     }
 
     private func patternInitializerList() throws -> [(Pattern, Expression?)] {
+        ScopeManager.enterScope(.ValueBinding)
         var pi: [(Pattern, Expression?)] = []
         repeat {
             let p = try ptp.declarativePattern()

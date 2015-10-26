@@ -32,8 +32,8 @@ public class Scope {
     private var enums: [String:EnumInst]?
     private var structs: [String:StructInst]?
     private var classes: [String:ClassInst]?
-    private var valueRefs: [String:ValueRef]?
-    private var implicitParameterRefs: [Int:ImplicitParameterRef]?
+    private var valueRefs: [(String, ValueRef)]?
+    private var implicitParameterRefs: [(Int, ImplicitParameterRef)]?
 
     private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
@@ -56,16 +56,16 @@ public class Scope {
     }
 
     private func createRef<Identifier, ConcreteRef : Ref<Identifier>>(
-        inout refs: [Identifier:ConcreteRef]?, _ id: Identifier,
+        inout refs: [(Identifier, ConcreteRef)]?, _ id: Identifier,
         _ source: SourceTrackable, _ constructor: () -> ConcreteRef,
         _ errorMessage: ErrorMessage
     ) throws -> ConcreteRef {
         guard refs != nil else {
             throw ErrorReporter.fatal(errorMessage, source)
         }
-        let i = constructor()
-        refs?[id] = i
-        return i
+        let r = constructor()
+        refs?.append(id, r)
+        return r
     }
 
     private func createValue(
@@ -116,6 +116,16 @@ public class Scope {
             &classes, name, source, { ClassInst(name, source, node: node) }
         )
     }
+
+    private func printMembers() {
+        print("Scope: \(type)")
+        print("\tvalues: \(values)")
+        print("\tenums: \(enums)")
+        print("\tstructs: \(structs)")
+        print("\tclasses: \(classes)")
+        print("\tvalueRefs: \(valueRefs)")
+        print("\timplicitParameterRefs: \(implicitParameterRefs)")
+    }
 }
 
 private class GlobalScope : Scope {
@@ -125,7 +135,7 @@ private class GlobalScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -137,7 +147,7 @@ private class FileScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -149,7 +159,7 @@ private class ValueBindingScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -161,7 +171,7 @@ private class FlowScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -173,8 +183,8 @@ private class FunctionScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
-        implicitParameterRefs = [:]
+        valueRefs = []
+        implicitParameterRefs = []
     }
 }
 
@@ -185,7 +195,7 @@ private class EnumScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -197,7 +207,7 @@ private class StructScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -209,7 +219,7 @@ private class ClassScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -221,7 +231,7 @@ private class ProtocolScope : Scope {
         enums = nil
         structs = nil
         classes = nil
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -233,7 +243,7 @@ private class ExtensionScope : Scope {
         enums = [:]
         structs = [:]
         classes = [:]
-        valueRefs = [:]
+        valueRefs = []
         implicitParameterRefs = nil
     }
 }
@@ -249,6 +259,9 @@ public class ScopeManager {
         case .File:
             currentScope = FileScope(currentScope)
         case .ValueBinding:
+            guard currentScope.type.policy != .Declarative else {
+                return
+            }
             currentScope = ValueBindingScope(currentScope)
         case .For, .ForIn, .While, .RepeatWhile, .If,
              .Guard, .Defer, .Do, .Catch, .Case:
@@ -271,14 +284,24 @@ public class ScopeManager {
     public static func leaveScope(
         type: ScopeType, _ source: SourceTrackable?
     ) throws -> Scope {
-        guard currentScope.type != type else {
-            throw ErrorReporter.fatal(.ScopeTypeMismatch, source)
+        while currentScope.type == .ValueBinding {
+            guard let s = currentScope.parent else {
+                throw ErrorReporter.fatal(.LeavingGlobalScope, source)
+            }
+            currentScope.printMembers()
+            currentScope = s
+        }
+        guard currentScope.type == type else {
+            throw ErrorReporter.fatal(
+                .ScopeTypeMismatch(currentScope.type, type), source
+            )
         }
         guard let s = currentScope.parent else {
             throw ErrorReporter.fatal(.LeavingGlobalScope, source)
         }
         let past = currentScope
         currentScope = s
+        past.printMembers()
         return past
     }
 
@@ -411,7 +434,7 @@ public class ValueRef : Ref<String>, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(ValueRef \(index))"
+        return "(ValueRef \(id))"
     }
 }
 
@@ -421,6 +444,6 @@ public class ImplicitParameterRef : Ref<Int>, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(ImplicitParameterRef \(index))"
+        return "(ImplicitParameterRef \(id))"
     }
 }
