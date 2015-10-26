@@ -113,8 +113,9 @@ public enum ErrorMessage : CustomStringConvertible {
     case LeavingGlobalScope
     case InvalidScope(Inst.Type)
     case AlreadyExist(Inst.Type, String)
-    case InvalidRefScope(Ref.Type)
+    case InvalidValueRefScope
     case InvalidImplicitParameterRefScope
+    case InvalidErrorTypeRefScope
     case NotExist(Inst.Type, String)
     // TokenStream
     case UnexpectedEOF
@@ -303,15 +304,12 @@ public enum ErrorMessage : CustomStringConvertible {
             default:
                 return "<instance type error> with name '\(name)' already exists"
             }
-        case let .InvalidRefScope(type):
-            switch type {
-            case is ValueRef.Type:
-                return "You cannot refer a constant or a variable in this scope"
-            default:
-                return "You cannot refer <instance type error> in this scope"
-            }
+        case .InvalidValueRefScope:
+            return "You cannot refer a constant or a variable in this scope"
         case .InvalidImplicitParameterRefScope:
             return "You cannot refer an implicit parameter in this scope"
+        case .InvalidErrorTypeRefScope:
+            return "You cannot refer <instance type error> in this scope"
         case let .NotExist(type, name):
             switch type {
             case is ValueInst.Type:

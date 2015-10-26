@@ -40,30 +40,31 @@ public class Scope {
         self.parent = parent
     }
 
-    private func createInst<T : Inst>(
-        inout insts: [String:T]?, _ name: String, _ source: SourceTrackable,
-        _ constructor: () -> T
-    ) throws -> T {
+    private func createInst<ConcreteInst : Inst>(
+        inout insts: [String:ConcreteInst]?, _ name: String, _ source: SourceTrackable,
+        _ constructor: () -> ConcreteInst
+    ) throws -> ConcreteInst {
         guard insts != nil else {
-            throw ErrorReporter.fatal(.InvalidScope(T.self), source)
+            throw ErrorReporter.fatal(.InvalidScope(ConcreteInst.self), source)
         }
         guard insts?[name] == nil else {
-            throw ErrorReporter.fatal(.AlreadyExist(T.self, name), source)
+            throw ErrorReporter.fatal(.AlreadyExist(ConcreteInst.self, name), source)
         }
         let i = constructor()
         insts?[name] = i
         return i
     }
 
-    private func createRef<T : Ref>(
-        inout refs: [String:T]?, _ name: String, _ source: SourceTrackable,
-        _ constructor: () -> T
-    ) throws -> T {
+    private func createRef<Identifier, ConcreteRef : Ref<Identifier>>(
+        inout refs: [Identifier:ConcreteRef]?, _ id: Identifier,
+        _ source: SourceTrackable, _ constructor: () -> ConcreteRef,
+        _ errorMessage: ErrorMessage
+    ) throws -> ConcreteRef {
         guard refs != nil else {
-            throw ErrorReporter.fatal(.InvalidRefScope(T.self), source)
+            throw ErrorReporter.fatal(errorMessage, source)
         }
         let i = constructor()
-        refs?[name] = i
+        refs?[id] = i
         return i
     }
 
@@ -76,22 +77,20 @@ public class Scope {
     }
 
     private func createValueRef(
-        name: String, _ source: SourceTrackable
+        id: String, _ source: SourceTrackable
     ) throws -> ValueRef {
         return try createRef(
-            &valueRefs, name, source, { ValueRef(name, source) }
+            &valueRefs, id, source, { ValueRef(id, source) }, .InvalidValueRefScope
         )
     }
 
     public func createImplicitParameterRef(
-        index: Int, _ source: SourceTrackable
+        id: Int, _ source: SourceTrackable
     ) throws -> ImplicitParameterRef {
-        guard implicitParameterRefs != nil else {
-            throw ErrorReporter.fatal(.InvalidImplicitParameterRefScope, source)
-        }
-        let i = ImplicitParameterRef(index, source)
-        implicitParameterRefs?[index] = i
-        return i
+        return try createRef(
+            &implicitParameterRefs, id, source, { ImplicitParameterRef(id, source) },
+            .InvalidImplicitParameterRefScope
+        )
     }
 
     private func createEnum(
@@ -393,35 +392,32 @@ public class ClassInst : Inst, CustomStringConvertible {
     }
 }
 
-public class Ref : SourceTrackable {
-    private let name: String
+public class Ref<Identifier : Equatable> : SourceTrackable {
+    private let id: Identifier
     private let info: SourceInfo
     public var sourceInfo: SourceInfo {
         return info
     }
 
-    public init(_ name: String, _ source: SourceTrackable) {
-        self.name = name
+    public init(_ id: Identifier, _ source: SourceTrackable) {
+        self.id = id
         self.info = source.sourceInfo
     }
 }
 
-public class ValueRef : Ref, CustomStringConvertible {
+public class ValueRef : Ref<String>, CustomStringConvertible {
+    override public init(_ id: String, _ source: SourceTrackable) {
+        super.init(id, source)
+    }
+
     public var description: String {
         return "(ValueRef \(index))"
     }
 }
 
-public class ImplicitParameterRef : SourceTrackable, CustomStringConvertible {
-    private let index: Int
-    private let info: SourceInfo
-    public var sourceInfo: SourceInfo {
-        return info
-    }
-
-    public init(_ index: Int, _ source: SourceTrackable) {
-        self.index = index
-        self.info = source.sourceInfo
+public class ImplicitParameterRef : Ref<Int>, CustomStringConvertible {
+    override public init(_ id: Int, _ source: SourceTrackable) {
+        super.init(id, source)
     }
 
     public var description: String {
