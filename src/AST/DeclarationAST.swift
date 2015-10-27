@@ -112,7 +112,7 @@ public class VariableBlock : ScopeTrackable {
 }
 
 public class TypealiasDeclaration : Declaration {
-    public var name: TypeRef!
+    public var name: TypeInst!
     public var inherits: TypeInheritanceClause?
     public var type: Type?
 
@@ -146,7 +146,7 @@ public class FunctionDeclaration : Declaration, ScopeTrackable {
 
 public enum FunctionReference {
     case Function(ValueInst)
-    case Operator(OperatorRef)
+    case Operator(OperatorInst)
 }
 
 public enum ThrowType : String {
@@ -220,9 +220,9 @@ public class EnumCaseClause {
 }
 
 public class EnumCase : CustomStringConvertible {
-    public var name: EnumCaseRef!
+    public var name: EnumCaseInst!
 
-    public init(_ name: EnumCaseRef) {
+    public init(_ name: EnumCaseInst) {
         self.name = name
     }
 
@@ -234,7 +234,7 @@ public class EnumCase : CustomStringConvertible {
 public class UnionStyleEnumCase : EnumCase {
     public var tuple: TupleType!
 
-    public init(_ name: EnumCaseRef, _ tuple: TupleType) {
+    public init(_ name: EnumCaseInst, _ tuple: TupleType) {
         super.init(name)
         self.tuple = tuple
     }
@@ -247,7 +247,7 @@ public class UnionStyleEnumCase : EnumCase {
 public class RawValueStyleEnumCase : EnumCase {
     public var value: RawValueLiteral!
 
-    public init(_ name: EnumCaseRef, _ value: RawValueLiteral) {
+    public init(_ name: EnumCaseInst, _ value: RawValueLiteral) {
         super.init(name)
         self.value = value
     }
@@ -298,7 +298,7 @@ public class ClassDeclaration : Declaration, ScopeTrackable {
 }
 
 public class ProtocolDeclaration : Declaration, ScopeTrackable {
-    public var name: ProtocolRef!
+    public var name: ProtocolInst!
     public var inherits: TypeInheritanceClause?
     public var body: [Declaration] = []
     public var associatedScope: Scope!
@@ -383,9 +383,9 @@ public class SubscriptDeclaration : Declaration, ScopeTrackable {
 
 public class OperatorDeclaration : Declaration {
     public let kind: OperatorDeclarationKind
-    public let name: OperatorRef
+    public let name: OperatorInst
 
-    public init(_ kind: OperatorDeclarationKind, _ name: OperatorRef!) {
+    public init(_ kind: OperatorDeclarationKind, _ name: OperatorInst!) {
         self.kind = kind
         self.name = name
         super.init()

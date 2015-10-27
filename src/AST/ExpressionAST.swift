@@ -83,8 +83,8 @@ public enum ExpressionPostfix {
     case Initializer, PostfixSelf, DynamicType
     case ForcedValue, OptionalChaining
     case Operator(OperatorRef)
-    case ExplicitNamedMember(MemberRef, genArgs: [Type]?)
-    case ExplicitUnnamedMember(MemberRef)
+    case ExplicitNamedMember(String, genArgs: [Type]?)
+    case ExplicitUnnamedMember(Int64)
     case Subscript([Expression])
     case FunctionCall(Tuple)
 }
@@ -102,14 +102,14 @@ public enum ExpressionCore {
     case Array([Expression])
     case Dictionary([(Expression, Expression)])
     case SelfExpression, SelfInitializer
-    case SelfMember(MemberRef)
+    case SelfMember(String)
     case SelfSubscript([Expression])
     case SuperClassInitializer
-    case SuperClassMember(MemberRef)
+    case SuperClassMember(String)
     case SuperClassSubscript([Expression])
     case ClosureExpression(Closure)
     case TupleExpression(Tuple)
-    case ImplicitMember(MemberRef)
+    case ImplicitMember(String) // TODO enumCase?
     case Wildcard
 }
 

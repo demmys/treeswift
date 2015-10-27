@@ -287,10 +287,10 @@ extension ExpressionPostfix : CustomStringConvertible {
         case .ForcedValue: return "\(pre) foced-value\(post)"
         case .OptionalChaining: return "\(pre) optional-chaining\(post)"
         case let .Operator(r): return "\(pre) operator \(r)\(post)"
-        case let .ExplicitNamedMember(r, genArgs: ts):
-            return "\(pre) explicit-named-member \(r) \(ts)\(post)"
-        case let .ExplicitUnnamedMember(r):
-            return "\(pre) explicit-unnamed-member \(r)\(post)"
+        case let .ExplicitNamedMember(s, genArgs: ts):
+            return "\(pre) explicit-named-member \(s) \(ts)\(post)"
+        case let .ExplicitUnnamedMember(s):
+            return "\(pre) explicit-unnamed-member \(s)\(post)"
         case let .Subscript(es):
             return "\(pre) subscript \(es)\(post)"
         case let .FunctionCall(t):
@@ -317,15 +317,15 @@ extension ExpressionCore : CustomStringConvertible {
         case let .Dictionary(ees): return "\(pre) dictionary \(ees)\(post)"
         case .SelfExpression: return "\(pre) self-expression\(post)"
         case .SelfInitializer: return "\(pre) self-initializer\(post)"
-        case let .SelfMember(r): return "\(pre) self-member \(r)\(post)"
+        case let .SelfMember(s): return "\(pre) self-member \(s)\(post)"
         case let .SelfSubscript(es): return "\(pre) self-subscript \(es)\(post)"
         case .SuperClassInitializer: return "\(pre) super-class-initializer \(post)"
-        case let .SuperClassMember(r): return "\(pre) super-class-member \(r)\(post)"
+        case let .SuperClassMember(s): return "\(pre) super-class-member \(s)\(post)"
         case let .SuperClassSubscript(es):
             return "\(pre) super-class-subscript \(es)\(post)"
         case let .ClosureExpression(c): return "\(pre) closure-expression \(c)\(post)"
         case let .TupleExpression(t): return "\(pre) tuple \(t)\(post)"
-        case let .ImplicitMember(r): return "\(pre) implicit-member \(r)\(post)"
+        case let .ImplicitMember(s): return "\(pre) implicit-member \(s)\(post)"
         case .Wildcard: return "\(pre) wildcard\(post)"
         }
     }

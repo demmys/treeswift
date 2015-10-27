@@ -23,13 +23,15 @@ class GenericsParser : GrammarParser {
     }
 
     func genericParameter() throws -> GenericParameter {
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedGenericParameterName)
         }
-        let r = try createTypeRef(s)
+        let r = try ScopeManager.createType(s, trackable)
         if ts.test([.Colon]) {
+            let trackable = ts.look()
             if case let .Identifier(s) = ts.match([identifier]) {
-                return .Conformance(r, try tp.identifierType(s))
+                return .Conformance(r, try tp.identifierType(s, trackable))
             } else {
                 return .ProtocolConformance(r, try tp.protocolCompositionType())
             }
@@ -49,14 +51,16 @@ class GenericsParser : GrammarParser {
     }
 
     func requirement() throws -> Requirement {
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedIdentifierForRequirement)
         }
-        let i = try tp.identifierType(s)
+        let i = try tp.identifierType(s, trackable)
         switch ts.match([.Colon, binaryOperator]) {
         case .Colon:
+            let trackable = ts.look()
             if case let .Identifier(s) = ts.match([identifier]) {
-                return .Conformance(i, try tp.identifierType(s))
+                return .Conformance(i, try tp.identifierType(s, trackable))
             } else {
                 return .ProtocolConformance(i, try tp.protocolCompositionType())
             }

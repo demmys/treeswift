@@ -10,7 +10,7 @@ public indirect enum Pattern {
     case TuplePattern(PatternTuple)
     case VariableBindingPattern(Pattern)
     case ConstantBindingPattern(Pattern)
-    case EnumCasePattern(MemberRef, PatternTuple)
+    case EnumCasePattern(EnumCaseRef, PatternTuple)
     case TypePattern(Type)
     case ExpressionPattern(Expression)
     case OptionalPattern(Pattern)

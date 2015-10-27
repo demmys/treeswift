@@ -6,9 +6,9 @@ public class GenericParameterClause {
 }
 
 public enum GenericParameter {
-    case Identifier(TypeRef)
-    case Conformance(TypeRef, IdentifierType)
-    case ProtocolConformance(TypeRef, ProtocolCompositionType)
+    case Identifier(TypeInst)
+    case Conformance(TypeInst, IdentifierType)
+    case ProtocolConformance(TypeInst, ProtocolCompositionType)
 }
 
 public enum Requirement {

@@ -113,7 +113,10 @@ public enum ErrorMessage : CustomStringConvertible {
     case LeavingGlobalScope
     case InvalidScope(Inst.Type)
     case AlreadyExist(Inst.Type, String)
+    case InvalidTypeRefScope
     case InvalidValueRefScope
+    case InvalidOperatorRefScope
+    case InvalidEnumCaseRefScope
     case InvalidImplicitParameterRefScope
     case InvalidErrorTypeRefScope
     case NotExist(Inst.Type, String)
@@ -304,8 +307,14 @@ public enum ErrorMessage : CustomStringConvertible {
             default:
                 return "<instance type error> with name '\(name)' already exists"
             }
+        case .InvalidTypeRefScope:
+            return "You cannot refer a type in this scope"
         case .InvalidValueRefScope:
             return "You cannot refer a constant or a variable in this scope"
+        case .InvalidOperatorRefScope:
+            return "You cannot refer an operator in this scope"
+        case .InvalidEnumCaseRefScope:
+            return "You cannot refer an enum member in this scope"
         case .InvalidImplicitParameterRefScope:
             return "You cannot refer an implicit parameter in this scope"
         case .InvalidErrorTypeRefScope:

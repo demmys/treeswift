@@ -24,9 +24,10 @@ class TypeParser : GrammarParser {
     }
 
     func primaryType() throws -> Type {
+        let trackable = ts.look()
         switch ts.match([identifier, .LeftBracket, .LeftParenthesis, .Protocol]) {
         case let .Identifier(s):
-            return try identifierType(s)
+            return try identifierType(s, trackable)
         case .LeftBracket:
             return try collectionType()
         case .LeftParenthesis:
@@ -38,8 +39,12 @@ class TypeParser : GrammarParser {
         }
     }
 
-    func identifierType(s: String) throws -> IdentifierType {
-        return IdentifierType(try getTypeRef(s), try gp.genericArgumentClause())
+    func identifierType(
+        s: String, _ trackable: SourceTrackable
+    ) throws -> IdentifierType {
+        return IdentifierType(
+            try ScopeManager.createTypeRef(s, trackable), try gp.genericArgumentClause()
+        )
     }
 
     private func collectionType() throws -> Type {
@@ -128,10 +133,11 @@ class TypeParser : GrammarParser {
             return x
         }
         repeat {
+            let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedTypeIdentifierForProtocolCompositionType)
             }
-            x.types.append(try identifierType(s))
+            x.types.append(try identifierType(s, trackable))
         } while ts.test([.Comma])
         if !ts.test([.PostfixGraterThan]) {
             try ts.error(.ExpectedGraterThanAfterProtocolCompositionType)

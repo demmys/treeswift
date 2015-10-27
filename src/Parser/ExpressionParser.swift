@@ -49,9 +49,12 @@ class ExpressionParser : GrammarParser {
 
     private func expressionBody(valueBinding: Bool) throws -> ExpressionBody {
         let preExp = try expressionUnit(valueBinding)
+        let trackable = ts.look()
         switch ts.match([binaryOperator, .BinaryQuestion, .Is, .As]) {
         case let .BinaryOperator(s):
-            return try binaryExpressionBody(preExp, s, valueBinding: valueBinding)
+            return try binaryExpressionBody(
+                preExp, s, trackable, valueBinding: valueBinding
+            )
         case .BinaryQuestion:
             return try conditionalExpressionBody(preExp)
         case .Is:
@@ -66,13 +69,12 @@ class ExpressionParser : GrammarParser {
     }
 
     private func binaryExpressionBody(
-        preExp: ExpressionUnit,
-        _ s: String,
+        preExp: ExpressionUnit, _ s: String, _ trackable: SourceTrackable,
         valueBinding: Bool
     ) throws -> BinaryExpressionBody {
         let x = BinaryExpressionBody()
         x.left = preExp
-        x.op = try getOperatorRef(s)
+        x.op = try ScopeManager.createOperatorRef(s, trackable)
         x.right = try expressionBody(valueBinding)
         return x
     }
@@ -128,9 +130,10 @@ class ExpressionParser : GrammarParser {
     }
 
     private func expressionPrefix() throws -> ExpressionPrefix {
+        let trackable = ts.look()
         switch ts.match([prefixOperator, .PrefixAmpersand]) {
         case let .PrefixOperator(s):
-            return .Operator(try getOperatorRef(s))
+            return .Operator(try ScopeManager.createOperatorRef(s, trackable))
         case .PrefixAmpersand:
             return .InOut
         default:
@@ -139,12 +142,13 @@ class ExpressionParser : GrammarParser {
     }
 
     private func expressionPostfix() throws -> ExpressionPostfix? {
+        let trackable = ts.look()
         switch ts.match([
             postfixOperator, .LeftParenthesis, .Dot, .LeftBracket,
             .PostfixExclamation, .PostfixQuestion
         ]) {
         case let .PostfixOperator(s):
-            return .Operator(try getOperatorRef(s))
+            return .Operator(try ScopeManager.createOperatorRef(s, trackable))
         case .LeftParenthesis:
             // because of ambiguity, TreeSwift do not support a trailing closure
             return .FunctionCall(try tupleExpression())
@@ -174,12 +178,9 @@ class ExpressionParser : GrammarParser {
         case .DynamicType:
             return .DynamicType
         case let .Identifier(s):
-            return .ExplicitNamedMember(
-                try getMemberRef(s),
-                genArgs: try gp.genericArgumentClause()
-            )
+            return .ExplicitNamedMember(s, genArgs: try gp.genericArgumentClause())
         case .IntegerLiteral(let d, true):
-            return .ExplicitUnnamedMember(try getMemberRef(Int(d)))
+            return .ExplicitUnnamedMember(d)
         default:
             throw ts.fatal(.UnexpectedTokenForMember)
         }
@@ -240,7 +241,7 @@ class ExpressionParser : GrammarParser {
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedImplicitMember)
             }
-            return .ImplicitMember(try getMemberRef(s))
+            return .ImplicitMember(s)
         case .Underscore:
             return .Wildcard
         default:
@@ -303,7 +304,7 @@ class ExpressionParser : GrammarParser {
         case .Dot:
             switch ts.match([identifier, .Init]) {
             case let .Identifier(s):
-                return .SelfMember(try getMemberRef(s))
+                return .SelfMember(s)
             case .Init:
                 return .SelfInitializer
             default:
@@ -325,7 +326,7 @@ class ExpressionParser : GrammarParser {
         case .Dot:
             switch ts.match([identifier, .Init]) {
             case let .Identifier(s):
-                return .SuperClassMember(try getMemberRef(s))
+                return .SuperClassMember(s)
             case .Init:
                 return .SuperClassInitializer
             default:

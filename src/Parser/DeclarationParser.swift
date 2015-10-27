@@ -155,8 +155,9 @@ class DeclarationParser : GrammarParser {
             }
         }
         repeat {
+            let trackable = ts.look()
             if case let .Identifier(s) = ts.match([identifier]) {
-                x.types.append(try tp.identifierType(s))
+                x.types.append(try tp.identifierType(s, trackable))
             } else {
                 try ts.error(.ExpectedTypeIdentifier)
             }
@@ -386,10 +387,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> TypealiasDeclaration {
         let x = TypealiasDeclaration(attrs, mod)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedTypealiasName)
         }
-        x.name = try createTypeRef(s)
+        x.name = try ScopeManager.createType(s, trackable)
         if !ts.test([.AssignmentOperator]) {
             try ts.error(.ExpectedTypealiasAssignment)
         }
@@ -427,11 +429,11 @@ class DeclarationParser : GrammarParser {
         case let .Identifier(s):
             return .Function(try ScopeManager.createValue(s, trackable, isVariable: false))
         case let .PrefixOperator(o):
-            return .Operator(try createOperatorRef(o))
+            return .Operator(try ScopeManager.createOperator(o, trackable))
         case let .BinaryOperator(o):
-            return .Operator(try createOperatorRef(o))
+            return .Operator(try ScopeManager.createOperator(o, trackable))
         case let .PostfixOperator(o):
-            return .Operator(try createOperatorRef(o))
+            return .Operator(try ScopeManager.createOperator(o, trackable))
         default:
             throw ts.fatal(.ExpectedFunctionName)
         }
@@ -664,10 +666,11 @@ class DeclarationParser : GrammarParser {
     ) throws -> EnumMember {
         let x = EnumCaseClause(attrs)
         repeat {
+            let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedEnumCaseName)
             }
-            let n = try createEnumCaseRef(s)
+            let n = try ScopeManager.createEnumCase(s, trackable)
             switch ts.match([.LeftParenthesis, .AssignmentOperator]) {
             case .LeftParenthesis:
                 if isRawValueStyle {
@@ -749,10 +752,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> ProtocolDeclaration {
         let x = ProtocolDeclaration(attrs, mod)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedProtocolName)
         }
-        x.name = try createProtocolRef(s)
+        x.name = try ScopeManager.createProtocol(s, trackable, node: x)
         ScopeManager.enterScope(.Protocol)
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
@@ -873,10 +877,11 @@ class DeclarationParser : GrammarParser {
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> TypealiasDeclaration {
         let x = TypealiasDeclaration(attrs, mod)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedProtocolAssociatedTypeName)
         }
-        x.name = try createTypeRef(s)
+        x.name = try ScopeManager.createType(s, trackable)
         x.inherits = try typeInheritanceClause()
         if ts.test([.AssignmentOperator]) {
             x.type = try tp.type()
@@ -922,10 +927,11 @@ class DeclarationParser : GrammarParser {
 
     private func extensionDeclaration(mod: Modifier?) throws -> ExtensionDeclaration {
         let x = ExtensionDeclaration(mod)
+        let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedExtendedType)
         }
-        x.type = try tp.identifierType(s)
+        x.type = try tp.identifierType(s, trackable)
         ScopeManager.enterScope(.Extension)
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
@@ -963,10 +969,11 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.Operator]) {
             try ts.error(.ExpectedOperator)
         }
+        let trackable = ts.look()
         guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
             throw ts.fatal(.ExpectedOperatorName)
         }
-        let name = try createOperatorRef(s)
+        let name = try ScopeManager.createOperator(s, trackable)
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForOperator)
         }
@@ -980,10 +987,11 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.Operator]) {
             try ts.error(.ExpectedOperator)
         }
+        let trackable = ts.look()
         guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
             throw ts.fatal(.ExpectedOperatorName)
         }
-        let name = try createOperatorRef(s)
+        let name = try ScopeManager.createOperator(s, trackable)
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForOperator)
         }
