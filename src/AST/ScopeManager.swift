@@ -25,18 +25,15 @@ public protocol ScopeTrackable {
     var scope: Scope { get }
 }
 
+public enum InstKind {
+    case Type, Value, Operator, Enum, EnumCase, Struct, Class, Protocol, Extension
+}
+
 public class Scope {
-    private let type: ScopeType
-    private let parent: Scope?
-    private var types: [String:TypeInst]?
-    private var values: [String:ValueInst]?
-    private var operators: [String:OperatorInst]?
-    private var enums: [String:EnumInst]?
-    private var enumCases: [String:EnumCaseInst]?
-    private var structs: [String:StructInst]?
-    private var classes: [String:ClassInst]?
-    private var protocols: [String:ProtocolInst]?
-    private var extensions: [String:ExtensionInst]?
+    public let type: ScopeType
+    public let parent: Scope?
+    public var children: [Scope] = []
+    private var insts: [InstKind:[String:Inst]] = [:]
     private var typeRefs: [(String, TypeRef)]?
     private var valueRefs: [(String, ValueRef)]?
     private var operatorRefs: [(String, OperatorRef)]?
@@ -46,20 +43,21 @@ public class Scope {
     private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
         self.parent = parent
+        self.parent?.children.append(self)
     }
 
     private func createInst<ConcreteInst : Inst>(
-        inout insts: [String:ConcreteInst]?, _ name: String, _ source: SourceTrackable,
+        kind: InstKind, _ name: String, _ source: SourceTrackable,
         _ constructor: () -> ConcreteInst
     ) throws -> ConcreteInst {
-        guard insts != nil else {
+        guard insts[kind] != nil else {
             throw ErrorReporter.fatal(.InvalidScope(ConcreteInst.self), source)
         }
-        guard insts?[name] == nil else {
+        guard insts[kind]?[name] == nil else {
             throw ErrorReporter.fatal(.AlreadyExist(ConcreteInst.self, name), source)
         }
         let i = constructor()
-        insts?[name] = i
+        insts[kind]?[name] = i
         return i
     }
 
@@ -74,78 +72,6 @@ public class Scope {
         let r = constructor()
         refs?.append(id, r)
         return r
-    }
-
-    private func createType(
-        name: String, _ source: SourceTrackable
-    ) throws -> TypeInst {
-        return try createInst(
-            &types, name, source, { TypeInst(name, source) }
-        )
-    }
-
-    private func createValue(
-        name: String, _ source: SourceTrackable, isVariable: Bool?
-    ) throws -> ValueInst {
-        return try createInst(
-            &values, name, source, { ValueInst(name, source, isVariable: isVariable) }
-        )
-    }
-
-    private func createOperator(
-        name: String, _ source: SourceTrackable
-    ) throws -> OperatorInst {
-        return try createInst(
-            &operators, name, source, { OperatorInst(name, source) }
-        )
-    }
-
-    private func createEnum(
-        name: String, _ source: SourceTrackable, node: EnumDeclaration
-    ) throws -> EnumInst {
-        return try createInst(
-            &enums, name, source, { EnumInst(name, source, node: node) }
-        )
-    }
-
-    private func createEnumCase(
-        name: String, _ source: SourceTrackable
-    ) throws -> EnumCaseInst {
-        return try createInst(
-            &enumCases, name, source, { EnumCaseInst(name, source) }
-        )
-    }
-
-    private func createStruct(
-        name: String, _ source: SourceTrackable, node: StructDeclaration
-    ) throws -> StructInst {
-        return try createInst(
-            &structs, name, source, { StructInst(name, source, node: node) }
-        )
-    }
-
-    private func createClass(
-        name: String, _ source: SourceTrackable, node: ClassDeclaration
-    ) throws -> ClassInst {
-        return try createInst(
-            &classes, name, source, { ClassInst(name, source, node: node) }
-        )
-    }
-
-    private func createProtocol(
-        name: String, _ source: SourceTrackable, node: ProtocolDeclaration
-    ) throws -> ProtocolInst {
-        return try createInst(
-            &protocols, name, source, { ProtocolInst(name, source, node: node) }
-        )
-    }
-
-    private func createExtension(
-        name: String, _ source: SourceTrackable, node: ExtensionDeclaration
-    ) throws -> ExtensionInst {
-        return try createInst(
-            &extensions, name, source, { ExtensionInst(name, source, node: node) }
-        )
     }
 
     private func createTypeRef(
@@ -193,15 +119,15 @@ public class Scope {
 
     private func printMembers() {
         print("Scope: \(type)")
-        print("\ttypes: \(types)")
-        print("\tvalues: \(values)")
-        print("\toperators: \(operators)")
-        print("\tenums: \(enums)")
-        print("\tenumCases: \(enumCases)")
-        print("\tstructs: \(structs)")
-        print("\tclasses: \(classes)")
-        print("\tprotocols: \(protocols)")
-        print("\textensions: \(extensions)")
+        print("\ttypes: \(insts[.Type])")
+        print("\tvalues: \(insts[.Value])")
+        print("\toperators: \(insts[.Operator])")
+        print("\tenums: \(insts[.Enum])")
+        print("\tenumCases: \(insts[.EnumCase])")
+        print("\tstructs: \(insts[.Struct])")
+        print("\tclasses: \(insts[.Class])")
+        print("\tprotocols: \(insts[.Protocol])")
+        print("\textensions: \(insts[.Extension])")
         print("\ttypeRefs: \(typeRefs)")
         print("\tvalueRefs: \(valueRefs)")
         print("\toperatorRefs: \(operatorRefs)")
@@ -213,15 +139,15 @@ public class Scope {
 private class GlobalScope : Scope {
     init() {
         super.init(.Global, nil)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = [:]
-        extensions = [:]
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = [:]
+        insts[.Extension] = [:]
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -233,15 +159,15 @@ private class GlobalScope : Scope {
 private class FileScope : Scope {
     init(_ parent: Scope) {
         super.init(.File, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = [:]
-        extensions = [:]
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = [:]
+        insts[.Extension] = [:]
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -253,15 +179,15 @@ private class FileScope : Scope {
 private class ValueBindingScope : Scope {
     init(_ parent: Scope) {
         super.init(.ValueBinding, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = [:]
-        extensions = [:]
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = [:]
+        insts[.Extension] = [:]
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -273,15 +199,15 @@ private class ValueBindingScope : Scope {
 private class FlowScope : Scope {
     init(_ type: ScopeType, _ parent: Scope) {
         super.init(type, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -293,15 +219,15 @@ private class FlowScope : Scope {
 private class FunctionScope : Scope {
     init(_ parent: Scope) {
         super.init(.Function, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -313,15 +239,15 @@ private class FunctionScope : Scope {
 private class EnumScope : Scope {
     init(_ parent: Scope) {
         super.init(.Enum, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = [:]
-        structs = [:]
-        classes = [:]
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = [:]
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = nil
         operatorRefs = nil
@@ -333,15 +259,15 @@ private class EnumScope : Scope {
 private class StructScope : Scope {
     init(_ parent: Scope) {
         super.init(.Struct, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -353,15 +279,15 @@ private class StructScope : Scope {
 private class ClassScope : Scope {
     init(_ parent: Scope) {
         super.init(.Class, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = nil
-        structs = [:]
-        classes = [:]
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = []
         operatorRefs = []
@@ -373,15 +299,15 @@ private class ClassScope : Scope {
 private class ProtocolScope : Scope {
     init(_ parent: Scope) {
         super.init(.Protocol, parent)
-        types = [:]
-        values = [:]
-        operators = nil
-        enums = nil
-        enumCases = nil
-        structs = nil
-        classes = nil
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = nil
+        insts[.Enum] = nil
+        insts[.EnumCase] = nil
+        insts[.Struct] = nil
+        insts[.Class] = nil
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = nil
         operatorRefs = nil
@@ -393,15 +319,15 @@ private class ProtocolScope : Scope {
 private class ExtensionScope : Scope {
     init(_ parent: Scope) {
         super.init(.Extension, parent)
-        types = [:]
-        values = [:]
-        operators = [:]
-        enums = [:]
-        enumCases = [:]
-        structs = [:]
-        classes = [:]
-        protocols = nil
-        extensions = nil
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = [:]
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
         typeRefs = []
         valueRefs = nil
         operatorRefs = []
@@ -470,55 +396,73 @@ public class ScopeManager {
     public static func createType(
         name: String, _ source: SourceTrackable
     ) throws -> TypeInst {
-        return try currentScope.createType(name, source)
+        return try currentScope.createInst(
+            .Type, name, source, { TypeInst(name, source) }
+        )
     }
 
     public static func createValue(
         name: String, _ source: SourceTrackable, isVariable: Bool? = nil
     ) throws -> ValueInst {
-        return try currentScope.createValue(name, source, isVariable: isVariable)
+        return try currentScope.createInst(
+            .Value, name, source, { ValueInst(name, source, isVariable: isVariable) }
+        )
     }
 
     public static func createOperator(
         name: String, _ source: SourceTrackable
     ) throws -> OperatorInst {
-        return try currentScope.createOperator(name, source)
+        return try currentScope.createInst(
+            .Operator, name, source, { OperatorInst(name, source) }
+        )
     }
 
     public static func createEnum(
         name: String, _ source: SourceTrackable, node: EnumDeclaration
     ) throws -> EnumInst {
-        return try currentScope.createEnum(name, source, node: node)
+        return try currentScope.createInst(
+            .Enum, name, source, { EnumInst(name, source, node: node) }
+        )
     }
 
     public static func createEnumCase(
         name: String, _ source: SourceTrackable
     ) throws -> EnumCaseInst {
-        return try currentScope.createEnumCase(name, source)
+        return try currentScope.createInst(
+            .EnumCase, name, source, { EnumCaseInst(name, source) }
+        )
     }
 
     public static func createStruct(
         name: String, _ source: SourceTrackable, node: StructDeclaration
     ) throws -> StructInst {
-        return try currentScope.createStruct(name, source, node: node)
+        return try currentScope.createInst(
+            .Struct, name, source, { StructInst(name, source, node: node) }
+        )
     }
 
     public static func createClass(
         name: String, _ source: SourceTrackable, node: ClassDeclaration
     ) throws -> ClassInst {
-        return try currentScope.createClass(name, source, node: node)
+        return try currentScope.createInst(
+            .Class, name, source, { ClassInst(name, source, node: node) }
+        )
     }
 
     public static func createProtocol(
         name: String, _ source: SourceTrackable, node: ProtocolDeclaration
     ) throws -> ProtocolInst {
-        return try currentScope.createProtocol(name, source, node: node)
+        return try currentScope.createInst(
+            .Protocol, name, source, { ProtocolInst(name, source, node: node) }
+        )
     }
 
     public static func createExtension(
         name: String, _ source: SourceTrackable, node: ExtensionDeclaration
     ) throws -> ExtensionInst {
-        return try currentScope.createExtension(name, source, node: node)
+        return try currentScope.createInst(
+            .Extension, name, source, { ExtensionInst(name, source, node: node) }
+        )
     }
 
     public static func createTypeRef(

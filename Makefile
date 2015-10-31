@@ -1,5 +1,6 @@
 COMPILER = $(shell xcrun -f swiftc)
 LD = $(COMPILER)
+INC_PATH = $(shell xcrun --show-sdk-path)/usr/include
 LLVM_PATH = $(shell brew --prefix llvm)
 LLVM_CONFIG = $(LLVM_PATH)/bin/llvm-config
 
@@ -10,7 +11,7 @@ BIN_DIR = bin
 
 BRIDGING_HEADER = $(CURDIR)/$(SRC_DIR)/llvm_bridging_header.h
 
-CFLAGS = -enable-testing -I$(CURDIR)/$(INC_DIR) -I/usr/include -import-objc-header $(BRIDGING_HEADER) -Xcc -I$(LLVM_PATH)/include -Xcc -D__STDC_CONSTANT_MACROS -Xcc -D__STDC_FORMAT_MACROS -Xcc -D__STDC_LIMIT_MACROS
+CFLAGS = -enable-testing -I$(INC_PATH) -I$(CURDIR)/$(INC_DIR) -import-objc-header $(BRIDGING_HEADER) -Xcc -I$(LLVM_PATH)/include -Xcc -D__STDC_CONSTANT_MACROS -Xcc -D__STDC_FORMAT_MACROS -Xcc -D__STDC_LIMIT_MACROS
 LDFLAGS = -lc++ -L$(LLVM_PATH)/lib $(shell $(LLVM_CONFIG) --libs --system-libs)
 
 SRCS = $(shell find $(SRC_DIR) -name '*.swift' | sed -e 's/.*main.swift//g')
