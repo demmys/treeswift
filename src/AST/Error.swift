@@ -109,17 +109,14 @@ public enum ErrorMessage : CustomStringConvertible {
     case FileNotFound(String)
     case FileCanNotRead(String)
     // ScopeManager
+    case InvalidInstType
+    case InvalidRefType
     case ScopeTypeMismatch(ScopeType, ScopeType)
     case LeavingGlobalScope
-    case InvalidScope(Inst.Type)
-    case AlreadyExist(Inst.Type, String)
-    case InvalidTypeRefScope
-    case InvalidValueRefScope
-    case InvalidOperatorRefScope
-    case InvalidEnumCaseRefScope
-    case InvalidImplicitParameterRefScope
-    case InvalidErrorTypeRefScope
-    case NotExist(Inst.Type, String)
+    case InvalidScope(InstKind)
+    case AlreadyExist(InstKind, String)
+    case InvalidRefScope(RefKind)
+    case NotExist(InstKind, String)
     // TokenStream
     case UnexpectedEOF
     case InvalidToken
@@ -277,61 +274,66 @@ public enum ErrorMessage : CustomStringConvertible {
         case .ReservedToken:
             return "Reserved token"
         // ScopeManager
+        case .InvalidInstType:
+            return "<system error> Invalid inst type."
+        case .InvalidRefType:
+            return "<system error> Invalid ref type."
         case let .ScopeTypeMismatch(current, expected):
             return "<system error> leaving scope type mismatch. Expected type is '\(expected)', but actual type is '\(current)'"
         case .LeavingGlobalScope:
             return "<system error> leaving global scope"
-        case let .InvalidScope(type):
-            switch type {
-            case is ValueInst.Type:
-                return "You cannot declare a constant or a variable in this scope"
-            case is EnumInst.Type:
-                return "You cannot declare an enum in this scope"
-            case is StructInst.Type:
-                return "You cannot declare a struct in this scope"
-            case is ClassInst.Type:
-                return "You cannot declare a class in this scope"
-            default:
-                return "You cannot declare <instance type error> in this scope"
+        case let .InvalidScope(kind):
+            var target = ""
+            switch kind {
+            case .Type: target = "a type"
+            case .Value: target = "a constant or a variable"
+            case .Operator: target = "an operator"
+            case .Enum: target = "an enum"
+            case .EnumCase: target = "an enum case"
+            case .Struct: target = "a struct"
+            case .Class: target = "a class"
+            case .Protocol: target = "a protocol"
+            case .Extension: target = "an extension"
             }
-        case let .AlreadyExist(type, name):
-            switch type {
-            case is ValueInst.Type:
-                return "Constant or variable with name '\(name)' already exists"
-            case is EnumInst.Type:
-                return "Enum with name '\(name)' already exists"
-            case is StructInst.Type:
-                return "Struct with name '\(name)' already exists"
-            case is ClassInst.Type:
-                return "Class with name '\(name)' already exists"
-            default:
-                return "<instance type error> with name '\(name)' already exists"
+            return "You cannot declare \(target) in this scope"
+        case let .AlreadyExist(kind, name):
+            var target = ""
+            switch kind {
+            case .Type: target = "Type"
+            case .Value: target = "Constant or a variable"
+            case .Operator: target = "Operator"
+            case .Enum: target = "Enum"
+            case .EnumCase: target = "Enum case"
+            case .Struct: target = "Struct"
+            case .Class: target = "Class"
+            case .Protocol: target = "Protocol"
+            case .Extension: target = "Extension"
             }
-        case .InvalidTypeRefScope:
-            return "You cannot refer a type in this scope"
-        case .InvalidValueRefScope:
-            return "You cannot refer a constant or a variable in this scope"
-        case .InvalidOperatorRefScope:
-            return "You cannot refer an operator in this scope"
-        case .InvalidEnumCaseRefScope:
-            return "You cannot refer an enum member in this scope"
-        case .InvalidImplicitParameterRefScope:
-            return "You cannot refer an implicit parameter in this scope"
-        case .InvalidErrorTypeRefScope:
-            return "You cannot refer <instance type error> in this scope"
-        case let .NotExist(type, name):
-            switch type {
-            case is ValueInst.Type:
-                return "Constant or variable '\(name)' not exists in this scope"
-            case is EnumInst.Type:
-                return "Enum '\(name)' not exists in this scope"
-            case is StructInst.Type:
-                return "Struct '\(name)' not exists in this scope"
-            case is ClassInst.Type:
-                return "Class '\(name)' not exists in this scope"
-            default:
-                return "<instance type error> '\(name)' not exists in this scope"
+            return "\(target) with name '\(name)' already exists"
+        case let .InvalidRefScope(kind):
+            var target = ""
+            switch kind {
+            case .Type: target = "a type"
+            case .Value: target = "a constant or a variable"
+            case .Operator: target = "an operator"
+            case .EnumCase: target = "an enum case"
+            case .ImplicitParameter: target = "an implicit parameter"
             }
+            return "You cannot refer \(target) in this scope"
+        case let .NotExist(kind, name):
+            var target = ""
+            switch kind {
+            case .Type: target = "Type"
+            case .Value: target = "Constant or a variable"
+            case .Operator: target = "Operator"
+            case .Enum: target = "Enum"
+            case .EnumCase: target = "Enum case"
+            case .Struct: target = "Struct"
+            case .Class: target = "Class"
+            case .Protocol: target = "Protocol"
+            case .Extension: target = "Extension"
+            }
+            return "\(target) '\(name)' not exists in this scope"
         // AttributesParser
         case .ExpectedAttributeIdentifier:
             return "Expected identifier for attribute"

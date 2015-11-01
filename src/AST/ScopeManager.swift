@@ -27,10 +27,36 @@ public protocol ScopeTrackable {
 
 public enum InstKind {
     case Type, Value, Operator, Enum, EnumCase, Struct, Class, Protocol, Extension
+
+    private static func fromType(type: Inst.Type) throws -> InstKind {
+        switch type {
+        case is TypeInst.Type: return .Type
+        case is ValueInst.Type: return .Value
+        case is OperatorInst.Type: return .Operator
+        case is EnumInst.Type: return .Enum
+        case is EnumCaseInst.Type: return .EnumCase
+        case is StructInst.Type: return .Struct
+        case is ClassInst.Type: return .Class
+        case is ProtocolInst.Type: return .Protocol
+        case is ExtensionInst.Type: return .Extension
+        default: throw ErrorReporter.fatal(.InvalidInstType, nil)
+        }
+    }
 }
 
 public enum RefKind {
     case Type, Value, Operator, EnumCase, ImplicitParameter
+
+    private static func fromType(type: Ref.Type) throws -> RefKind {
+        switch type {
+        case is TypeRef.Type: return .Type
+        case is ValueRef.Type: return .Value
+        case is OperatorRef.Type: return .Operator
+        case is EnumCaseRef.Type: return .EnumCase
+        case is ImplicitParameterRef.Type: return .ImplicitParameter
+        default: throw ErrorReporter.fatal(.InvalidRefType, nil)
+        }
+    }
 }
 
 public class Scope {
@@ -47,14 +73,14 @@ public class Scope {
     }
 
     private func createInst<ConcreteInst : Inst>(
-        kind: InstKind, _ name: String, _ source: SourceTrackable,
-        _ constructor: () -> ConcreteInst
+        name: String, _ source: SourceTrackable, _ constructor: () -> ConcreteInst
     ) throws -> ConcreteInst {
+        let kind = try InstKind.fromType(ConcreteInst.self)
         guard insts[kind] != nil else {
-            throw ErrorReporter.fatal(.InvalidScope(ConcreteInst.self), source)
+            throw ErrorReporter.fatal(.InvalidScope(kind), source)
         }
         guard insts[kind]?[name] == nil else {
-            throw ErrorReporter.fatal(.AlreadyExist(ConcreteInst.self, name), source)
+            throw ErrorReporter.fatal(.AlreadyExist(kind, name), source)
         }
         let i = constructor()
         insts[kind]?[name] = i
@@ -62,11 +88,11 @@ public class Scope {
     }
 
     private func createRef<ConcreteRef: Ref>(
-        kind: RefKind, _ source: SourceTrackable,
-        _ constructor: () -> ConcreteRef, _ errorMessage: ErrorMessage
+        source: SourceTrackable, _ constructor: () -> ConcreteRef
     ) throws -> ConcreteRef {
+        let kind = try RefKind.fromType(ConcreteRef.self)
         guard refs[kind] != nil else {
-            throw ErrorReporter.fatal(errorMessage, source)
+            throw ErrorReporter.fatal(.InvalidRefScope(kind), source)
         }
         let r = constructor()
         refs[kind]?.append(r)
@@ -352,16 +378,14 @@ public class ScopeManager {
     public static func createType(
         name: String, _ source: SourceTrackable
     ) throws -> TypeInst {
-        return try currentScope.createInst(
-            .Type, name, source, { TypeInst(name, source) }
-        )
+        return try currentScope.createInst(name, source, { TypeInst(name, source) })
     }
 
     public static func createValue(
         name: String, _ source: SourceTrackable, isVariable: Bool? = nil
     ) throws -> ValueInst {
         return try currentScope.createInst(
-            .Value, name, source, { ValueInst(name, source, isVariable: isVariable) }
+            name, source, { ValueInst(name, source, isVariable: isVariable) }
         )
     }
 
@@ -369,7 +393,7 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable
     ) throws -> OperatorInst {
         return try currentScope.createInst(
-            .Operator, name, source, { OperatorInst(name, source) }
+            name, source, { OperatorInst(name, source) }
         )
     }
 
@@ -377,7 +401,7 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable, node: EnumDeclaration
     ) throws -> EnumInst {
         return try currentScope.createInst(
-            .Enum, name, source, { EnumInst(name, source, node: node) }
+            name, source, { EnumInst(name, source, node: node) }
         )
     }
 
@@ -385,7 +409,7 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable
     ) throws -> EnumCaseInst {
         return try currentScope.createInst(
-            .EnumCase, name, source, { EnumCaseInst(name, source) }
+            name, source, { EnumCaseInst(name, source) }
         )
     }
 
@@ -393,7 +417,7 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable, node: StructDeclaration
     ) throws -> StructInst {
         return try currentScope.createInst(
-            .Struct, name, source, { StructInst(name, source, node: node) }
+            name, source, { StructInst(name, source, node: node) }
         )
     }
 
@@ -401,7 +425,7 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable, node: ClassDeclaration
     ) throws -> ClassInst {
         return try currentScope.createInst(
-            .Class, name, source, { ClassInst(name, source, node: node) }
+            name, source, { ClassInst(name, source, node: node) }
         )
     }
 
@@ -409,7 +433,7 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable, node: ProtocolDeclaration
     ) throws -> ProtocolInst {
         return try currentScope.createInst(
-            .Protocol, name, source, { ProtocolInst(name, source, node: node) }
+            name, source, { ProtocolInst(name, source, node: node) }
         )
     }
 
@@ -417,40 +441,33 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable, node: ExtensionDeclaration
     ) throws -> ExtensionInst {
         return try currentScope.createInst(
-            .Extension, name, source, { ExtensionInst(name, source, node: node) }
+            name, source, { ExtensionInst(name, source, node: node) }
         )
     }
 
     public static func createTypeRef(
         name: String, _ source: SourceTrackable
     ) throws -> TypeRef {
-        return try currentScope.createRef(
-            .Type, source, { TypeRef(name, source) }, .InvalidTypeRefScope
-        )
+        return try currentScope.createRef(source, { TypeRef(name, source) })
     }
 
     public static func createValueRef(
         name: String, _ source: SourceTrackable
     ) throws -> ValueRef {
-        return try currentScope.createRef(
-            .Value, source, { ValueRef(name, source) }, .InvalidValueRefScope
-        )
+        return try currentScope.createRef(source, { ValueRef(name, source) })
     }
 
     public static func createOperatorRef(
         name: String, _ source: SourceTrackable
     ) throws -> OperatorRef {
-        return try currentScope.createRef(
-            .Operator, source, { OperatorRef(name, source) }, .InvalidOperatorRefScope
-        )
+        return try currentScope.createRef(source, { OperatorRef(name, source) })
     }
 
     public static func createEnumCaseRef(
         name: String, _ source: SourceTrackable, className: String? = nil
     ) throws -> EnumCaseRef {
         return try currentScope.createRef(
-            .EnumCase, source, { EnumCaseRef(name, source, className: className) },
-            .InvalidEnumCaseRefScope
+            source, { EnumCaseRef(name, source, className: className) }
         )
     }
 
@@ -458,8 +475,7 @@ public class ScopeManager {
         index: Int, _ source: SourceTrackable
     ) throws -> ImplicitParameterRef {
         return try currentScope.createRef(
-            .ImplicitParameter, source, { ImplicitParameterRef(index, source) },
-            .InvalidImplicitParameterRefScope
+            source, { ImplicitParameterRef(index, source) }
         )
     }
 }
