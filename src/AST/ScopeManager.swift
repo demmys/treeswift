@@ -85,6 +85,18 @@ public class Scope {
         return i
     }
 
+    public func getInst(
+        kind: InstKind, _ name: String, _ source: SourceTrackable
+    ) throws -> Inst {
+        if let i = insts[kind]?[name] {
+            return i
+        }
+        guard let p = parent else {
+            throw ErrorReporter.fatal(.NotExist(kind, name), source)
+        }
+        return try p.getInst(kind, name, source)
+    }
+
     private func createRef<ConcreteRef: Ref>(
         source: SourceTrackable, _ constructor: () -> ConcreteRef
     ) throws -> ConcreteRef {
