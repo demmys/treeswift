@@ -131,22 +131,34 @@ public class ExtensionInst : Inst, CustomStringConvertible {
     }
 }
 
-public class Ref<Identifier : Equatable> : SourceTrackable {
-    private let id: Identifier
+public enum RefIdentifier : CustomStringConvertible{
+    case Name(String)
+    case Index(Int)
+
+    public var description: String {
+        switch self {
+        case let .Name(n): return "name: \(n)"
+        case let .Index(i): return "index: \(i)"
+        }
+    }
+}
+
+public class Ref : SourceTrackable {
+    private let id: RefIdentifier
     private let info: SourceInfo
     public var sourceInfo: SourceInfo {
         return info
     }
 
-    public init(_ id: Identifier, _ source: SourceTrackable) {
+    public init(_ id: RefIdentifier, _ source: SourceTrackable) {
         self.id = id
         self.info = source.sourceInfo
     }
 }
 
-public class TypeRef : Ref<String>, CustomStringConvertible {
-    override public init(_ id: String, _ source: SourceTrackable) {
-        super.init(id, source)
+public class TypeRef : Ref, CustomStringConvertible {
+    public init(_ name: String, _ source: SourceTrackable) {
+        super.init(.Name(name), source)
     }
 
     public var description: String {
@@ -154,9 +166,9 @@ public class TypeRef : Ref<String>, CustomStringConvertible {
     }
 }
 
-public class ValueRef : Ref<String>, CustomStringConvertible {
-    override public init(_ id: String, _ source: SourceTrackable) {
-        super.init(id, source)
+public class ValueRef : Ref, CustomStringConvertible {
+    public init(_ name: String, _ source: SourceTrackable) {
+        super.init(.Name(name), source)
     }
 
     public var description: String {
@@ -164,9 +176,9 @@ public class ValueRef : Ref<String>, CustomStringConvertible {
     }
 }
 
-public class OperatorRef : Ref<String>, CustomStringConvertible {
-    override public init(_ id: String, _ source: SourceTrackable) {
-        super.init(id, source)
+public class OperatorRef : Ref, CustomStringConvertible {
+    public init(_ name: String, _ source: SourceTrackable) {
+        super.init(.Name(name), source)
     }
 
     public var description: String {
@@ -174,12 +186,12 @@ public class OperatorRef : Ref<String>, CustomStringConvertible {
     }
 }
 
-public class EnumCaseRef : Ref<String>, CustomStringConvertible {
+public class EnumCaseRef : Ref, CustomStringConvertible {
     private let className: String?
 
-    public init(_ id: String, _ source: SourceTrackable, className: String?) {
+    public init(_ name: String, _ source: SourceTrackable, className: String?) {
         self.className = className
-        super.init(id, source)
+        super.init(.Name(name), source)
     }
 
     public var description: String {
@@ -187,9 +199,9 @@ public class EnumCaseRef : Ref<String>, CustomStringConvertible {
     }
 }
 
-public class ImplicitParameterRef : Ref<Int>, CustomStringConvertible {
-    override public init(_ id: Int, _ source: SourceTrackable) {
-        super.init(id, source)
+public class ImplicitParameterRef : Ref, CustomStringConvertible {
+    public init(_ index: Int, _ source: SourceTrackable) {
+        super.init(.Index(index), source)
     }
 
     public var description: String {

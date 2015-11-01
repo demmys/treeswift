@@ -29,16 +29,16 @@ public enum InstKind {
     case Type, Value, Operator, Enum, EnumCase, Struct, Class, Protocol, Extension
 }
 
+public enum RefKind {
+    case Type, Value, Operator, EnumCase, ImplicitParameter
+}
+
 public class Scope {
     public let type: ScopeType
     public let parent: Scope?
     public var children: [Scope] = []
     private var insts: [InstKind:[String:Inst]] = [:]
-    private var typeRefs: [(String, TypeRef)]?
-    private var valueRefs: [(String, ValueRef)]?
-    private var operatorRefs: [(String, OperatorRef)]?
-    private var enumCaseRefs: [(String, EnumCaseRef)]?
-    private var implicitParameterRefs: [(Int, ImplicitParameterRef)]?
+    private var refs: [RefKind:[Ref]] = [:]
 
     private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
@@ -61,60 +61,16 @@ public class Scope {
         return i
     }
 
-    private func createRef<Identifier, ConcreteRef : Ref<Identifier>>(
-        inout refs: [(Identifier, ConcreteRef)]?, _ id: Identifier,
-        _ source: SourceTrackable, _ constructor: () -> ConcreteRef,
-        _ errorMessage: ErrorMessage
+    private func createRef<ConcreteRef: Ref>(
+        kind: RefKind, _ source: SourceTrackable,
+        _ constructor: () -> ConcreteRef, _ errorMessage: ErrorMessage
     ) throws -> ConcreteRef {
-        guard refs != nil else {
+        guard refs[kind] != nil else {
             throw ErrorReporter.fatal(errorMessage, source)
         }
         let r = constructor()
-        refs?.append(id, r)
+        refs[kind]?.append(r)
         return r
-    }
-
-    private func createTypeRef(
-        id: String, _ source: SourceTrackable
-    ) throws -> TypeRef {
-        return try createRef(
-            &typeRefs, id, source, { TypeRef(id, source) }, .InvalidTypeRefScope
-        )
-    }
-
-    private func createValueRef(
-        id: String, _ source: SourceTrackable
-    ) throws -> ValueRef {
-        return try createRef(
-            &valueRefs, id, source, { ValueRef(id, source) }, .InvalidValueRefScope
-        )
-    }
-
-    private func createOperatorRef(
-        id: String, _ source: SourceTrackable
-    ) throws -> OperatorRef {
-        return try createRef(
-            &operatorRefs, id, source, { OperatorRef(id, source) },
-            .InvalidOperatorRefScope
-        )
-    }
-
-    private func createEnumCaseRef(
-        id: String, _ source: SourceTrackable, className: String?
-    ) throws -> EnumCaseRef {
-        return try createRef(
-            &enumCaseRefs, id, source, { EnumCaseRef(id, source, className: className) },
-            .InvalidEnumCaseRefScope
-        )
-    }
-
-    public func createImplicitParameterRef(
-        id: Int, _ source: SourceTrackable
-    ) throws -> ImplicitParameterRef {
-        return try createRef(
-            &implicitParameterRefs, id, source, { ImplicitParameterRef(id, source) },
-            .InvalidImplicitParameterRefScope
-        )
     }
 
     private func printMembers() {
@@ -128,11 +84,11 @@ public class Scope {
         print("\tclasses: \(insts[.Class])")
         print("\tprotocols: \(insts[.Protocol])")
         print("\textensions: \(insts[.Extension])")
-        print("\ttypeRefs: \(typeRefs)")
-        print("\tvalueRefs: \(valueRefs)")
-        print("\toperatorRefs: \(operatorRefs)")
-        print("\tenumCaseRefs: \(enumCaseRefs)")
-        print("\timplicitParameterRefs: \(implicitParameterRefs)")
+        print("\ttypeRefs: \(refs[.Type])")
+        print("\tvalueRefs: \(refs[.Value])")
+        print("\toperatorRefs: \(refs[.Operator])")
+        print("\tenumCaseRefs: \(refs[.EnumCase])")
+        print("\timplicitParameterRefs: \(refs[.ImplicitParameter])")
     }
 }
 
@@ -148,11 +104,11 @@ private class GlobalScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = [:]
         insts[.Extension] = [:]
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -168,11 +124,11 @@ private class FileScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = [:]
         insts[.Extension] = [:]
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -188,11 +144,11 @@ private class ValueBindingScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = [:]
         insts[.Extension] = [:]
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -208,11 +164,11 @@ private class FlowScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = []
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = []
     }
 }
 
@@ -228,11 +184,11 @@ private class FunctionScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = []
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = []
     }
 }
 
@@ -248,11 +204,11 @@ private class EnumScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = nil
-        operatorRefs = nil
-        enumCaseRefs = nil
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = nil
+        refs[.Operator] = nil
+        refs[.EnumCase] = nil
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -268,11 +224,11 @@ private class StructScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -288,11 +244,11 @@ private class ClassScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = []
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -308,11 +264,11 @@ private class ProtocolScope : Scope {
         insts[.Class] = nil
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = nil
-        operatorRefs = nil
-        enumCaseRefs = nil
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = nil
+        refs[.Operator] = nil
+        refs[.EnumCase] = nil
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -328,11 +284,11 @@ private class ExtensionScope : Scope {
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
-        typeRefs = []
-        valueRefs = nil
-        operatorRefs = []
-        enumCaseRefs = []
-        implicitParameterRefs = nil
+        refs[.Type] = []
+        refs[.Value] = nil
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
     }
 }
 
@@ -468,30 +424,42 @@ public class ScopeManager {
     public static func createTypeRef(
         name: String, _ source: SourceTrackable
     ) throws -> TypeRef {
-        return try currentScope.createTypeRef(name, source)
+        return try currentScope.createRef(
+            .Type, source, { TypeRef(name, source) }, .InvalidTypeRefScope
+        )
     }
 
     public static func createValueRef(
         name: String, _ source: SourceTrackable
     ) throws -> ValueRef {
-        return try currentScope.createValueRef(name, source)
+        return try currentScope.createRef(
+            .Value, source, { ValueRef(name, source) }, .InvalidValueRefScope
+        )
     }
 
     public static func createOperatorRef(
         name: String, _ source: SourceTrackable
     ) throws -> OperatorRef {
-        return try currentScope.createOperatorRef(name, source)
+        return try currentScope.createRef(
+            .Operator, source, { OperatorRef(name, source) }, .InvalidOperatorRefScope
+        )
     }
 
     public static func createEnumCaseRef(
         name: String, _ source: SourceTrackable, className: String? = nil
     ) throws -> EnumCaseRef {
-        return try currentScope.createEnumCaseRef(name, source, className: className)
+        return try currentScope.createRef(
+            .EnumCase, source, { EnumCaseRef(name, source, className: className) },
+            .InvalidEnumCaseRefScope
+        )
     }
 
     public static func createImplicitParameterRef(
         index: Int, _ source: SourceTrackable
     ) throws -> ImplicitParameterRef {
-        return try currentScope.createImplicitParameterRef(index, source)
+        return try currentScope.createRef(
+            .ImplicitParameter, source, { ImplicitParameterRef(index, source) },
+            .InvalidImplicitParameterRefScope
+        )
     }
 }
