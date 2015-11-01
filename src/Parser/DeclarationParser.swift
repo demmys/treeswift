@@ -47,21 +47,25 @@ class DeclarationParser : GrammarParser {
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
+            ScopeManager.enterImplicitScope()
             return try constantDeclaration(attrs, mods)
         case .Var:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
+            ScopeManager.enterImplicitScope()
             return try variableDeclaration(attrs, mods)
         case .Typealias:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeTypealias)
             }
+            ScopeManager.enterImplicitScope()
             return try typealiasDeclaration(attrs, almod)
         case .Func:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
+            ScopeManager.enterImplicitScope()
             return try functionDeclaration(attrs, mods)
         case .Indirect:
             if !ts.test([.Enum]) {
@@ -70,26 +74,31 @@ class DeclarationParser : GrammarParser {
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeEnum)
             }
+            ScopeManager.enterImplicitScope()
             return try enumDeclaration(attrs, almod, isIndirect: true)
         case .Enum:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeEnum)
             }
+            ScopeManager.enterImplicitScope()
             return try enumDeclaration(attrs, almod)
         case .Struct:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeStruct)
             }
+            ScopeManager.enterImplicitScope()
             return try structDeclaration(attrs, almod)
         case .Class:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeClass)
             }
+            ScopeManager.enterImplicitScope()
             return try classDeclaration(attrs, almod)
         case .Protocol:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeProtocol)
             }
+            ScopeManager.enterImplicitScope()
             return try protocolDeclaration(attrs, almod)
         case .Init:
             if let m = almod {
@@ -108,6 +117,7 @@ class DeclarationParser : GrammarParser {
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeExtension)
             }
+            ScopeManager.enterImplicitScope()
             return try extensionDeclaration(almod)
         case .Subscript:
             if let m = almod {
@@ -121,6 +131,7 @@ class DeclarationParser : GrammarParser {
             if almod != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
+            ScopeManager.enterImplicitScope()
             return try operatorDeclaration(.Prefix)
         case .Postfix:
             if attrs.count > 0 {
@@ -129,6 +140,7 @@ class DeclarationParser : GrammarParser {
             if almod != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
+            ScopeManager.enterImplicitScope()
             return try operatorDeclaration(.Postfix)
         case .Infix:
             if attrs.count > 0 {
@@ -137,6 +149,7 @@ class DeclarationParser : GrammarParser {
             if almod != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
+            ScopeManager.enterImplicitScope()
             return try infixOperatorDeclaration()
         default:
             throw ts.fatal(.ExpectedDeclaration)
@@ -370,7 +383,6 @@ class DeclarationParser : GrammarParser {
     }
 
     private func patternInitializerList() throws -> [(Pattern, Expression?)] {
-        ScopeManager.enterScope(.ValueBinding)
         var pi: [(Pattern, Expression?)] = []
         repeat {
             let p = try ptp.declarativePattern()

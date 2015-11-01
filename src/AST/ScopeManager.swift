@@ -3,8 +3,8 @@ public enum MemberPolicy {
 }
 
 public enum ScopeType {
+    case Implicit
     case Global, File
-    case ValueBinding
     case For, ForIn, While, RepeatWhile, If, Guard, Defer, Do, Catch, Case
     case Function, Enum, Struct, Class, Protocol, Extension
 
@@ -12,11 +12,9 @@ public enum ScopeType {
         switch self {
         case .Global, .Enum, Struct, .Class, .Protocol, .Extension:
             return .Declarative
-        case .File, .For, .ForIn, .While, .RepeatWhile, .If, .Guard, .Defer,
-             .Do, .Catch, .Case, .Function:
+        case .Implicit, .File, .For, .ForIn, .While, .RepeatWhile, .If, .Guard,
+             .Defer, .Do, .Catch, .Case, .Function:
             return .Procedural
-        case .ValueBinding:
-            return .Transparent
         }
     }
 }
@@ -28,7 +26,7 @@ public protocol ScopeTrackable {
 public enum InstKind {
     case Type, Value, Operator, Enum, EnumCase, Struct, Class, Protocol, Extension
 
-    private static func fromType(type: Inst.Type) throws -> InstKind {
+    private static func fromType(type: Inst.Type) -> InstKind {
         switch type {
         case is TypeInst.Type: return .Type
         case is ValueInst.Type: return .Value
@@ -39,7 +37,7 @@ public enum InstKind {
         case is ClassInst.Type: return .Class
         case is ProtocolInst.Type: return .Protocol
         case is ExtensionInst.Type: return .Extension
-        default: throw ErrorReporter.fatal(.InvalidInstType, nil)
+        default: assert(false, "<system error> invalid inst type.")
         }
     }
 }
@@ -47,14 +45,14 @@ public enum InstKind {
 public enum RefKind {
     case Type, Value, Operator, EnumCase, ImplicitParameter
 
-    private static func fromType(type: Ref.Type) throws -> RefKind {
+    private static func fromType(type: Ref.Type) -> RefKind {
         switch type {
         case is TypeRef.Type: return .Type
         case is ValueRef.Type: return .Value
         case is OperatorRef.Type: return .Operator
         case is EnumCaseRef.Type: return .EnumCase
         case is ImplicitParameterRef.Type: return .ImplicitParameter
-        default: throw ErrorReporter.fatal(.InvalidRefType, nil)
+        default: assert(false, "<system error> invalid ref type.")
         }
     }
 }
@@ -75,7 +73,7 @@ public class Scope {
     private func createInst<ConcreteInst : Inst>(
         name: String, _ source: SourceTrackable, _ constructor: () -> ConcreteInst
     ) throws -> ConcreteInst {
-        let kind = try InstKind.fromType(ConcreteInst.self)
+        let kind = InstKind.fromType(ConcreteInst.self)
         guard insts[kind] != nil else {
             throw ErrorReporter.fatal(.InvalidScope(kind), source)
         }
@@ -90,7 +88,7 @@ public class Scope {
     private func createRef<ConcreteRef: Ref>(
         source: SourceTrackable, _ constructor: () -> ConcreteRef
     ) throws -> ConcreteRef {
-        let kind = try RefKind.fromType(ConcreteRef.self)
+        let kind = RefKind.fromType(ConcreteRef.self)
         guard refs[kind] != nil else {
             throw ErrorReporter.fatal(.InvalidRefScope(kind), source)
         }
@@ -118,6 +116,26 @@ public class Scope {
     }
 }
 
+private class ImplicitScope : Scope {
+    init(_ parent: Scope) {
+        super.init(.Implicit, parent)
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = [:]
+        insts[.Extension] = [:]
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
+    }
+}
+
 private class GlobalScope : Scope {
     init() {
         super.init(.Global, nil)
@@ -141,26 +159,6 @@ private class GlobalScope : Scope {
 private class FileScope : Scope {
     init(_ parent: Scope) {
         super.init(.File, parent)
-        insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
-        insts[.Enum] = [:]
-        insts[.EnumCase] = nil
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = [:]
-        insts[.Extension] = [:]
-        refs[.Type] = []
-        refs[.Value] = []
-        refs[.Operator] = []
-        refs[.EnumCase] = []
-        refs[.ImplicitParameter] = nil
-    }
-}
-
-private class ValueBindingScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.ValueBinding, parent)
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -324,15 +322,12 @@ public class ScopeManager {
 
     public static func enterScope(type: ScopeType) {
         switch type {
+        case .Implicit:
+            currentScope = ImplicitScope(currentScope)
         case .Global:
             assert(false, "<system error> duplicated global scope")
         case .File:
             currentScope = FileScope(currentScope)
-        case .ValueBinding:
-            guard currentScope.type.policy != .Declarative else {
-                return
-            }
-            currentScope = ValueBindingScope(currentScope)
         case .For, .ForIn, .While, .RepeatWhile, .If,
              .Guard, .Defer, .Do, .Catch, .Case:
             currentScope = FlowScope(type, currentScope)
@@ -351,10 +346,16 @@ public class ScopeManager {
         }
     }
 
+    public static func enterImplicitScope() {
+        if currentScope.type.policy == .Procedural {
+            currentScope = ImplicitScope(currentScope)
+        }
+    }
+
     public static func leaveScope(
         type: ScopeType, _ source: SourceTrackable?
     ) throws -> Scope {
-        while currentScope.type == .ValueBinding {
+        while currentScope.type == .Implicit {
             guard let s = currentScope.parent else {
                 throw ErrorReporter.fatal(.LeavingGlobalScope, source)
             }

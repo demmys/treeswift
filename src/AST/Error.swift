@@ -109,8 +109,6 @@ public enum ErrorMessage : CustomStringConvertible {
     case FileNotFound(String)
     case FileCanNotRead(String)
     // ScopeManager
-    case InvalidInstType
-    case InvalidRefType
     case ScopeTypeMismatch(ScopeType, ScopeType)
     case LeavingGlobalScope
     case InvalidScope(InstKind)
@@ -274,10 +272,6 @@ public enum ErrorMessage : CustomStringConvertible {
         case .ReservedToken:
             return "Reserved token"
         // ScopeManager
-        case .InvalidInstType:
-            return "<system error> Invalid inst type."
-        case .InvalidRefType:
-            return "<system error> Invalid ref type."
         case let .ScopeTypeMismatch(current, expected):
             return "<system error> leaving scope type mismatch. Expected type is '\(expected)', but actual type is '\(current)'"
         case .LeavingGlobalScope:
