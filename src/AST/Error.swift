@@ -108,6 +108,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case Dummy
     case FileNotFound(String)
     case FileCanNotRead(String)
+    case MultipleMain(String, String)
     // ScopeManager
     case ScopeTypeMismatch(ScopeType, ScopeType)
     case LeavingGlobalScope
@@ -264,6 +265,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "No such a file: \(name)"
         case let .FileCanNotRead(name):
             return "File cannot read: \(name)"
+        case let .MultipleMain(first, second):
+            return "Top level procedure was found in both of \(first) and \(second). Only one file can act as main program."
         // TokenStream
         case .UnexpectedEOF:
             return "Unexpected end of file"

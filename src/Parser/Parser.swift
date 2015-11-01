@@ -21,6 +21,7 @@ public class Parser {
                 throw e
             }
         }
+        try specifyMain(result)
         if ErrorReporter.hasErrors() {
             throw ErrorReport.Found
         }
@@ -66,11 +67,28 @@ public class Parser {
             fileScope: try ScopeManager.leaveScope(.File, nil)
         )
     }
+
+    private func specifyMain(tlds: [String:TopLevelDeclaration]) throws {
+        var found: String?
+        for (name, tld) in tlds {
+            for p in tld.procedures {
+                guard case .DeclarationProcedure = p else {
+                    if let n = found {
+                        throw ErrorReporter.fatal(.MultipleMain(n, name), nil)
+                    }
+                    tld.isMain = true
+                    found = name
+                    break
+                }
+            }
+        }
+    }
 }
 
 public class TopLevelDeclaration : ScopeTrackable, CustomStringConvertible {
     public let procedures: [Procedure]
     public let fileScope: Scope
+    public var isMain = false
 
     public init(procedures: [Procedure], fileScope: Scope) {
         self.procedures = procedures
