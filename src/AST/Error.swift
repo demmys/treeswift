@@ -78,19 +78,19 @@ public class ErrorReporter {
         for (fileName, errors) in bundledErrors {
             for (kind, msg, info) in errors {
                 if let i = info {
-                    print("\(fileName):\(i.lineNo):\(i.charNo) \(kind): \(msg)")
+                    print("\(fileName):\(i.lineNo):\(i.charNo) \(kind): \(msg)", toStream: &STDERR)
                     if let file = File(name: fileName, mode: "r") {
                         if file.seek(i.seekNo - i.charNo, whence: .SeekSet) {
                             if let line = file.readLine() {
-                                print(line, terminator: "")
+                                print(line, terminator: "", toStream: &STDERR)
                                 printMarker(i.charNo)
                                 continue
                             }
                         }
                     }
-                    print("(system error: failed to load the source)")
+                    print("(system error: failed to load the source)", toStream: &STDERR)
                 } else {
-                    print("\(fileName): \(kind): \(msg)")
+                    print("\(fileName): \(kind): \(msg)", toStream: &STDERR)
                 }
             }
         }
@@ -98,9 +98,9 @@ public class ErrorReporter {
 
     private static func printMarker(charNo: Int) {
         for var i = 0; i < charNo - 1; ++i {
-            print(" ", terminator: "")
+            print(" ", terminator: "", toStream: &STDERR)
         }
-        print("^")
+        print("^", toStream: &STDERR)
     }
 }
 

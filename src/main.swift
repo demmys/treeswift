@@ -41,31 +41,49 @@ func prettyPrint(target: CustomStringConvertible) {
     print("")
 }
 
-let arguments = Process.arguments
-if arguments.count < 2 {
-    print("No input file")
-} else {
-    let parser = Parser(Array(arguments[1..<arguments.count]))
-    do {
-        let result = try parser.parse()
-        ErrorReporter.report()
-        for (fileName, tld) in result {
-            print("----- \(fileName) -----")
-            for p in tld.procedures {
-                prettyPrint(p)
+func printError(message: Any) {
+    print("\(Process.arguments[0]): ", terminator: "", toStream: &STDERR)
+    print(message, toStream: &STDERR)
+}
+
+let optionParser = OptionParser<ParseOption>()
+optionParser.setOption("sdk", { (arg) in ParseOption.SDKPath(arg!) }, requireArgument: true)
+optionParser.setOption("I", { (arg) in ParseOption.IncludePath(arg!) }, requireArgument: true)
+optionParser.setOption("L", { (arg) in ParseOption.LibraryPath(arg!) }, requireArgument: true)
+do {
+    let (result: parseOptions, remains: arguments) = try optionParser.parse()
+    print(parseOptions)
+    if arguments.count < 2 {
+        printError("No input file.")
+    } else {
+        let parser = Parser(Array(arguments.dropFirst(1)))
+        do {
+            let result = try parser.parse()
+            ErrorReporter.report()
+            for (fileName, tld) in result {
+                print("----- \(fileName) -----")
+                for p in tld.procedures {
+                    prettyPrint(p)
+                }
             }
+        } catch ErrorReport.Fatal {
+            printError("Compile process aborted because of the fatal error.")
+            ErrorReporter.report()
+        } catch ErrorReport.Full {
+            printError("Compile process aborted because of too much errors.")
+            ErrorReporter.report()
+        } catch ErrorReport.Found {
+            printError("Some errors found in compile process.")
+            ErrorReporter.report()
+        } catch let e {
+            printError("Compile process aborted because of unexpected error.")
+            printError(e)
         }
-    } catch ErrorReport.Fatal {
-        print("Compile process aborted because of the fatal error.")
-        ErrorReporter.report()
-    } catch ErrorReport.Full {
-        print("Compile process aborted because of too much errors.")
-        ErrorReporter.report()
-    } catch ErrorReport.Found {
-        print("Some errors found in compile process.")
-        ErrorReporter.report()
-    } catch let e {
-        print("Compile process aborted because of unexpected error.")
-        print(e)
     }
+} catch let OptionParseError.InvalidOption(option) {
+    printError("Invalid option '\(option)'.")
+} catch let OptionParseError.ArgumentNotProvided(option) {
+    printError("Option '\(option)' needs argument.")
+} catch let e {
+    printError(e)
 }

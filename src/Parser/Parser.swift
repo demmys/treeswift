@@ -1,6 +1,12 @@
 import Util
 import AST
 
+public enum ParseOption {
+    case SDKPath(String)
+    case IncludePath(String)
+    case LibraryPath(String)
+}
+
 public class Parser {
     private let fileNames: [String]
     private var ts: TokenStream!
