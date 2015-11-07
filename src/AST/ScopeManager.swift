@@ -1,16 +1,16 @@
 public enum MemberPolicy {
-    case Declarative, Procedural, Transparent
+    case Declarative, Procedural
 }
 
 public enum ScopeType {
+    case Module, File
     case Implicit
-    case Global, File
     case For, ForIn, While, RepeatWhile, If, Guard, Defer, Do, Catch, Case
     case Function, Enum, Struct, Class, Protocol, Extension
 
     var policy: MemberPolicy {
         switch self {
-        case .Global, .Enum, Struct, .Class, .Protocol, .Extension:
+        case .Module, .Enum, Struct, .Class, .Protocol, .Extension:
             return .Declarative
         case .Implicit, .File, .For, .ForIn, .While, .RepeatWhile, .If, .Guard,
              .Defer, .Do, .Catch, .Case, .Function:
@@ -128,29 +128,9 @@ public class Scope {
     }
 }
 
-private class ImplicitScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Implicit, parent)
-        insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
-        insts[.Enum] = [:]
-        insts[.EnumCase] = nil
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = [:]
-        insts[.Extension] = [:]
-        refs[.Type] = []
-        refs[.Value] = []
-        refs[.Operator] = []
-        refs[.EnumCase] = []
-        refs[.ImplicitParameter] = nil
-    }
-}
-
-private class GlobalScope : Scope {
+private class ModuleScope : Scope {
     init() {
-        super.init(.Global, nil)
+        super.init(.File, nil)
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -171,6 +151,26 @@ private class GlobalScope : Scope {
 private class FileScope : Scope {
     init(_ parent: Scope) {
         super.init(.File, parent)
+        insts[.Type] = [:]
+        insts[.Value] = [:]
+        insts[.Operator] = [:]
+        insts[.Enum] = [:]
+        insts[.EnumCase] = nil
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = [:]
+        insts[.Extension] = [:]
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
+    }
+}
+
+private class ImplicitScope : Scope {
+    init(_ parent: Scope) {
+        super.init(.Implicit, parent)
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -329,16 +329,52 @@ private class ExtensionScope : Scope {
 }
 
 public class ScopeManager {
-    private static var globalScope: GlobalScope = GlobalScope()
-    private static var currentScope: Scope = globalScope
+    private static var importableModules: [String:() throws -> ()] = [:]
+    private static var currentSourceScope: Scope = ModuleScope()
+    private static var currentModuleScope: Scope = ModuleScope()
+    private static var moduleImporting = false
+    private static var currentScope: Scope {
+        get { return moduleImporting ? currentModuleScope : currentSourceScope }
+        set(scope) {
+            if moduleImporting {
+                currentModuleScope = scope
+            } else {
+                currentSourceScope = scope
+            }
+        }
+    }
+    private static var modules: [ModuleScope] = []
+
+    public static func addImportableModule(
+        name: String, _ importMethod: () throws -> ()
+    ) {
+        importableModules[name] = importMethod
+    }
+
+    public static func importModule(name: String, _ source: SourceTrackable) throws {
+        guard let importMethod = importableModules[name] else {
+            throw ErrorReporter.fatal(.NoSuchModule(name), source)
+        }
+        moduleImporting = true
+        try importMethod()
+        guard case let s as ModuleScope = currentModuleScope else {
+            throw ErrorReporter.fatal(.UnresolvedScopeRemains, source)
+        }
+        modules.append(s)
+        currentModuleScope = ModuleScope()
+        moduleImporting = false
+    }
 
     public static func enterScope(type: ScopeType) {
         switch type {
         case .Implicit:
             currentScope = ImplicitScope(currentScope)
-        case .Global:
-            assert(false, "<system error> duplicated global scope")
+        case .Module:
+            assert(false, "<system error> duplicated module scope")
         case .File:
+            if currentScope.type != .Module {
+                assert(false, "<system error> file scope should be under a module scope")
+            }
             currentScope = FileScope(currentScope)
         case .For, .ForIn, .While, .RepeatWhile, .If,
              .Guard, .Defer, .Do, .Catch, .Case:
@@ -369,7 +405,7 @@ public class ScopeManager {
     ) throws -> Scope {
         while currentScope.type == .Implicit {
             guard let s = currentScope.parent else {
-                throw ErrorReporter.fatal(.LeavingGlobalScope, source)
+                throw ErrorReporter.fatal(.LeavingModuleScope, source)
             }
             currentScope.printMembers()
             currentScope = s
@@ -379,15 +415,16 @@ public class ScopeManager {
                 .ScopeTypeMismatch(currentScope.type, type), source
             )
         }
-        guard let s = currentScope.parent else {
-            throw ErrorReporter.fatal(.LeavingGlobalScope, source)
+        guard let parent = currentScope.parent else {
+            throw ErrorReporter.fatal(.LeavingModuleScope, source)
         }
-        let past = currentScope
-        currentScope = s
-        past.printMembers()
-        return past
+        let child = currentScope
+        currentScope = parent
+        child.printMembers()
+        return child
     }
 
+    // TODO access levelを引数に渡す
     public static func createType(
         name: String, _ source: SourceTrackable
     ) throws -> TypeInst {

@@ -110,8 +110,10 @@ public enum ErrorMessage : CustomStringConvertible {
     case FileCanNotRead(String)
     case MultipleMain(String, String)
     // ScopeManager
+    case NoSuchModule(String)
+    case UnresolvedScopeRemains
     case ScopeTypeMismatch(ScopeType, ScopeType)
-    case LeavingGlobalScope
+    case LeavingModuleScope
     case InvalidScope(InstKind)
     case AlreadyExist(InstKind, String)
     case InvalidRefScope(RefKind)
@@ -275,10 +277,14 @@ public enum ErrorMessage : CustomStringConvertible {
         case .ReservedToken:
             return "Reserved token"
         // ScopeManager
+        case let .NoSuchModule(name):
+            return "No such module '\(name)'"
+        case .UnresolvedScopeRemains:
+            return "<system error> unresolved scope remains"
         case let .ScopeTypeMismatch(current, expected):
             return "<system error> leaving scope type mismatch. Expected type is '\(expected)', but actual type is '\(current)'"
-        case .LeavingGlobalScope:
-            return "<system error> leaving global scope"
+        case .LeavingModuleScope:
+            return "<system error> leaving module scope"
         case let .InvalidScope(kind):
             var target = ""
             switch kind {

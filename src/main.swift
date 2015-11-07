@@ -46,26 +46,68 @@ func printError(message: Any) {
     print(message, toStream: &STDERR)
 }
 
-let optionParser = OptionParser<ParseOption>()
-optionParser.setOption("sdk", { (arg) in ParseOption.SDKPath(arg!) }, requireArgument: true)
-optionParser.setOption("I", { (arg) in ParseOption.IncludePath(arg!) }, requireArgument: true)
-optionParser.setOption("L", { (arg) in ParseOption.LibraryPath(arg!) }, requireArgument: true)
+func modulePaths(parseOptions: [CompilerOption]) -> [String:String] {
+    let includes = parseOptions.map({ o -> String in
+        if case let .IncludePath(path) = o {
+            return path
+        }
+        return ""
+    }).filter({ !$0.isEmpty })
+    var modules: [String:String] = [:]
+    for i in includes {
+        guard let dir = Dir(name: i) else {
+            continue
+        }
+        let fileNames = dir.read().filter({ $0.hasSuffix(".tsm") })
+        modules = fileNames.reduce(modules, combine: { (var ms, f) -> [String:String] in
+            ms[String(f.characters.dropLast(4))] = "\(i)/\(f)"
+            return ms
+        })
+    }
+    return modules
+}
+
+func moduleName(parseOptions: [CompilerOption]) -> String {
+    var name = "-"
+    for o in parseOptions {
+        if case let .ModuleName(n) = o {
+            name = n
+        }
+    }
+    return name
+}
+
+func printParseResult(parseResult: [String:TopLevelDeclaration]) {
+    for (fileName, tld) in parseResult {
+        print("----- \(fileName) -----")
+        for p in tld.procedures {
+            prettyPrint(p)
+        }
+    }
+}
+
+let optionParser = OptionParser<CompilerOption>()
+optionParser.setOption(
+    "I", { (arg) in CompilerOption.IncludePath(arg!) }, requireArgument: true
+)
+optionParser.setOption(
+    "L", { (arg) in CompilerOption.LibraryPath(arg!) }, requireArgument: true
+)
+optionParser.setOption(
+    "module-name", { (arg) in CompilerOption.ModuleName(arg!) }, requireArgument: true
+)
+
 do {
     let (result: parseOptions, remains: arguments) = try optionParser.parse()
-    print(parseOptions)
     if arguments.count < 2 {
         printError("No input file.")
     } else {
-        let parser = Parser(Array(arguments.dropFirst(1)))
         do {
-            let result = try parser.parse()
+            let modules = modulePaths(parseOptions)
+            let parser = Parser(moduleName: moduleName(parseOptions), modules: modules)
+            let result = try parser.parse(Array(arguments.dropFirst(1)))
             ErrorReporter.report()
-            for (fileName, tld) in result {
-                print("----- \(fileName) -----")
-                for p in tld.procedures {
-                    prettyPrint(p)
-                }
-            }
+            printParseResult(result)
         } catch ErrorReport.Fatal {
             printError("Compile process aborted because of the fatal error.")
             ErrorReporter.report()

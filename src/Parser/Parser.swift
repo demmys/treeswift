@@ -1,26 +1,32 @@
 import Util
 import AST
 
-public enum ParseOption {
-    case SDKPath(String)
-    case IncludePath(String)
-    case LibraryPath(String)
-}
-
 public class Parser {
-    private let fileNames: [String]
-    private var ts: TokenStream!
+    private let moduleName: String
 
-    public init(_ fileNames: [String]) {
-        self.fileNames = fileNames
+    public init(moduleName: String, modules: [String:String]) {
+        self.moduleName = moduleName
+        for (name, fileName) in modules {
+            ScopeManager.addImportableModule(name, parseModule(fileName))
+        }
     }
 
-    public func parse() throws -> [String:TopLevelDeclaration] {
+    public func parseModule(fileName: String)() throws {
+        do {
+            let parser = prepareDeclarationParser(try createStream(fileName))
+            try parser.moduleDeclaration()
+        } catch let e {
+            ErrorReporter.bundle(fileName)
+            throw e
+        }
+    }
+
+    public func parse(fileNames: [String]) throws -> [String:TopLevelDeclaration] {
         var result: [String:TopLevelDeclaration] = [:]
         for fileName in fileNames {
             do {
-                ts = try createStream(fileName)
-                result[fileName] = try topLevelDeclaration()
+                let parser = prepareDeclarationParser(try createStream(fileName))
+                result[fileName] = try parser.topLevelDeclaration()
                 ErrorReporter.bundle(fileName)
             } catch let e {
                 ErrorReporter.bundle(fileName)
@@ -44,36 +50,6 @@ public class Parser {
         return ts
     }
 
-    private func topLevelDeclaration() throws -> TopLevelDeclaration {
-        let ap = AttributesParser(ts)
-        let gp = GenericsParser(ts)
-        let tp = TypeParser(ts)
-        let ep = ExpressionParser(ts)
-        let dp = DeclarationParser(ts)
-        let pp = PatternParser(ts)
-        let parser = ProcedureParser(ts)
-        gp.setParser(typeParser: tp)
-        tp.setParser(attributesParser: ap, genericsParser: gp)
-        ep.setParser(
-            typeParser: tp, genericsParser: gp, procedureParser: parser,
-            expressionParser: ep, declarationParser: dp
-        )
-        dp.setParser(
-            procedureParser: parser, patternParser: pp, expressionParser: ep,
-            typeParser: tp, attributesParser: ap, genericsParser: gp
-        )
-        pp.setParser(typeParser: tp, expressionParser: ep)
-        parser.setParser(
-            declarationParser: dp, patternParser: pp,expressionParser: ep,
-            attributesParser: ap
-        )
-        ScopeManager.enterScope(.File)
-        return TopLevelDeclaration(
-            procedures: try parser.procedures(),
-            fileScope: try ScopeManager.leaveScope(.File, nil)
-        )
-    }
-
     private func specifyMain(tlds: [String:TopLevelDeclaration]) throws {
         var found: String?
         for (name, tld) in tlds {
@@ -89,20 +65,30 @@ public class Parser {
             }
         }
     }
-}
 
-public class TopLevelDeclaration : ScopeTrackable, CustomStringConvertible {
-    public let procedures: [Procedure]
-    public let fileScope: Scope
-    public var isMain = false
-
-    public init(procedures: [Procedure], fileScope: Scope) {
-        self.procedures = procedures
-        self.fileScope = fileScope
-    }
-
-    public var scope: Scope { return fileScope }
-    public var description: String {
-        return "(TopLevelDeclaration \(procedures))"
+    private func prepareDeclarationParser(ts: TokenStream) -> DeclarationParser {
+        let ap = AttributesParser(ts)
+        let gp = GenericsParser(ts)
+        let tp = TypeParser(ts)
+        let ep = ExpressionParser(ts)
+        let dp = DeclarationParser(ts)
+        let pp = PatternParser(ts)
+        let prp = ProcedureParser(ts)
+        gp.setParser(typeParser: tp)
+        tp.setParser(attributesParser: ap, genericsParser: gp)
+        ep.setParser(
+            typeParser: tp, genericsParser: gp, procedureParser: prp,
+            expressionParser: ep, declarationParser: dp
+        )
+        dp.setParser(
+            procedureParser: prp, patternParser: pp, expressionParser: ep,
+            typeParser: tp, attributesParser: ap, genericsParser: gp
+        )
+        pp.setParser(typeParser: tp, expressionParser: ep)
+        prp.setParser(
+            declarationParser: dp, patternParser: pp,expressionParser: ep,
+            attributesParser: ap
+        )
+        return dp
     }
 }

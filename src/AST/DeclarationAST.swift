@@ -1,3 +1,16 @@
+public class TopLevelDeclaration : ScopeTrackable {
+    public let procedures: [Procedure]
+    public let fileScope: Scope
+    public var isMain = false
+
+    public init(procedures: [Procedure], fileScope: Scope) {
+        self.procedures = procedures
+        self.fileScope = fileScope
+    }
+
+    public var scope: Scope { return fileScope }
+}
+
 public class Declaration : CustomStringConvertible {
     public var attrs: [Attribute] = []
     public var mods: [Modifier] = []

@@ -82,6 +82,12 @@ extension FlowSwitch : CustomStringConvertible {
 /*
  * DeclarationAST
  */
+extension TopLevelDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(TopLevelDeclaration \(procedures))"
+    }
+}
+
 extension ImportKind : CustomStringConvertible {
     public var description: String {
         return self.rawValue.lowercaseString

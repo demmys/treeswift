@@ -24,6 +24,18 @@ class DeclarationParser : GrammarParser {
         self.gp = gp
     }
 
+    func moduleDeclaration() throws {
+        // TODO すべてScopeにバインドされていくことで情報が保持される
+    }
+
+    func topLevelDeclaration() throws -> TopLevelDeclaration {
+        ScopeManager.enterScope(.File)
+        return TopLevelDeclaration(
+            procedures: try prp.procedures(),
+            fileScope: try ScopeManager.leaveScope(.File, nil)
+        )
+    }
+
     func declaration(
         parsedAttrs: [Attribute]? = nil
     ) throws -> Declaration {
