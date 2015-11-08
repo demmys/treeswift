@@ -424,7 +424,7 @@ class DeclarationParser : GrammarParser {
     }
 
     private func functionDeclaration(
-        attrs: [Attribute], _ mods: [Modifier], forProtocol: Bool = false
+        attrs: [Attribute], _ mods: [Modifier], forModule: Bool = false
     ) throws -> FunctionDeclaration {
         let x = FunctionDeclaration(attrs, mods)
         x.name = try functionName()
@@ -433,7 +433,7 @@ class DeclarationParser : GrammarParser {
         x.params = try parameterClauses()
         x.throwType = throwType()
         x.returns = try functionResult()
-        if forProtocol {
+        if forModule {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInDeclarationOfProtocol)
             }
@@ -808,33 +808,33 @@ class DeclarationParser : GrammarParser {
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
-            return try protocolPropertyDeclaration(attrs, mods)
+            return try moduleVariableDeclaration(attrs, mods)
         case .Typealias:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeTypealias)
             }
-            return try protocolAssociatedTypeDeclaration(attrs, almod)
+            return try AssociatedTypeDeclaration(attrs, almod)
         case .Func:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
-            return try functionDeclaration(attrs, mods, forProtocol: true)
+            return try functionDeclaration(attrs, mods, forModule: true)
         case .Init:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
-            return try initializerDeclaration(attrs, mods, forProtocol: true)
+            return try initializerDeclaration(attrs, mods, forModule: true)
         case .Subscript:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
             }
-            return try protocolSubscriptDeclaration(attrs, mods)
+            return try moduleSubscriptDeclaration(attrs, mods)
         default:
             throw ts.fatal(.ExpectedDeclaration)
         }
     }
 
-    private func protocolPropertyDeclaration(
+    private func moduleVariableDeclaration(
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> VariableBlockDeclaration {
         let trackable = ts.look()
@@ -852,7 +852,7 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
-    private func protocolSubscriptDeclaration(
+    private func moduleSubscriptDeclaration(
         attrs: [Attribute], _ mods: [Modifier]
     ) throws -> SubscriptDeclaration {
         let x = SubscriptDeclaration(attrs, mods)
@@ -897,7 +897,7 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
-    private func protocolAssociatedTypeDeclaration(
+    private func AssociatedTypeDeclaration(
         attrs: [Attribute], _ mod: Modifier?
     ) throws -> TypealiasDeclaration {
         let x = TypealiasDeclaration(attrs, mod)
@@ -914,7 +914,7 @@ class DeclarationParser : GrammarParser {
     }
 
     private func initializerDeclaration(
-        attrs: [Attribute], _ mods: [Modifier], forProtocol: Bool = false
+        attrs: [Attribute], _ mods: [Modifier], forModule: Bool = false
     ) throws -> InitializerDeclaration {
         let x = InitializerDeclaration(attrs, mods)
         switch ts.match([.PostfixQuestion, .PostfixExclamation]) {
@@ -928,7 +928,7 @@ class DeclarationParser : GrammarParser {
         ScopeManager.enterScope(.Function)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClause()
-        if forProtocol {
+        if forModule {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInDeclarationOfProtocol)
             }
