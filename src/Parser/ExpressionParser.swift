@@ -352,7 +352,7 @@ class ExpressionParser : GrammarParser {
             let info = ts.look().sourceInfo
             switch ts.match([identifier]) {
             case .LeftParenthesis:
-                c.params = .ExplicitTyped(try dp.parameterClause())
+                c.params = .ExplicitTyped(try dp.parameterClause(false))
                 c.returns = try dp.functionResult()
             case let .Identifier(s):
                 c.params = try identifierList(s, info)
@@ -366,7 +366,7 @@ class ExpressionParser : GrammarParser {
             }
             switch ts.look(i + 1).kind {
             case .Arrow, .In:
-                c.params = .ExplicitTyped(try dp.parameterClause())
+                c.params = .ExplicitTyped(try dp.parameterClause(false))
                 c.returns = try dp.functionResult()
             default:
                 c.params = .NotProvided

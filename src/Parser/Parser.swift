@@ -14,7 +14,7 @@ public class Parser {
     public func parseModule(fileName: String)() throws {
         do {
             let parser = prepareDeclarationParser(try createStream(fileName))
-            try parser.moduleDeclaration()
+            try parser.moduleDeclarations()
         } catch let e {
             ErrorReporter.bundle(fileName)
             throw e

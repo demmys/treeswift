@@ -144,6 +144,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case AttributeBeforeOperator
     case ModifierBeforeOperator
     case ExpectedDeclaration
+    case ExpectedModuleDeclaration
     case ExpectedTypeIdentifier
     case ExpectedPath
     case MultipleVariableWithBlock
@@ -161,7 +162,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedDidSetterWillSetter
     case ExpectedTypealiasName
     case ExpectedTypealiasAssignment
-    case ProcedureInDeclarationOfProtocol
+    case ProcedureInModulableFunctionDeclaration
     case ExpectedFunctionName
     case ExpectedLeftParenthesisForParameter
     case ExpectedRightParenthesisAfterParameter
@@ -169,6 +170,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedInternalParameterName
     case UnexpectedParameterType
     case ExpectedParameterNameTypeAnnotation
+    case ExplicitDefaultArgumentInModuleDeclaration
     case ExpectedEnumName
     case ExpectedLeftBraceForEnumCase
     case RawValueStyleEnumWithUnionStyle
@@ -178,18 +180,21 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedEnumCaseName
     case AssociatedValueWithRawValueStyle
     case RawValueAssignmentWithUnionStyle
+    case RawValueAssignmentInModuleDeclaration
     case ExpectedLiteralForRawValue
+    case ExpectedConstantName
+    case ExpectedVariableName
     case ExpectedStructName
     case ExpectedLeftBraceForDeclarationBody
     case ExpectedClassName
     case ExpectedProtocolName
-    case ExpectedTypeAnnotationForProtocolProperty
+    case ExpectedTypeAnnotationForConstantOrVariable
     case ExpectedFunctionResultArrow
     case ExpectedGetterSetterKeyword
     case ExpectedSetKeyword
     case ExpectedGetKeyword
     case ExpectedGetSetKeyword
-    case ExpectedProtocolAssociatedTypeName
+    case ExpectedAssociatedTypeName
     case ExpectedExtendedType
     case ExpectedLeftBraceForExtension
     case ExpectedRightBraceAfterExtension
@@ -380,6 +385,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Unexpected modifier before operator declaration 'prefix'."
         case .ExpectedDeclaration:
             return "Expected declaration."
+        case .ExpectedModuleDeclaration:
+            return "Expected module declaration."
         case .ExpectedTypeIdentifier:
             return "Expected identifier for type name."
         case .ExpectedPath:
@@ -414,8 +421,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected identifier for typealias name."
         case .ExpectedTypealiasAssignment:
             return "Expected '=' for typealias declaration"
-        case .ProcedureInDeclarationOfProtocol:
-            return "Declaration in protocol cannot have a body procedures."
+        case .ProcedureInModulableFunctionDeclaration:
+            return "Function declaration in modulable scope cannot have a body procedures."
         case .ExpectedFunctionName:
             return "Expected function or operator name."
         case .ExpectedLeftParenthesisForParameter:
@@ -430,6 +437,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "<system error> Unexpected parameter type."
         case .ExpectedParameterNameTypeAnnotation:
             return "Expected type annotation after parameter name."
+        case .ExplicitDefaultArgumentInModuleDeclaration:
+            return "Do not explicitly write the value of default argument. Just write 'default'."
         case .ExpectedEnumName:
             return "Expected enum name."
         case .ExpectedLeftBraceForEnumCase:
@@ -448,8 +457,14 @@ public enum ErrorMessage : CustomStringConvertible {
             return "enum case with associated type is only valid in union style enum context."
         case .RawValueAssignmentWithUnionStyle:
             return "enum case with raw value assignment is only valid in raw value style enum context."
+        case .RawValueAssignmentInModuleDeclaration:
+            return "Do not explicitly write a raw value assignmentation of raw value style enum declaration in module."
         case .ExpectedLiteralForRawValue:
             return "Expected literal for raw value"
+        case .ExpectedConstantName:
+            return "Expected constant name"
+        case .ExpectedVariableName:
+            return "Expected variable name"
         case .ExpectedStructName:
             return "Expected struct name"
         case .ExpectedLeftBraceForDeclarationBody:
@@ -458,8 +473,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected class name"
         case .ExpectedProtocolName:
             return "Expected protocol name"
-        case .ExpectedTypeAnnotationForProtocolProperty:
-            return "Expected type annotation for protocol property declaration"
+        case .ExpectedTypeAnnotationForConstantOrVariable:
+            return "Expected type annotation for constant or variable declaration"
         case .ExpectedFunctionResultArrow:
             return "Expected '->' for subscript result type."
         case .ExpectedGetterSetterKeyword:
@@ -470,8 +485,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected 'get' keyword"
         case .ExpectedGetSetKeyword:
             return "Expected 'get' or 'set' keyword."
-        case .ExpectedProtocolAssociatedTypeName:
-            return "Expected protocol associated type name."
+        case .ExpectedAssociatedTypeName:
+            return "Expected associated type name."
         case .ExpectedExtendedType:
             return "Expected extended type name."
         case .ExpectedLeftBraceForExtension:
