@@ -61,6 +61,7 @@ public class Scope {
     public let type: ScopeType
     public let parent: Scope?
     public var children: [Scope] = []
+    private var modules: [String:ModuleInst]?
     private var insts: [InstKind:[String:Inst]] = [:]
     private var refs: [RefKind:[Ref]] = [:]
 
@@ -68,6 +69,13 @@ public class Scope {
         self.type = type
         self.parent = parent
         self.parent?.children.append(self)
+    }
+
+    func importModule(name: String, _ module: ModuleInst, _ source: SourceTrackable) throws {
+        guard modules != nil else {
+            throw ErrorReporter.fatal(.InvalidScopeToImport, source)
+        }
+        modules?[name] = module
     }
 
     private func createInst<ConcreteInst : Inst>(
@@ -111,6 +119,7 @@ public class Scope {
 
     private func printMembers() {
         print("Scope: \(type)")
+        print("\tmodules: \(modules)")
         print("\ttypes: \(insts[.Type])")
         print("\tvalues: \(insts[.Value])")
         print("\toperators: \(insts[.Operator])")
@@ -131,6 +140,7 @@ public class Scope {
 private class ModuleScope : Scope {
     init() {
         super.init(.File, nil)
+        modules = [:]
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -149,10 +159,9 @@ private class ModuleScope : Scope {
 }
 
 private class FileScope : Scope {
-    var modules: [String:ModuleScope] = [:]
-
     init(_ parent: Scope) {
         super.init(.File, parent)
+        modules = [:]
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -168,17 +177,12 @@ private class FileScope : Scope {
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
     }
-
-    func importModule(name: String, _ module: ModuleScope) {
-        modules[name] = module
-    }
-
-    // Override reference resolving function and use imported modules
 }
 
 private class ImplicitScope : Scope {
     init(_ parent: Scope) {
         super.init(.Implicit, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -199,6 +203,7 @@ private class ImplicitScope : Scope {
 private class FlowScope : Scope {
     init(_ type: ScopeType, _ parent: Scope) {
         super.init(type, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -219,6 +224,7 @@ private class FlowScope : Scope {
 private class FunctionScope : Scope {
     init(_ parent: Scope) {
         super.init(.Function, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -239,6 +245,7 @@ private class FunctionScope : Scope {
 private class EnumScope : Scope {
     init(_ parent: Scope) {
         super.init(.Enum, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -259,6 +266,7 @@ private class EnumScope : Scope {
 private class StructScope : Scope {
     init(_ parent: Scope) {
         super.init(.Struct, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -279,6 +287,7 @@ private class StructScope : Scope {
 private class ClassScope : Scope {
     init(_ parent: Scope) {
         super.init(.Class, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -299,6 +308,7 @@ private class ClassScope : Scope {
 private class ProtocolScope : Scope {
     init(_ parent: Scope) {
         super.init(.Protocol, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = nil
@@ -319,6 +329,7 @@ private class ProtocolScope : Scope {
 private class ExtensionScope : Scope {
     init(_ parent: Scope) {
         super.init(.Extension, parent)
+        modules = nil
         insts[.Type] = [:]
         insts[.Value] = [:]
         insts[.Operator] = [:]
@@ -337,48 +348,40 @@ private class ExtensionScope : Scope {
 }
 
 public class ScopeManager {
-    private static var importableModules: [String:() throws -> ()] = [:]
-    private static var currentSourceScope: Scope = ModuleScope()
-    private static var currentModuleScope: Scope = ModuleScope()
-    private static var moduleImporting = false
-    private static var currentScope: Scope {
-        get { return moduleImporting ? currentModuleScope : currentSourceScope }
-        set(scope) {
-            if moduleImporting {
-                currentModuleScope = scope
-            } else {
-                currentSourceScope = scope
-            }
-        }
-    }
-    private static var modules: [String:ModuleScope] = [:]
+    private static var modules: [String:ModuleInst] = [:]
+    private static var importableModules: [String:() throws -> [Declaration]] = [:]
+    private static var currentScope: Scope = ModuleScope()
+    private static var importingScopeStack: [Scope] = []
 
     public static func addImportableModule(
-        name: String, _ importMethod: () throws -> ()
+        name: String, _ importMethod: () throws -> [Declaration]
     ) {
         importableModules[name] = importMethod
     }
 
     public static func importModule(name: String, _ source: SourceTrackable) throws {
-        guard case let scope as FileScope = currentSourceScope else {
-            throw ErrorReporter.fatal(.InvalidScopeToImport, source)
-        }
-        if let module = modules[name] {
-            scope.importModule(name, module)
+        if let moduleInst = modules[name] {
+            try currentScope.importModule(name, moduleInst, source)
+            if let nestedImportingScope = importingScopeStack.popLast() {
+                currentScope = nestedImportingScope
+            }
             return
         }
         guard let importMethod = importableModules[name] else {
             throw ErrorReporter.fatal(.NoSuchModule(name), source)
         }
-        moduleImporting = true
-        try importMethod()
-        guard case let module as ModuleScope = currentModuleScope else {
+        importingScopeStack.append(currentScope)
+        currentScope = ModuleScope()
+        let declarations = try importMethod()
+        guard case let moduleScope as ModuleScope = currentScope else {
             throw ErrorReporter.fatal(.UnresolvedScopeRemains, source)
         }
-        modules[name] = (module)
-        currentModuleScope = ModuleScope()
-        moduleImporting = false
-        scope.importModule(name, module)
+        let moduleInst = ModuleInst(
+            name, module: Module(declarations: declarations, moduleScope: moduleScope)
+        )
+        modules[name] = moduleInst
+        currentScope = importingScopeStack.popLast()!
+        try currentScope.importModule(name, moduleInst, source)
     }
 
     public static func enterScope(type: ScopeType) {

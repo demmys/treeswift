@@ -47,6 +47,7 @@ class DeclarationParser : GrammarParser {
         }
         let almod = try ap.accessLevelModifier()
         var mods = try ap.declarationModifiers()
+        let trackable = ts.look()
         switch ts.match([
             .Import, .Let, .Var, .Typealias, .Func, .Indirect, .Enum,
             .Struct, .Class, .Protocol, .Init, .Extension, .Subscript,
@@ -56,7 +57,7 @@ class DeclarationParser : GrammarParser {
             if almod != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeImport)
             }
-            return try importDeclaration(attrs)
+            return try importDeclaration(attrs, trackable)
         case .Let:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
@@ -167,6 +168,7 @@ class DeclarationParser : GrammarParser {
         }
         let almod = try ap.accessLevelModifier()
         var mods = try ap.declarationModifiers()
+        let trackable = ts.look()
         switch ts.match([
             .Import, .Let, .Var, .Typealias, .Func, .Indirect, .Enum,
             .Struct, .Class, .Protocol, .Init, .Deinit, .Extension, .Subscript,
@@ -176,7 +178,7 @@ class DeclarationParser : GrammarParser {
             if almod != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeImport)
             }
-            return try importDeclaration(attrs)
+            return try importDeclaration(attrs, trackable)
         case .Let:
             if let m = almod {
                 mods.insert(m, atIndex: 0)
@@ -312,8 +314,10 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
-    private func importDeclaration(attrs: [Attribute]) throws -> ImportDeclaration {
-        let x = ImportDeclaration(attrs)
+    private func importDeclaration(
+        attrs: [Attribute], _ trackable: SourceTrackable
+    ) throws -> ImportDeclaration {
+        let x = ImportDeclaration(attrs, trackable)
         switch ts.match([
             .Typealias, .Struct, .Class, .Enum, .Protocol, .Var, .Func
         ]) {
@@ -326,18 +330,21 @@ class DeclarationParser : GrammarParser {
         case .Func: x.kind = .Func
         default: break
         }
+        var path: [String] = []
         repeat {
             switch ts.match([
                 identifier, prefixOperator, binaryOperator, postfixOperator
             ]) {
-            case let .Identifier(s): x.path.append(s)
-            case let .PrefixOperator(s): x.path.append(s)
-            case let .BinaryOperator(s): x.path.append(s)
-            case let .PostfixOperator(s): x.path.append(s)
+            case let .Identifier(s): path.append(s)
+            case let .PrefixOperator(s): path.append(s)
+            case let .BinaryOperator(s): path.append(s)
+            case let .PostfixOperator(s): path.append(s)
             default:
                 try ts.error(.ExpectedPath)
             }
         } while ts.test([.Dot])
+        x.name = path.reduce("", combine: { "\($0).\($1)" })
+        try ScopeManager.importModule(x.name, x.sourceInfo)
         return x
     }
 

@@ -11,10 +11,10 @@ public class Parser {
         }
     }
 
-    public func parseModule(fileName: String)() throws {
+    public func parseModule(fileName: String)() throws -> [Declaration] {
         do {
             let parser = prepareDeclarationParser(try createStream(fileName))
-            try parser.moduleDeclarations()
+            return try parser.moduleDeclarations()
         } catch let e {
             ErrorReporter.bundle(fileName)
             throw e

@@ -1,3 +1,15 @@
+public class Module : ScopeTrackable {
+    public let declarations: [Declaration]
+    public let moduleScope: Scope
+
+    public init(declarations: [Declaration], moduleScope: Scope) {
+        self.declarations = declarations
+        self.moduleScope = moduleScope
+    }
+
+    public var scope: Scope { return moduleScope }
+}
+
 public class TopLevelDeclaration : ScopeTrackable {
     public let procedures: [Procedure]
     public let fileScope: Scope
@@ -47,16 +59,22 @@ public class TypeInheritanceClause {
     public init() {}
 }
 
-public class ImportDeclaration : Declaration {
+public class ImportDeclaration : Declaration, SourceTrackable {
     public var kind: ImportKind?
-    public var path: [String] = []
+    public var name: String = ""
+    private let info: SourceInfo
 
-    public override init(_ attrs: [Attribute]) {
+    public init(_ attrs: [Attribute], _ source: SourceTrackable) {
+        self.info = source.sourceInfo
         super.init(attrs)
     }
 
+    public var sourceInfo: SourceInfo {
+        return info
+    }
+
     public override var description: String {
-        return "(ImportDeclaration kind: \(attrs) \(kind) \(path))"
+        return "(ImportDeclaration kind: \(attrs) \(kind) \(name))"
     }
 }
 

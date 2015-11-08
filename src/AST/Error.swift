@@ -284,7 +284,7 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Reserved token"
         // ScopeManager
         case .InvalidScopeToImport:
-            return "'import' is only valid at file scope."
+            return "'import' is only valid at file scope or module."
         case let .NoSuchModule(name):
             return "No such module '\(name)'"
         case .UnresolvedScopeRemains:

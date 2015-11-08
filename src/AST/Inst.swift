@@ -1,3 +1,13 @@
+public class ModuleInst {
+    private let name: String
+    private let module: Module
+
+    public init(_ name: String, module: Module) {
+        self.name = name
+        self.module = module
+    }
+}
+
 public class Inst : SourceTrackable {
     private let name: String
     private let info: SourceInfo
