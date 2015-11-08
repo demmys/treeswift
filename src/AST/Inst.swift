@@ -31,18 +31,21 @@ public class TypeInst : Inst, CustomStringConvertible {
     }
 }
 
-public class ValueInst : Inst, CustomStringConvertible {
-    public var isVariable: Bool!
-
-    public init(
-        _ name: String, _ source: SourceTrackable, isVariable: Bool? = nil
-    ) {
-        super.init(name, source)
-        self.isVariable = isVariable
-    }
-
+public class ConstantInst : Inst, CustomStringConvertible {
     public var description: String {
-        return "(ValueInst \(name) is-variable: \(isVariable))"
+        return "(ConstantInst \(name))"
+    }
+}
+
+public class VariableInst : Inst, CustomStringConvertible {
+    public var description: String {
+        return "(VariableInst \(name))"
+    }
+}
+
+public class FunctionInst : Inst, CustomStringConvertible {
+    public var description: String {
+        return "(FunctionInst \(name))"
     }
 }
 

@@ -1,10 +1,12 @@
 public indirect enum Pattern {
     case IdentityPattern
     case BooleanPattern
-    case OptionalBindingConstantPattern(Pattern)
-    case OptionalBindingVariablePattern(Pattern)
-    case IdentifierPattern(ValueInst)
-    case TypedIdentifierPattern(ValueInst, Type, [Attribute])
+    case ConstantIdentifierPattern(ConstantInst)
+    case VariableIdentifierPattern(VariableInst)
+    case ReferenceIdentifierPattern(ValueRef)
+    case TypedConstantIdentifierPattern(ConstantInst, Type, [Attribute])
+    case TypedVariableIdentifierPattern(VariableInst, Type, [Attribute])
+    case TypedReferenceIdentifierPattern(ValueRef, Type, [Attribute])
     case WildcardPattern
     case TypedWildcardPattern(Type, [Attribute]?)
     case TuplePattern(PatternTuple)

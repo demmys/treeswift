@@ -60,7 +60,7 @@ public class TypeCastingExpressionBody : ExpressionBody {
     } }
 }
 
-public enum CastType {
+public enum CastType : String {
     case Is, As, ConditionalAs, ForcedAs
 }
 
@@ -92,7 +92,8 @@ public enum ExpressionPostfix {
 // primary-expression
 public enum ExpressionCore {
     case Value(ValueRef, genArgs: [Type]?)
-    case BindingValue(ValueRef)
+    case BindingConstant(ConstantInst)
+    case BindingVariable(VariableInst)
     case ImplicitParameter(ImplicitParameterRef, genArgs: [Type]?)
     case Integer(Int64)
     case FloatingPoint(Double)
@@ -132,7 +133,7 @@ public enum CaptureSpecifier {
 public enum ClosureParameters {
     case NotProvided
     case ExplicitTyped(ParameterClause)
-    case ImplicitTyped([ValueInst])
+    case ImplicitTyped([ConstantInst])
 }
 
 public typealias Tuple = [(String?, Expression)]

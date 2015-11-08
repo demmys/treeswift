@@ -45,8 +45,7 @@ class DeclarationParser : GrammarParser {
         if let pa = parsedAttrs {
             attrs = pa
         }
-        let almod = try ap.accessLevelModifier()
-        var mods = try ap.declarationModifiers()
+        let (al, mods) = try disjointModifiers(try ap.declarationModifiers())
         let trackable = ts.look()
         switch ts.match([
             .Import, .Let, .Var, .Typealias, .Func, .Indirect, .Enum,
@@ -54,30 +53,21 @@ class DeclarationParser : GrammarParser {
             .Prefix, .Postfix, .Infix
         ]) {
         case .Import:
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeImport)
             }
             return try importDeclaration(attrs, trackable)
         case .Let:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try moduleConstantDeclaration(attrs, mods)
+            return try moduleConstantDeclaration(attrs, al, mods)
         case .Var:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try moduleVariableDeclaration(attrs, mods)
+            return try moduleVariableDeclaration(attrs, al, mods)
         case .Typealias:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeTypealias)
             }
-            return try associatedTypeDeclaration(attrs, almod)
+            return try associatedTypeDeclaration(attrs, al)
         case .Func:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try functionDeclaration(attrs, mods, forModule: true)
+            return try functionDeclaration(attrs, al, mods, forModule: true)
         case .Indirect:
             if !ts.test([.Enum]) {
                 try ts.error(.ExpectedEnum)
@@ -85,32 +75,29 @@ class DeclarationParser : GrammarParser {
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeEnum)
             }
-            return try enumDeclaration(attrs, almod, isIndirect: true, forModule: true)
+            return try enumDeclaration(attrs, al, isIndirect: true, forModule: true)
         case .Enum:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeEnum)
             }
-            return try enumDeclaration(attrs, almod, forModule: true)
+            return try enumDeclaration(attrs, al, forModule: true)
         case .Struct:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeStruct)
             }
-            return try structDeclaration(attrs, almod, forModule: true)
+            return try structDeclaration(attrs, al, forModule: true)
         case .Class:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeClass)
             }
-            return try classDeclaration(attrs, almod, forModule: true)
+            return try classDeclaration(attrs, al, forModule: true)
         case .Protocol:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeProtocol)
             }
-            return try protocolDeclaration(attrs, almod)
+            return try protocolDeclaration(attrs, al)
         case .Init:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try initializerDeclaration(attrs, mods, forModule: true)
+            return try initializerDeclaration(attrs, al, mods, forModule: true)
         case .Extension:
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeExtension)
@@ -118,17 +105,14 @@ class DeclarationParser : GrammarParser {
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeExtension)
             }
-            return try extensionDeclaration(almod, forModule: true)
+            return try extensionDeclaration(al, forModule: true)
         case .Subscript:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try moduleSubscriptDeclaration(attrs, mods)
+            return try moduleSubscriptDeclaration(attrs, al, mods)
         case .Prefix:
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeOperator)
             }
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
             return try operatorDeclaration(.Prefix)
@@ -136,7 +120,7 @@ class DeclarationParser : GrammarParser {
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeOperator)
             }
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
             return try operatorDeclaration(.Postfix)
@@ -144,7 +128,7 @@ class DeclarationParser : GrammarParser {
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeOperator)
             }
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
             return try infixOperatorDeclaration()
@@ -166,8 +150,7 @@ class DeclarationParser : GrammarParser {
         if let pa = parsedAttrs {
             attrs = pa
         }
-        let almod = try ap.accessLevelModifier()
-        var mods = try ap.declarationModifiers()
+        let (al, mods) = try disjointModifiers(try ap.declarationModifiers())
         let trackable = ts.look()
         switch ts.match([
             .Import, .Let, .Var, .Typealias, .Func, .Indirect, .Enum,
@@ -175,34 +158,25 @@ class DeclarationParser : GrammarParser {
             .Prefix, .Postfix, .Infix
         ]) {
         case .Import:
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeImport)
             }
             return try importDeclaration(attrs, trackable)
         case .Let:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
             ScopeManager.enterImplicitScope()
-            return try constantDeclaration(attrs, mods)
+            return try constantDeclaration(attrs, al, mods)
         case .Var:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
             ScopeManager.enterImplicitScope()
-            return try variableDeclaration(attrs, mods)
+            return try variableDeclaration(attrs, al, mods)
         case .Typealias:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeTypealias)
             }
             ScopeManager.enterImplicitScope()
-            return try typealiasDeclaration(attrs, almod)
+            return try typealiasDeclaration(attrs, al)
         case .Func:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
             ScopeManager.enterImplicitScope()
-            return try functionDeclaration(attrs, mods)
+            return try functionDeclaration(attrs, al, mods)
         case .Indirect:
             if !ts.test([.Enum]) {
                 try ts.error(.ExpectedEnum)
@@ -211,38 +185,35 @@ class DeclarationParser : GrammarParser {
                 try ts.error(.ModifierBeforeEnum)
             }
             ScopeManager.enterImplicitScope()
-            return try enumDeclaration(attrs, almod, isIndirect: true)
+            return try enumDeclaration(attrs, al, isIndirect: true)
         case .Enum:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeEnum)
             }
             ScopeManager.enterImplicitScope()
-            return try enumDeclaration(attrs, almod)
+            return try enumDeclaration(attrs, al)
         case .Struct:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeStruct)
             }
             ScopeManager.enterImplicitScope()
-            return try structDeclaration(attrs, almod)
+            return try structDeclaration(attrs, al)
         case .Class:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeClass)
             }
             ScopeManager.enterImplicitScope()
-            return try classDeclaration(attrs, almod)
+            return try classDeclaration(attrs, al)
         case .Protocol:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeProtocol)
             }
             ScopeManager.enterImplicitScope()
-            return try protocolDeclaration(attrs, almod)
+            return try protocolDeclaration(attrs, al)
         case .Init:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try initializerDeclaration(attrs, mods)
+            return try initializerDeclaration(attrs, al, mods)
         case .Deinit:
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeDeinit)
             }
             return try deinitializerDeclaration(attrs)
@@ -254,17 +225,14 @@ class DeclarationParser : GrammarParser {
                 try ts.error(.ModifierBeforeExtension)
             }
             ScopeManager.enterImplicitScope()
-            return try extensionDeclaration(almod)
+            return try extensionDeclaration(al)
         case .Subscript:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try subscriptDeclaration(attrs, mods)
+            return try subscriptDeclaration(attrs, al, mods)
         case .Prefix:
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeOperator)
             }
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
             ScopeManager.enterImplicitScope()
@@ -273,7 +241,7 @@ class DeclarationParser : GrammarParser {
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeOperator)
             }
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
             ScopeManager.enterImplicitScope()
@@ -282,7 +250,7 @@ class DeclarationParser : GrammarParser {
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeOperator)
             }
-            if almod != nil || mods.count > 0 {
+            if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeOperator)
             }
             ScopeManager.enterImplicitScope()
@@ -349,39 +317,38 @@ class DeclarationParser : GrammarParser {
     }
 
     private func moduleConstantDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]
     ) throws -> PatternInitializerDeclaration {
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedConstantName)
         }
-        let v = try ScopeManager.createValue(s, trackable)
+        let v = try ScopeManager.createConstant(s, trackable)
         guard let (t, typeAttrs) = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
         }
         return PatternInitializerDeclaration(
-            attrs, mods, isVariable: false,
-            inits: [(.TypedIdentifierPattern(v, t, typeAttrs), nil)]
+            attrs, al, mods, inits: [(.TypedConstantIdentifierPattern(v, t, typeAttrs), nil)]
         )
     }
 
     private func constantDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]
     ) throws -> PatternInitializerDeclaration {
         return PatternInitializerDeclaration(
-            attrs, mods, isVariable: false, inits: try patternInitializerList()
+            attrs, al, mods, inits: try patternInitializerList(false)
         )
     }
 
     private func moduleVariableDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]
     ) throws -> VariableBlockDeclaration {
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedVariableName)
         }
         let x = VariableBlockDeclaration(
-            attrs, mods, name: try ScopeManager.createValue(s, trackable)
+            attrs, al, mods, name: try ScopeManager.createVariable(s, trackable)
         )
         guard let (t, typeAttrs) = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
@@ -392,43 +359,41 @@ class DeclarationParser : GrammarParser {
     }
 
     func variableDeclaration(
-        attrs: [Attribute] = [], _ mods: [Modifier] = []
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]
     ) throws -> Declaration {
         switch ts.look().kind {
         case .Underscore, .LeftParenthesis:
             return PatternInitializerDeclaration(
-                attrs, mods, isVariable: true, inits: try patternInitializerList()
+                attrs, al, mods, inits: try patternInitializerList(true)
             )
         case .Identifier:
-            let inits = try patternInitializerList()
+            let inits = try patternInitializerList(true)
             if ts.test([.LeftBrace]) {
                 if inits.count > 1 {
                     try ts.error(.MultipleVariableWithBlock)
                 }
-                return try variableBlockDeclaration(attrs, mods, ini: inits[0])
+                return try variableBlockDeclaration(attrs, al, mods, ini: inits[0])
             }
-            return PatternInitializerDeclaration(
-                attrs, mods, isVariable: true, inits: inits
-            )
+            return PatternInitializerDeclaration(attrs, al, mods, inits: inits)
         default:
             throw ts.fatal(.ExpectedVariableIdentifier)
         }
     }
 
     private func variableBlockDeclaration(
-        attrs: [Attribute], _ mods: [Modifier], ini: (Pattern, Expression?)
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], ini: (Pattern, Expression?)
     ) throws -> VariableBlockDeclaration {
         switch ini.0 {
-        case let .IdentifierPattern(v):
+        case let .VariableIdentifierPattern(v):
             guard let e = ini.1 else {
                 throw ts.fatal(.ExpectedVariableSpecifierWithBlock)
             }
-            let x = VariableBlockDeclaration(attrs, mods, name: v)
+            let x = VariableBlockDeclaration(attrs, al, mods, name: v)
             x.specifier = .Initializer(e)
             x.blocks = try willSetDidSetBlock()
             return x
-        case let .TypedIdentifierPattern(v, t, attrs):
-            let x = VariableBlockDeclaration(attrs, mods, name: v)
+        case let .TypedVariableIdentifierPattern(v, t, attrs):
+            let x = VariableBlockDeclaration(attrs, al, mods, name: v)
             if let e = ini.1 {
                 x.specifier = .TypedInitializer(t, attrs, e)
                 x.blocks = try willSetDidSetBlock()
@@ -448,10 +413,10 @@ class DeclarationParser : GrammarParser {
         var x: VariableBlocks!
         switch ts.match([.Get, .Set], ahead: ahead) {
         case .Get:
-            ScopeManager.enterScope(.Function)
+            ScopeManager.enterScope(.VariableBlock)
             let g = VariableBlock(attrs)
             g.body = try prp.proceduresBlock()
-            g.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+            g.associatedScope = try ScopeManager.leaveScope(.VariableBlock, ts.look())
             if ts.test([.RightBrace]) {
                 x = .GetterSetter(getter: g, setter: nil)
             } else {
@@ -468,10 +433,10 @@ class DeclarationParser : GrammarParser {
             if !ts.test([.Get]) {
                 try ts.error(.ExpectedGetterAfterSetter)
             }
-            ScopeManager.enterScope(.Function)
+            ScopeManager.enterScope(.VariableBlock)
             let g = VariableBlock(getAttrs)
             g.body = try prp.proceduresBlock()
-            g.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+            g.associatedScope = try ScopeManager.leaveScope(.VariableBlock, ts.look())
             x = .GetterSetter(getter: g, setter: s)
         case .Atmark:
             // Expect getter, setter or procedure beggining with attributes
@@ -496,7 +461,7 @@ class DeclarationParser : GrammarParser {
     }
 
     private func setterBlock(attrs: [Attribute] = []) throws -> VariableBlock {
-        ScopeManager.enterScope(.Function)
+        ScopeManager.enterScope(.VariableBlock)
         let x = VariableBlock()
         x.attrs = attrs
         if ts.test([.LeftParenthesis]) {
@@ -504,13 +469,13 @@ class DeclarationParser : GrammarParser {
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedSetterVariableName)
             }
-            x.param = try ScopeManager.createValue(s, trackable, isVariable: false)
+            x.param = try ScopeManager.createConstant(s, trackable)
             if !ts.test([.RightParenthesis]) {
                 try ts.error(.ExpectedRightParenthesisAfterSetterVariable)
             }
         }
         x.body = try prp.proceduresBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.VariableBlock, ts.look())
         return x
     }
 
@@ -550,10 +515,11 @@ class DeclarationParser : GrammarParser {
         }
     }
 
-    private func patternInitializerList() throws -> [(Pattern, Expression?)] {
+    private func patternInitializerList(isVariable: Bool) throws -> [(Pattern, Expression?)] {
         var pi: [(Pattern, Expression?)] = []
         repeat {
-            let p = try ptp.declarativePattern()
+            let p = isVariable ? try ptp.declarativePattern(.VariableCreation)
+                               : try ptp.declarativePattern(.ConstantCreation)
             if ts.test([.AssignmentOperator]) {
                 pi.append((p, try ep.expression()))
             } else {
@@ -564,9 +530,9 @@ class DeclarationParser : GrammarParser {
     }
 
     private func associatedTypeDeclaration(
-        attrs: [Attribute], _ mod: Modifier?
+        attrs: [Attribute], _ al: AccessLevel?
     ) throws -> TypealiasDeclaration {
-        let x = TypealiasDeclaration(attrs, mod)
+        let x = TypealiasDeclaration(attrs, al)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedAssociatedTypeName)
@@ -580,9 +546,9 @@ class DeclarationParser : GrammarParser {
     }
 
     private func typealiasDeclaration(
-        attrs: [Attribute], _ mod: Modifier?
+        attrs: [Attribute], _ al: AccessLevel?
     ) throws -> TypealiasDeclaration {
-        let x = TypealiasDeclaration(attrs, mod)
+        let x = TypealiasDeclaration(attrs, al)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedTypealiasName)
@@ -596,9 +562,10 @@ class DeclarationParser : GrammarParser {
     }
 
     private func functionDeclaration(
-        attrs: [Attribute], _ mods: [Modifier], forModule: Bool = false
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier],
+        forModule: Bool = false
     ) throws -> FunctionDeclaration {
-        let x = FunctionDeclaration(attrs, mods)
+        let x = FunctionDeclaration(attrs, al, mods)
         x.name = try functionName()
         ScopeManager.enterScope(.Function)
         x.genParam = try gp.genericParameterClause()
@@ -623,13 +590,13 @@ class DeclarationParser : GrammarParser {
             identifier, prefixOperator, binaryOperator, postfixOperator
         ]) {
         case let .Identifier(s):
-            return .Function(try ScopeManager.createValue(s, trackable, isVariable: false))
+            return .Function(try ScopeManager.createFunction(s, trackable))
         case let .PrefixOperator(o):
-            return .Operator(try ScopeManager.createOperator(o, trackable))
+            return .Operator(try ScopeManager.createFunction(o, trackable))
         case let .BinaryOperator(o):
-            return .Operator(try ScopeManager.createOperator(o, trackable))
+            return .Operator(try ScopeManager.createFunction(o, trackable))
         case let .PostfixOperator(o):
-            return .Operator(try ScopeManager.createOperator(o, trackable))
+            return .Operator(try ScopeManager.createFunction(o, trackable))
         default:
             throw ts.fatal(.ExpectedFunctionName)
         }
@@ -721,14 +688,26 @@ class DeclarationParser : GrammarParser {
             switch followName {
             case .NotSpecified:
                 p.externalName = .NotSpecified
-                p.internalName = .SpecifiedInst(
-                    try ScopeManager.createValue(s, i, isVariable: isVariable)
-                )
+                if isVariable {
+                    p.internalName = .SpecifiedVariableInst(
+                        try ScopeManager.createVariable(s, i)
+                    )
+                } else {
+                    p.internalName = .SpecifiedConstantInst(
+                        try ScopeManager.createConstant(s, i)
+                    )
+                }
             case let .Specified(s, i):
                 p.externalName = name
-                p.internalName = .SpecifiedInst(
-                    try ScopeManager.createValue(s, i, isVariable: isVariable)
-                )
+                if isVariable {
+                    p.internalName = .SpecifiedVariableInst(
+                        try ScopeManager.createVariable(s, i)
+                    )
+                } else {
+                    p.internalName = .SpecifiedConstantInst(
+                        try ScopeManager.createConstant(s, i)
+                    )
+                }
             case .Needless:
                 p.externalName = name
                 p.internalName = .Needless
@@ -742,9 +721,15 @@ class DeclarationParser : GrammarParser {
                 p.internalName = .Needless
             case let .Specified(s, i):
                 p.externalName = .Needless
-                p.internalName = .SpecifiedInst(
-                    try ScopeManager.createValue(s, i, isVariable: isVariable)
-                )
+                if isVariable {
+                    p.internalName = .SpecifiedVariableInst(
+                        try ScopeManager.createVariable(s, i)
+                    )
+                } else {
+                    p.internalName = .SpecifiedConstantInst(
+                        try ScopeManager.createConstant(s, i)
+                    )
+                }
             case .Needless:
                 p.externalName = .Needless
                 p.internalName = .Needless
@@ -789,10 +774,10 @@ class DeclarationParser : GrammarParser {
     }
 
     private func enumDeclaration(
-        attrs: [Attribute], _ mod: Modifier?,
+        attrs: [Attribute], _ al: AccessLevel?,
         isIndirect: Bool = false, forModule: Bool = false
     ) throws -> EnumDeclaration {
-        let x = EnumDeclaration(attrs, mod, isIndirect: isIndirect)
+        let x = EnumDeclaration(attrs, al, isIndirect: isIndirect)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedEnumName)
@@ -919,9 +904,9 @@ class DeclarationParser : GrammarParser {
     }
 
     private func structDeclaration(
-        attrs: [Attribute], _ mod: Modifier?, forModule: Bool = false
+        attrs: [Attribute], _ al: AccessLevel?, forModule: Bool = false
     ) throws -> StructDeclaration {
-        let x = StructDeclaration(attrs, mod)
+        let x = StructDeclaration(attrs, al)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedStructName)
@@ -943,9 +928,9 @@ class DeclarationParser : GrammarParser {
     }
 
     private func classDeclaration(
-        attrs: [Attribute], _ mod: Modifier?, forModule: Bool = false
+        attrs: [Attribute], _ al: AccessLevel?, forModule: Bool = false
     ) throws -> ClassDeclaration {
-        let x = ClassDeclaration(attrs, mod)
+        let x = ClassDeclaration(attrs, al)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedClassName)
@@ -967,9 +952,9 @@ class DeclarationParser : GrammarParser {
     }
 
     private func protocolDeclaration(
-        attrs: [Attribute], _ mod: Modifier?
+        attrs: [Attribute], _ al: AccessLevel?
     ) throws -> ProtocolDeclaration {
-        let x = ProtocolDeclaration(attrs, mod)
+        let x = ProtocolDeclaration(attrs, al)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedProtocolName)
@@ -995,50 +980,24 @@ class DeclarationParser : GrammarParser {
 
     private func protocolMemberDeclaration() throws -> Declaration {
         let attrs = try ap.attributes()
-        let almod = try ap.accessLevelModifier()
-        var mods = try ap.declarationModifiers()
+        let (al, mods) = try disjointModifiers(try ap.declarationModifiers())
         switch ts.match([.Var, .Typealias, .Func, .Init, .Subscript]) {
         case .Var:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try moduleVariableDeclaration(attrs, mods)
+            return try moduleVariableDeclaration(attrs, al, mods)
         case .Typealias:
             if mods.count > 0 {
                 try ts.error(.ModifierBeforeTypealias)
             }
-            return try associatedTypeDeclaration(attrs, almod)
+            return try associatedTypeDeclaration(attrs, al)
         case .Func:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try functionDeclaration(attrs, mods, forModule: true)
+            return try functionDeclaration(attrs, al, mods, forModule: true)
         case .Init:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try initializerDeclaration(attrs, mods, forModule: true)
+            return try initializerDeclaration(attrs, al, mods, forModule: true)
         case .Subscript:
-            if let m = almod {
-                mods.insert(m, atIndex: 0)
-            }
-            return try moduleSubscriptDeclaration(attrs, mods)
+            return try moduleSubscriptDeclaration(attrs, al, mods)
         default:
             throw ts.fatal(.ExpectedDeclaration)
         }
-    }
-
-    private func moduleSubscriptDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
-    ) throws -> SubscriptDeclaration {
-        let x = SubscriptDeclaration(attrs, mods)
-        x.params = try parameterClause(true)
-        guard let r = try functionResult() else {
-            throw ts.fatal(.ExpectedFunctionResultArrow)
-        }
-        x.returns = r
-        x.body = try getterSetterKeywordBlock()
-        return x
     }
 
     private func getterSetterKeywordBlock() throws -> VariableBlocks {
@@ -1074,9 +1033,9 @@ class DeclarationParser : GrammarParser {
     }
 
     private func initializerDeclaration(
-        attrs: [Attribute], _ mods: [Modifier], forModule: Bool = false
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], forModule: Bool = false
     ) throws -> InitializerDeclaration {
-        let x = InitializerDeclaration(attrs, mods)
+        let x = InitializerDeclaration(attrs, al, mods)
         switch ts.match([.PostfixQuestion, .PostfixExclamation]) {
         case .PostfixQuestion:
             x.failable = .Failable
@@ -1085,34 +1044,34 @@ class DeclarationParser : GrammarParser {
         default:
             x.failable = .Nothing
         }
-        ScopeManager.enterScope(.Function)
+        ScopeManager.enterScope(.Initializer)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClause(forModule)
         if forModule {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInModulableFunctionDeclaration)
             }
-            x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+            x.associatedScope = try ScopeManager.leaveScope(.Initializer, ts.look())
             return x
         }
         x.body = try prp.proceduresBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Initializer, ts.look())
         return x
     }
 
     private func deinitializerDeclaration(
         attrs: [Attribute]
     ) throws -> DeinitializerDeclaration {
-        ScopeManager.enterScope(.Function)
+        ScopeManager.enterScope(.Deinitializer)
         let x = DeinitializerDeclaration(attrs, try prp.proceduresBlock())
-        x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Deinitializer, ts.look())
         return x
     }
 
     private func extensionDeclaration(
-        mod: Modifier?, forModule: Bool = false
+        al: AccessLevel?, forModule: Bool = false
     ) throws -> ExtensionDeclaration {
-        let x = ExtensionDeclaration(mod)
+        let x = ExtensionDeclaration(al)
         let trackable = ts.look()
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedExtendedType)
@@ -1136,10 +1095,10 @@ class DeclarationParser : GrammarParser {
     }
 
     private func subscriptDeclaration(
-        attrs: [Attribute], _ mods: [Modifier]
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]
     ) throws -> SubscriptDeclaration {
-        let x = SubscriptDeclaration(attrs, mods)
-        ScopeManager.enterScope(.Function)
+        let x = SubscriptDeclaration(attrs, al, mods)
+        ScopeManager.enterScope(.Subscript)
         x.params = try parameterClause(false)
         guard let r = try functionResult() else {
             throw ts.fatal(.ExpectedFunctionResultArrow)
@@ -1149,7 +1108,22 @@ class DeclarationParser : GrammarParser {
             try ts.error(.ExpectedLeftBraceForSubscript)
         }
         x.body = try getterSetterBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(.Subscript, ts.look())
+        return x
+    }
+
+    private func moduleSubscriptDeclaration(
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]
+    ) throws -> SubscriptDeclaration {
+        let x = SubscriptDeclaration(attrs, al, mods)
+        ScopeManager.enterScope(.Subscript)
+        x.params = try parameterClause(true)
+        guard let r = try functionResult() else {
+            throw ts.fatal(.ExpectedFunctionResultArrow)
+        }
+        x.returns = r
+        x.body = try getterSetterKeywordBlock()
+        x.associatedScope = try ScopeManager.leaveScope(.Subscript, ts.look())
         return x
     }
 

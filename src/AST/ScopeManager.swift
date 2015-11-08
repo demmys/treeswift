@@ -6,14 +6,16 @@ public enum ScopeType {
     case Module, File
     case Implicit
     case For, ForIn, While, RepeatWhile, If, Guard, Defer, Do, Catch, Case
-    case Function, Enum, Struct, Class, Protocol, Extension
+    case Function, VariableBlock, Initializer, Deinitializer, Subscript
+    case Closure, Enum, Struct, Class, Protocol, Extension
 
     var policy: MemberPolicy {
         switch self {
         case .Module, .Enum, Struct, .Class, .Protocol, .Extension:
             return .Declarative
         case .Implicit, .File, .For, .ForIn, .While, .RepeatWhile, .If, .Guard,
-             .Defer, .Do, .Catch, .Case, .Function:
+             .Defer, .Do, .Catch, .Case, .Function, .VariableBlock, .Initializer,
+             .Deinitializer, .Subscript, .Closure:
             return .Procedural
         }
     }
@@ -24,12 +26,15 @@ public protocol ScopeTrackable {
 }
 
 public enum InstKind {
-    case Type, Value, Operator, Enum, EnumCase, Struct, Class, Protocol, Extension
+    case Type, Constant, Variable, Function, Operator
+    case Enum, EnumCase, Struct, Class, Protocol, Extension
 
     private static func fromType(type: Inst.Type) -> InstKind {
         switch type {
         case is TypeInst.Type: return .Type
-        case is ValueInst.Type: return .Value
+        case is ConstantInst.Type: return .Constant
+        case is VariableInst.Type: return .Variable
+        case is FunctionInst.Type: return .Function
         case is OperatorInst.Type: return .Operator
         case is EnumInst.Type: return .Enum
         case is EnumCaseInst.Type: return .EnumCase
@@ -121,7 +126,9 @@ public class Scope {
         print("Scope: \(type)")
         print("\tmodules: \(modules)")
         print("\ttypes: \(insts[.Type])")
-        print("\tvalues: \(insts[.Value])")
+        print("\tconstants: \(insts[.Constant])")
+        print("\tvariable: \(insts[.Variable])")
+        print("\tfunctions: \(insts[.Function])")
         print("\toperators: \(insts[.Operator])")
         print("\tenums: \(insts[.Enum])")
         print("\tenumCases: \(insts[.EnumCase])")
@@ -142,14 +149,16 @@ private class ModuleScope : Scope {
         super.init(.File, nil)
         modules = [:]
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = [:]
         insts[.Extension] = [:]
+        insts[.Operator] = [:]
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
@@ -163,14 +172,16 @@ private class FileScope : Scope {
         super.init(.File, parent)
         modules = [:]
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = [:]
         insts[.Extension] = [:]
+        insts[.Operator] = [:]
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
@@ -184,19 +195,21 @@ private class ImplicitScope : Scope {
         super.init(.Implicit, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = [:]
         insts[.Extension] = [:]
+        insts[.Operator] = [:]
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
-        refs[.ImplicitParameter] = nil
+        refs[.ImplicitParameter] = []
     }
 }
 
@@ -205,14 +218,16 @@ private class FlowScope : Scope {
         super.init(type, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
@@ -222,18 +237,43 @@ private class FlowScope : Scope {
 }
 
 private class FunctionScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Function, parent)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
+        refs[.Type] = []
+        refs[.Value] = []
+        refs[.Operator] = []
+        refs[.EnumCase] = []
+        refs[.ImplicitParameter] = nil
+    }
+}
+
+private class ClosureScope : Scope {
+    init(_ parent: Scope) {
+        super.init(.Closure, parent)
+        modules = nil
+        insts[.Type] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
+        insts[.Enum] = [:]
+        insts[.Struct] = [:]
+        insts[.Class] = [:]
+        insts[.Protocol] = nil
+        insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
@@ -247,14 +287,16 @@ private class EnumScope : Scope {
         super.init(.Enum, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = nil
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = [:]
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = [:]
         refs[.Type] = []
         refs[.Value] = nil
         refs[.Operator] = nil
@@ -268,14 +310,16 @@ private class StructScope : Scope {
         super.init(.Struct, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
@@ -289,14 +333,16 @@ private class ClassScope : Scope {
         super.init(.Class, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = [:]
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = nil
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
@@ -310,14 +356,16 @@ private class ProtocolScope : Scope {
         super.init(.Protocol, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = nil
+        insts[.Constant] = nil
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = nil
-        insts[.EnumCase] = nil
         insts[.Struct] = nil
         insts[.Class] = nil
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = nil
         refs[.Operator] = nil
@@ -331,18 +379,20 @@ private class ExtensionScope : Scope {
         super.init(.Extension, parent)
         modules = nil
         insts[.Type] = [:]
-        insts[.Value] = [:]
-        insts[.Operator] = [:]
+        insts[.Constant] = nil
+        insts[.Variable] = [:]
+        insts[.Function] = [:]
         insts[.Enum] = [:]
-        insts[.EnumCase] = [:]
         insts[.Struct] = [:]
         insts[.Class] = [:]
         insts[.Protocol] = nil
         insts[.Extension] = nil
+        insts[.Operator] = nil
+        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = nil
-        refs[.Operator] = []
-        refs[.EnumCase] = []
+        refs[.Operator] = nil
+        refs[.EnumCase] = nil
         refs[.ImplicitParameter] = nil
     }
 }
@@ -398,8 +448,10 @@ public class ScopeManager {
         case .For, .ForIn, .While, .RepeatWhile, .If,
              .Guard, .Defer, .Do, .Catch, .Case:
             currentScope = FlowScope(type, currentScope)
-        case .Function:
-            currentScope = FunctionScope(currentScope)
+        case .Function, .VariableBlock, .Initializer, .Deinitializer, .Subscript:
+            currentScope = FunctionScope(type, currentScope)
+        case .Closure:
+            currentScope = ClosureScope(currentScope)
         case .Enum:
             currentScope = EnumScope(currentScope)
         case .Struct:
@@ -450,11 +502,27 @@ public class ScopeManager {
         return try currentScope.createInst(name, source, { TypeInst(name, source) })
     }
 
-    public static func createValue(
-        name: String, _ source: SourceTrackable, isVariable: Bool? = nil
-    ) throws -> ValueInst {
+    public static func createConstant(
+        name: String, _ source: SourceTrackable
+    ) throws -> ConstantInst {
         return try currentScope.createInst(
-            name, source, { ValueInst(name, source, isVariable: isVariable) }
+            name, source, { ConstantInst(name, source) }
+        )
+    }
+
+    public static func createVariable(
+        name: String, _ source: SourceTrackable
+    ) throws -> VariableInst {
+        return try currentScope.createInst(
+            name, source, { VariableInst(name, source) }
+        )
+    }
+
+    public static func createFunction(
+        name: String, _ source: SourceTrackable
+    ) throws -> FunctionInst {
+        return try currentScope.createInst(
+            name, source, { FunctionInst(name, source) }
         )
     }
 

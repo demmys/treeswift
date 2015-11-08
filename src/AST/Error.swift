@@ -123,6 +123,8 @@ public enum ErrorMessage : CustomStringConvertible {
     case UnexpectedEOF
     case InvalidToken
     case ReservedToken
+    // GrammarParser
+    case DuplicateAccessLevelModifier
     // AttributesParser
     case ExpectedAttributeIdentifier
     case ExpectedUnownedSafeModifierRightParenthesis
@@ -282,6 +284,9 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Invalid token"
         case .ReservedToken:
             return "Reserved token"
+        // GrammarParser
+        case DuplicateAccessLevelModifier:
+            return "Duplicate access level modifier"
         // ScopeManager
         case .InvalidScopeToImport:
             return "'import' is only valid at file scope or module."
@@ -297,7 +302,9 @@ public enum ErrorMessage : CustomStringConvertible {
             var target = ""
             switch kind {
             case .Type: target = "a type"
-            case .Value: target = "a constant or a variable"
+            case .Constant: target = "a constant"
+            case .Variable: target = "a variable"
+            case .Function: target = "a function"
             case .Operator: target = "an operator"
             case .Enum: target = "an enum"
             case .EnumCase: target = "an enum case"
@@ -311,7 +318,9 @@ public enum ErrorMessage : CustomStringConvertible {
             var target = ""
             switch kind {
             case .Type: target = "Type"
-            case .Value: target = "Constant or a variable"
+            case .Constant: target = "Constant"
+            case .Variable: target = "Variable"
+            case .Function: target = "Function"
             case .Operator: target = "Operator"
             case .Enum: target = "Enum"
             case .EnumCase: target = "Enum case"
@@ -335,7 +344,9 @@ public enum ErrorMessage : CustomStringConvertible {
             var target = ""
             switch kind {
             case .Type: target = "Type"
-            case .Value: target = "Constant or a variable"
+            case .Constant: target = "Constant"
+            case .Variable: target = "Variable"
+            case .Function: target = "Function"
             case .Operator: target = "Operator"
             case .Enum: target = "Enum"
             case .EnumCase: target = "Enum case"

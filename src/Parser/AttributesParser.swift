@@ -93,7 +93,7 @@ class AttributesParser : GrammarParser {
                     }
                     return .Unowned
                 case .Internal, .Private, .Public:
-                    return try accessLevelModifier(k)
+                    return .AccessLevelModifier(try accessLevelModifier(k)!)
             }
         case .Class:
             if case .Identifier = ts.look(1).kind {
@@ -124,9 +124,9 @@ class AttributesParser : GrammarParser {
         }
     }
 
-    func accessLevelModifier(
+    private func accessLevelModifier(
         looked: ModifierKind? = nil
-    ) throws -> Modifier? {
+    ) throws -> AccessLevel? {
         var target: ModifierKind!
         if looked == nil {
             switch ts.look().kind {
@@ -154,6 +154,9 @@ class AttributesParser : GrammarParser {
                 }
                 return .InternalSet
             }
+            if looked == nil {
+                ts.next()
+            }
             return .Internal
         case .Private:
             if case .LeftParenthesis = ts.look().kind {
@@ -165,6 +168,9 @@ class AttributesParser : GrammarParser {
                 }
                 return .PrivateSet
             }
+            if looked == nil {
+                ts.next()
+            }
             return .Private
         case .Public:
             if case .LeftParenthesis = ts.look().kind {
@@ -175,6 +181,9 @@ class AttributesParser : GrammarParser {
                     try ts.error(.ExpectedRightParenthesisAfterSet)
                 }
                 return .PublicSet
+            }
+            if looked == nil {
+                ts.next()
             }
             return .Public
         default:

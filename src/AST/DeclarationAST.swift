@@ -25,26 +25,24 @@ public class TopLevelDeclaration : ScopeTrackable {
 
 public class Declaration : CustomStringConvertible {
     public var attrs: [Attribute] = []
+    public var al: AccessLevel?
     public var mods: [Modifier] = []
 
     public init() {}
-    private init(_ attrs: [Attribute], _ mods: [Modifier]) {
+    private init(_ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]) {
         self.attrs = attrs
+        self.al = al
         self.mods = mods
     }
-    private init(_ attrs: [Attribute], _ mod: Modifier?) {
+    private init(_ attrs: [Attribute], _ al: AccessLevel?) {
         self.attrs = attrs
-        if let m = mod {
-            self.mods = [m]
-        }
+        self.al = al
     }
     private init(_ attrs: [Attribute]) {
         self.attrs = attrs
     }
-    private init(_ mod: Modifier?) {
-        if let m = mod {
-            self.mods = [m]
-        }
+    private init(_ al: AccessLevel?) {
+        self.al = al
     }
 
     public var description: String {
@@ -83,35 +81,35 @@ public enum ImportKind : String {
 }
 
 public class PatternInitializerDeclaration : Declaration {
-    public var isVariable = false
     public var inits: [(Pattern, Expression?)] = []
 
     public init(
-        _ attrs: [Attribute], _ mods: [Modifier],
-        isVariable: Bool, inits: [(Pattern, Expression?)]
+        _ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier],
+        inits: [(Pattern, Expression?)]
     ) {
-        super.init(attrs, mods)
-        self.isVariable = isVariable
+        super.init(attrs, al, mods)
         self.inits = inits
     }
 
     public override var description: String {
-        return "(PatternInitializerDeclaration variable: \(isVariable) \(attrs) \(mods) \(inits))"
+        return "(PatternInitializerDeclaration \(attrs) \(al) \(mods) \(inits))"
     }
 }
 
 public class VariableBlockDeclaration : Declaration {
-    public var name: ValueInst!
+    public var name: VariableInst!
     public var specifier: VariableBlockSpecifier!
     public var blocks: VariableBlocks!
 
-    public init(_ attrs: [Attribute], _ mods: [Modifier], name: ValueInst) {
-        super.init(attrs, mods)
+    public init(
+        _ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], name: VariableInst
+    ) {
+        super.init(attrs, al, mods)
         self.name = name
     }
 
     public override var description: String {
-        return "(VariableBlockDeclaration \(attrs) \(mods) \(name) \(specifier) \(blocks))"
+        return "(VariableBlockDeclaration \(attrs) \(al) \(mods) \(name) \(specifier) \(blocks))"
     }
 }
 
@@ -130,7 +128,7 @@ public enum VariableBlocks {
 
 public class VariableBlock : ScopeTrackable {
     public var attrs: [Attribute] = []
-    public var param: ValueInst?
+    public var param: ConstantInst?
     public var body: [Procedure]!
     public var associatedScope: Scope!
 
@@ -147,12 +145,12 @@ public class TypealiasDeclaration : Declaration {
     public var inherits: TypeInheritanceClause?
     public var type: Type?
 
-    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
-        super.init(attrs, mod)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?) {
+        super.init(attrs, al)
     }
 
     public override var description: String {
-        return "(TypealiasDeclaration \(attrs) \(mods) \(name) \(type))"
+        return "(TypealiasDeclaration \(attrs) \(al) \(name) \(type))"
     }
 }
 
@@ -165,19 +163,19 @@ public class FunctionDeclaration : Declaration, ScopeTrackable {
     public var body: [Procedure] = []
     public var associatedScope: Scope!
 
-    public override init(_ attrs: [Attribute], _ mods: [Modifier]) {
-        super.init(attrs, mods)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]) {
+        super.init(attrs, al, mods)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(FunctionDeclaration \(attrs) \(mods) \(throwType) \(name) \(genParam) \(params) \(returns) \(body))"
+        return "(FunctionDeclaration \(attrs) \(mods) \(al) \(throwType) \(name) \(genParam) \(params) \(returns) \(body))"
     }
 }
 
 public enum FunctionReference {
-    case Function(ValueInst)
-    case Operator(OperatorInst)
+    case Function(FunctionInst)
+    case Operator(FunctionInst)
 }
 
 public enum ThrowType : String {
@@ -198,7 +196,6 @@ public enum Parameter {
 
 public class NamedParameter {
     public var isInout = false
-    public var isVariable = false
     public var externalName: ParameterName!
     public var internalName: ParameterName!
     public var type: (Type, [Attribute])!
@@ -210,7 +207,8 @@ public class NamedParameter {
 public enum ParameterName {
     case NotSpecified
     case Specified(String, SourceInfo)
-    case SpecifiedInst(ValueInst)
+    case SpecifiedConstantInst(ConstantInst)
+    case SpecifiedVariableInst(VariableInst)
     case Needless
 }
 
@@ -223,14 +221,14 @@ public class EnumDeclaration : Declaration, ScopeTrackable {
     public var members: [EnumMember]!
     public var associatedScope: Scope!
 
-    public init(_ attrs: [Attribute], _ mod: Modifier?, isIndirect: Bool) {
+    public init(_ attrs: [Attribute], _ al: AccessLevel?, isIndirect: Bool) {
         self.isIndirect = isIndirect
-        super.init(attrs, mod)
+        super.init(attrs, al)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(mods) \(name) \(genParam) \(inherits) \(members))"
+        return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(al) \(name) \(genParam) \(inherits) \(members))"
     }
 }
 
@@ -301,13 +299,13 @@ public class StructDeclaration : Declaration, ScopeTrackable {
     public var body: [Declaration] = []
     public var associatedScope: Scope!
 
-    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
-        super.init(attrs, mod)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?) {
+        super.init(attrs, al)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(StructDeclaration \(name) \(genParam) \(inherits) \(body))"
+        return "(StructDeclaration \(attrs) \(al) \(name) \(genParam) \(inherits) \(body))"
     }
 }
 
@@ -318,13 +316,13 @@ public class ClassDeclaration : Declaration, ScopeTrackable {
     public var body: [Declaration] = []
     public var associatedScope: Scope!
 
-    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
-        super.init(attrs, mod)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?) {
+        super.init(attrs, al)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(ClassDeclaration \(name) \(genParam) \(inherits) \(body)"
+        return "(ClassDeclaration \(attrs) \(al) \(name) \(genParam) \(inherits) \(body)"
     }
 }
 
@@ -334,13 +332,13 @@ public class ProtocolDeclaration : Declaration, ScopeTrackable {
     public var body: [Declaration] = []
     public var associatedScope: Scope!
 
-    public override init(_ attrs: [Attribute], _ mod: Modifier?) {
-        super.init(attrs, mod)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?) {
+        super.init(attrs, al)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(ProtocolDeclaration \(name) \(inherits) \(body))"
+        return "(ProtocolDeclaration \(attrs) \(al) \(name) \(inherits) \(body))"
     }
 }
 
@@ -351,13 +349,13 @@ public class InitializerDeclaration : Declaration, ScopeTrackable {
     public var body: [Procedure] = []
     public var associatedScope: Scope!
 
-    public override init(_ attrs: [Attribute], _ mods: [Modifier]) {
-        super.init(attrs, mods)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]) {
+        super.init(attrs, al, mods)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(InitializerDeclaration \(failable) \(genParam) \(params) \(body))"
+        return "(InitializerDeclaration \(attrs) \(al) \(mods) \(failable) \(genParam) \(params) \(body))"
     }
 }
 
@@ -376,7 +374,7 @@ public class DeinitializerDeclaration : Declaration, ScopeTrackable {
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(DeinitializerDeclaration \(body))"
+        return "(DeinitializerDeclaration \(attrs) \(body))"
     }
 }
 
@@ -386,13 +384,13 @@ public class ExtensionDeclaration : Declaration, ScopeTrackable {
     public var body: [Declaration] = []
     public var associatedScope: Scope!
 
-    public override init(_ mod: Modifier?) {
-        super.init(mod)
+    public override init(_ al: AccessLevel?) {
+        super.init(al)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(ExtensionDeclaration \(type) \(inherits) \(body))"
+        return "(ExtensionDeclaration \(al) \(type) \(inherits) \(body))"
     }
 }
 
@@ -402,13 +400,13 @@ public class SubscriptDeclaration : Declaration, ScopeTrackable {
     public var body: VariableBlocks!
     public var associatedScope: Scope!
 
-    public override init(_ attrs: [Attribute], _ mods: [Modifier]) {
-        super.init(attrs, mods)
+    public override init(_ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier]) {
+        super.init(attrs, al, mods)
     }
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(SubscriptDeclaration \(params) \(returns) \(body))"
+        return "(SubscriptDeclaration \(attrs) \(al) \(mods) \(params) \(returns) \(body))"
     }
 }
 

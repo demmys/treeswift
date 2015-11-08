@@ -108,6 +108,25 @@ class GrammarParser {
         }
     }
 
+    func disjointModifiers(
+        var mods: [Modifier]
+    ) throws -> (AccessLevel?, [Modifier]) {
+        var accessLevel: AccessLevel?
+        for var i = 0; i < mods.count; ++i {
+            switch mods[i] {
+            case let .AccessLevelModifier(al):
+                if accessLevel != nil {
+                    try ts.error(.DuplicateAccessLevelModifier)
+                }
+                accessLevel = al
+                mods.removeAtIndex(i--)
+            default:
+                break
+            }
+        }
+        return (accessLevel, mods)
+    }
+
     func isEnum(name: String) -> Bool {
         return true
     }

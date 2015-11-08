@@ -30,7 +30,7 @@ class ExpressionParser : GrammarParser {
         return x
     }
 
-    func expression(valueBinding: Bool = false) throws -> Expression {
+    func expression(valueBinding: ValueBindingStatus = .None) throws -> Expression {
         let x = Expression()
         x.tryType = tryOperator()
         x.body = try expressionBody(valueBinding)
@@ -47,7 +47,9 @@ class ExpressionParser : GrammarParser {
         return .Nothing
     }
 
-    private func expressionBody(valueBinding: Bool) throws -> ExpressionBody {
+    private func expressionBody(
+        valueBinding: ValueBindingStatus = .None
+    ) throws -> ExpressionBody {
         let preExp = try expressionUnit(valueBinding)
         let trackable = ts.look()
         switch ts.match([binaryOperator, .BinaryQuestion, .Is, .As]) {
@@ -70,7 +72,7 @@ class ExpressionParser : GrammarParser {
 
     private func binaryExpressionBody(
         preExp: ExpressionUnit, _ s: String, _ trackable: SourceTrackable,
-        valueBinding: Bool
+        valueBinding: ValueBindingStatus
     ) throws -> BinaryExpressionBody {
         let x = BinaryExpressionBody()
         x.left = preExp
@@ -119,7 +121,9 @@ class ExpressionParser : GrammarParser {
         return x
     }
 
-    private func expressionUnit(valueBinding: Bool) throws -> ExpressionUnit {
+    private func expressionUnit(
+        valueBinding: ValueBindingStatus
+    ) throws -> ExpressionUnit {
         let x = ExpressionUnit()
         x.pre = try expressionPrefix()
         x.core = try expressionCore(valueBinding)
@@ -186,7 +190,9 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func expressionCore(valueBinding: Bool) throws -> ExpressionCore {
+    private func expressionCore(
+        valueBinding: ValueBindingStatus
+    ) throws -> ExpressionCore {
         let trackable = ts.look()
         switch ts.match([
             identifier, implicitParameterName, integerLiteral, floatingPointLiteral,
@@ -195,15 +201,21 @@ class ExpressionParser : GrammarParser {
             .`Self`, .Super, .LeftBrace, .LeftParenthesis, .Dot, .Underscore
         ]) {
         case let .Identifier(s):
-            if valueBinding {
-                return .BindingValue(
-                    try ScopeManager.createValueRef(s, trackable)
+            switch valueBinding {
+            case .None:
+                return .Value(
+                    try ScopeManager.createValueRef(s, trackable),
+                    genArgs: try gp.genericArgumentClause()
+                )
+            case .Constant:
+                return .BindingConstant(
+                    try ScopeManager.createConstant(s, trackable)
+                )
+            case .Variable:
+                return .BindingVariable(
+                    try ScopeManager.createVariable(s, trackable)
                 )
             }
-            return .Value(
-                try ScopeManager.createValueRef(s, trackable),
-                genArgs: try gp.genericArgumentClause()
-            )
         case let .ImplicitParameterName(i):
             return .ImplicitParameter(
                 try ScopeManager.createImplicitParameterRef(i, trackable),
@@ -344,7 +356,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func closureExpression() throws -> ExpressionCore {
-        ScopeManager.enterScope(.Function)
+        ScopeManager.enterScope(.Closure)
         let c = Closure()
         switch ts.match([.LeftBracket]) {
         case .LeftBracket:
@@ -393,13 +405,13 @@ class ExpressionParser : GrammarParser {
     private func identifierList(
         first: String, _ info: SourceInfo
     ) throws -> ClosureParameters {
-        var list = [try ScopeManager.createValue(first, info, isVariable: false)]
+        var list = [try ScopeManager.createConstant(first, info)]
         while ts.test([.Comma]) {
             let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedParameterName)
             }
-            list.append(try ScopeManager.createValue(s, trackable, isVariable: false))
+            list.append(try ScopeManager.createConstant(s, trackable))
         }
         return .ImplicitTyped(list)
     }
@@ -440,7 +452,7 @@ class ExpressionParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterClosure)
         }
-        c.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        c.associatedScope = try ScopeManager.leaveScope(.Closure, ts.look())
         return .ClosureExpression(c)
     }
 

@@ -141,11 +141,11 @@ class ProcedureParser : GrammarParser {
             return nil
         case .Atmark, .Modifier, .Class, .Var:
             let attrs = try ap.attributes()
-            let mods = try ap.declarationModifiers()
+            let (al, mods) = try disjointModifiers(try ap.declarationModifiers())
             if !ts.test([.Var]) {
                 try ts.error(.ExpectedForVariableInit)
             }
-            return .VariableDeclaration(try dp.variableDeclaration(attrs, mods))
+            return .VariableDeclaration(try dp.variableDeclaration(attrs, al, mods))
         default:
             return .InitOperation(try assignmentOrExpressionOperation())
         }
@@ -158,7 +158,12 @@ class ProcedureParser : GrammarParser {
         if ts.test([.Case]) {
             p = try pp.conditionalPattern()
         } else {
-            p = try pp.declarativePattern()
+            if ts.test([.Var]) {
+                p = try pp.declarativePattern(.VariableCreation)
+            } else {
+                ts.test([.Let])
+                p = try pp.declarativePattern(.ConstantCreation)
+            }
         }
         if !ts.test([.In]) {
             try ts.error(.ExpectedInForForPattern)
@@ -251,9 +256,9 @@ class ProcedureParser : GrammarParser {
     private func matchingPattern() throws -> [PatternMatching] {
         switch ts.match([.Let, .Var, .Case]) {
         case .Let:
-            return try optionalBindingBody({ .OptionalBindingConstantPattern($0) })
+            return try optionalBindingBody(false)
         case .Var:
-            return try optionalBindingBody({ .OptionalBindingVariablePattern($0) })
+            return try optionalBindingBody(true)
         case .Case:
             let pm = PatternMatching()
             pm.pat = try pp.conditionalPattern()
@@ -270,11 +275,15 @@ class ProcedureParser : GrammarParser {
         }
     }
 
-    private func optionalBindingBody(wrap: Pattern -> Pattern) throws -> [PatternMatching] {
+    private func optionalBindingBody(isVariable: Bool) throws -> [PatternMatching] {
         var pms: [PatternMatching] = []
         repeat {
             let pm = PatternMatching()
-            pm.pat = wrap(try pp.declarativePattern())
+            if isVariable {
+                pm.pat = .OptionalPattern(try pp.declarativePattern(.VariableCreation))
+            } else {
+                pm.pat = .OptionalPattern(try pp.declarativePattern(.ConstantCreation))
+            }
             if !ts.test([.AssignmentOperator]) {
                 try ts.error(.ExpectedEqualForOptionalBinding)
             }
@@ -423,7 +432,7 @@ class ProcedureParser : GrammarParser {
         let (_, k) = find([.AssignmentOperator, .Semicolon, .LineFeed], startIndex: 1)
         switch k {
         case .AssignmentOperator:
-            let p = try pp.declarativePattern()
+            let p = try pp.declarativePattern(.VariableReference)
             if !ts.test([.AssignmentOperator]) {
                 try ts.error(.ExpectedEqualForAssignment)
             }

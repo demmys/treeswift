@@ -162,7 +162,7 @@ extension Parameter: CustomStringConvertible {
 
 extension NamedParameter : CustomStringConvertible {
     public var description: String {
-        return "inout: \(isInout) variable: \(isVariable) \(externalName) \(internalName) \(type) \(defaultArg)"
+        return "inout: \(isInout) \(externalName) \(internalName) \(type) \(defaultArg)"
     }
 }
 
@@ -172,7 +172,10 @@ extension ParameterName : CustomStringConvertible {
         switch self {
         case .NotSpecified: return "\(name) not-specified"
         case let .Specified(s, _): return "\(name) specified \(s)"
-        case let .SpecifiedInst(i): return "\(name) specified-inst \(i)"
+        case let .SpecifiedConstantInst(i):
+            return "\(name) specified-constant-inst \(i)"
+        case let .SpecifiedVariableInst(i):
+            return "\(name) specified-variable-inst \(i)"
         case .Needless: return "\(name) needless"
         }
     }
@@ -254,13 +257,7 @@ extension TryType : CustomStringConvertible {
 
 extension CastType : CustomStringConvertible {
     public var description: String {
-        let name = "cast-type: "
-        switch self {
-        case .Is: return "\(name)is"
-        case .As: return "\(name)as"
-        case .ConditionalAs: return "\(name)conditional-as-type"
-        case .ForcedAs: return "\(name)forced-as-type"
-        }
+        return "cast-type: \(self.rawValue.lowercaseString)"
     }
 }
 
@@ -311,7 +308,8 @@ extension ExpressionCore : CustomStringConvertible {
         let post = ")"
         switch self {
         case let .Value(r, genArgs: ts): return "\(pre) value \(r) \(ts)\(post)"
-        case let .BindingValue(r): return "\(pre) value \(r)\(post)"
+        case let .BindingConstant(i): return "\(pre) binding-constant \(i)\(post)"
+        case let .BindingVariable(i): return "\(pre) binding-variable \(i)\(post)"
         case let .ImplicitParameter(r, genArgs: ts):
             return "\(pre) implicit-parameter \(r) \(ts) \(post)"
         case let .Integer(i): return "\(pre) integer \(i)\(post)"
@@ -448,14 +446,18 @@ extension Pattern : CustomStringConvertible {
             return "\(pre) type: identity\(post)"
         case .BooleanPattern:
             return "\(pre) type: boolean\(post)"
-        case let .OptionalBindingConstantPattern(p):
-            return "\(pre) type: optional-binding-constant \(p)\(post)"
-        case let .OptionalBindingVariablePattern(p):
-            return "\(pre) type: optional-binding-variable \(p)\(post)"
-        case let .IdentifierPattern(r):
-            return "\(pre) type: identifier \(r)\(post)"
-        case let .TypedIdentifierPattern(r, t, attrs):
-            return "\(pre) type: type-identifier \(r) \(t) \(attrs)\(post)"
+        case let .ConstantIdentifierPattern(r):
+            return "\(pre) type: constant-identifier \(r)\(post)"
+        case let .VariableIdentifierPattern(r):
+            return "\(pre) type: variable-identifier \(r)\(post)"
+        case let .ReferenceIdentifierPattern(r):
+            return "\(pre) type: reference-identifier \(r)\(post)"
+        case let .TypedConstantIdentifierPattern(r, t, attrs):
+            return "\(pre) type: typed-constant-identifier \(r) \(t) \(attrs)\(post)"
+        case let .TypedVariableIdentifierPattern(r, t, attrs):
+            return "\(pre) type: typed-variable-identifier \(r) \(t) \(attrs)\(post)"
+        case let .TypedReferenceIdentifierPattern(r, t, attrs):
+            return "\(pre) type: typed-reference-identifier \(r) \(t) \(attrs)\(post)"
         case .WildcardPattern:
             return "\(pre) type: wildcard-pattern)\(post)"
         case let .TypedWildcardPattern(t, attrs):
@@ -509,6 +511,33 @@ extension Attribute : CustomStringConvertible {
 
 extension Modifier : CustomStringConvertible {
     public var description: String {
-        return "modifier: \(self.rawValue.lowercaseString)"
+        let name = "modifier: "
+        switch self {
+        case .Convenience: return "\(name)convenience"
+        case .Dynamic: return "\(name)dynamic"
+        case .Final: return "\(name)final"
+        case .Lazy: return "\(name)lazy"
+        case .Mutating: return "\(name)mutating"
+        case .Nonmutating: return "\(name)nonmutating"
+        case .Optional: return "\(name)optional"
+        case .Override: return "\(name)override"
+        case .Required: return "\(name)required"
+        case .Static: return "\(name)static"
+        case .Weak: return "\(name)weak"
+        case .Unowned: return "\(name)unowned"
+        case .UnownedSafe: return "\(name)unownedSafe"
+        case .UnownedUnsafe: return "\(name)unownedUnsafe"
+        case .Class: return "\(name)class"
+        case .Infix: return "\(name)infix"
+        case .Prefix: return "\(name)prefix"
+        case .Postfix: return "\(name)postfix"
+        case let .AccessLevelModifier(al): return "\(name)access-level-modifier \(al)"
+        }
+    }
+}
+
+extension AccessLevel : CustomStringConvertible {
+    public var description: String {
+        return "(AccessLevel \(self.rawValue.lowercaseString))"
     }
 }

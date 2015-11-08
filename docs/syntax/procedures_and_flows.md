@@ -50,6 +50,8 @@ for-finalize     -> expression
 
 for-in-flow    -> For for-in-pattern In expression requirement-clause? procedure-block
 for-in-pattern -> declarative-pattern
+                | Var declarative-pattern
+                | Let declarative-pattern
                 | Case conditional-pattern
 
 while-flow    -> While pattern-match-clause procedures-block
