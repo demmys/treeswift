@@ -149,6 +149,8 @@ private class ModuleScope : Scope {
 }
 
 private class FileScope : Scope {
+    var modules: [String:ModuleScope] = [:]
+
     init(_ parent: Scope) {
         super.init(.File, parent)
         insts[.Type] = [:]
@@ -166,6 +168,12 @@ private class FileScope : Scope {
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
     }
+
+    func importModule(name: String, _ module: ModuleScope) {
+        modules[name] = module
+    }
+
+    // Override reference resolving function and use imported modules
 }
 
 private class ImplicitScope : Scope {
@@ -343,7 +351,7 @@ public class ScopeManager {
             }
         }
     }
-    private static var modules: [ModuleScope] = []
+    private static var modules: [String:ModuleScope] = [:]
 
     public static func addImportableModule(
         name: String, _ importMethod: () throws -> ()
@@ -352,17 +360,25 @@ public class ScopeManager {
     }
 
     public static func importModule(name: String, _ source: SourceTrackable) throws {
+        guard case let scope as FileScope = currentSourceScope else {
+            throw ErrorReporter.fatal(.InvalidScopeToImport, source)
+        }
+        if let module = modules[name] {
+            scope.importModule(name, module)
+            return
+        }
         guard let importMethod = importableModules[name] else {
             throw ErrorReporter.fatal(.NoSuchModule(name), source)
         }
         moduleImporting = true
         try importMethod()
-        guard case let s as ModuleScope = currentModuleScope else {
+        guard case let module as ModuleScope = currentModuleScope else {
             throw ErrorReporter.fatal(.UnresolvedScopeRemains, source)
         }
-        modules.append(s)
+        modules[name] = (module)
         currentModuleScope = ModuleScope()
         moduleImporting = false
+        scope.importModule(name, module)
     }
 
     public static func enterScope(type: ScopeType) {

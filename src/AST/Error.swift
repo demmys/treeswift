@@ -110,6 +110,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case FileCanNotRead(String)
     case MultipleMain(String, String)
     // ScopeManager
+    case InvalidScopeToImport
     case NoSuchModule(String)
     case UnresolvedScopeRemains
     case ScopeTypeMismatch(ScopeType, ScopeType)
@@ -277,6 +278,8 @@ public enum ErrorMessage : CustomStringConvertible {
         case .ReservedToken:
             return "Reserved token"
         // ScopeManager
+        case .InvalidScopeToImport:
+            return "'import' is only valid at file scope."
         case let .NoSuchModule(name):
             return "No such module '\(name)'"
         case .UnresolvedScopeRemains:
