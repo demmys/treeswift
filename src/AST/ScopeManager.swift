@@ -69,6 +69,15 @@ public class Scope {
     private var modules: [String:ModuleInst]?
     private var insts: [InstKind:[String:Inst]] = [:]
     private var refs: [RefKind:[Ref]] = [:]
+    public var explicitType: ScopeType {
+        guard type == .Implicit else {
+            return type
+        }
+        guard let p = parent else {
+            assert(false, "ImplicitScope with no parent.")
+        }
+        return p.explicitType
+    }
 
     private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
@@ -78,14 +87,44 @@ public class Scope {
 
     func importModule(name: String, _ module: ModuleInst, _ source: SourceTrackable) throws {
         guard modules != nil else {
+            if type == .Implicit, let p = parent {
+                try p.importModule(name, module, source)
+                return
+            }
             throw ErrorReporter.fatal(.InvalidScopeToImport, source)
         }
         modules?[name] = module
     }
 
     private func createInst<ConcreteInst : Inst>(
-        name: String, _ source: SourceTrackable, _ constructor: () -> ConcreteInst
+        name: String, _ source: SourceTrackable, _ accessLevel: AccessLevel?,
+        _ constructor: () -> ConcreteInst
     ) throws -> ConcreteInst {
+        var explicitScope: Scope?
+        switch type {
+        case .Implicit:
+            var p = parent
+            while p != nil && p!.type == .Implicit {
+                p = p!.parent
+            }
+            if p == nil {
+                assert(false, "ImplicitScope with no parent.")
+            }
+            if p!.type == .File {
+                explicitScope = p
+                fallthrough
+            }
+        case .File:
+            if let al = accessLevel where al == .Private || al == .PrivateSet {
+                break
+            }
+            guard let p = (explicitScope ?? self).parent else {
+                assert(false, "ModuleScope not prepared.")
+            }
+            return try p.createInst(name, source, accessLevel, constructor)
+        default:
+            break
+        }
         let kind = InstKind.fromType(ConcreteInst.self)
         guard insts[kind] != nil else {
             throw ErrorReporter.fatal(.InvalidScope(kind), source)
@@ -94,6 +133,9 @@ public class Scope {
             throw ErrorReporter.fatal(.AlreadyExist(kind, name), source)
         }
         let i = constructor()
+        if type == .Module, let al = accessLevel where al == .Public || al == .PublicSet {
+            i.isPublic = true
+        }
         insts[kind]?[name] = i
         return i
     }
@@ -495,34 +537,35 @@ public class ScopeManager {
         return child
     }
 
-    // TODO access levelを引数に渡す
     public static func createType(
-        name: String, _ source: SourceTrackable
+        name: String, _ source: SourceTrackable, accessLevel: AccessLevel? = nil
     ) throws -> TypeInst {
-        return try currentScope.createInst(name, source, { TypeInst(name, source) })
+        return try currentScope.createInst(
+            name, source, accessLevel, { TypeInst(name, source) }
+        )
     }
 
     public static func createConstant(
-        name: String, _ source: SourceTrackable
+        name: String, _ source: SourceTrackable, accessLevel: AccessLevel? = nil
     ) throws -> ConstantInst {
         return try currentScope.createInst(
-            name, source, { ConstantInst(name, source) }
+            name, source, accessLevel, { ConstantInst(name, source) }
         )
     }
 
     public static func createVariable(
-        name: String, _ source: SourceTrackable
+        name: String, _ source: SourceTrackable, accessLevel: AccessLevel? = nil
     ) throws -> VariableInst {
         return try currentScope.createInst(
-            name, source, { VariableInst(name, source) }
+            name, source, accessLevel, { VariableInst(name, source) }
         )
     }
 
     public static func createFunction(
-        name: String, _ source: SourceTrackable
+        name: String, _ source: SourceTrackable, accessLevel: AccessLevel? = nil
     ) throws -> FunctionInst {
         return try currentScope.createInst(
-            name, source, { FunctionInst(name, source) }
+            name, source, accessLevel, { FunctionInst(name, source) }
         )
     }
 
@@ -530,15 +573,16 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable
     ) throws -> OperatorInst {
         return try currentScope.createInst(
-            name, source, { OperatorInst(name, source) }
+            name, source, .Public, { OperatorInst(name, source) }
         )
     }
 
     public static func createEnum(
-        name: String, _ source: SourceTrackable, node: EnumDeclaration
+        name: String, _ source: SourceTrackable, node: EnumDeclaration,
+        accessLevel: AccessLevel? = nil
     ) throws -> EnumInst {
         return try currentScope.createInst(
-            name, source, { EnumInst(name, source, node: node) }
+            name, source, accessLevel, { EnumInst(name, source, node: node) }
         )
     }
 
@@ -546,39 +590,43 @@ public class ScopeManager {
         name: String, _ source: SourceTrackable
     ) throws -> EnumCaseInst {
         return try currentScope.createInst(
-            name, source, { EnumCaseInst(name, source) }
+            name, source, nil, { EnumCaseInst(name, source) }
         )
     }
 
     public static func createStruct(
-        name: String, _ source: SourceTrackable, node: StructDeclaration
+        name: String, _ source: SourceTrackable, node: StructDeclaration,
+        accessLevel: AccessLevel? = nil
     ) throws -> StructInst {
         return try currentScope.createInst(
-            name, source, { StructInst(name, source, node: node) }
+            name, source, accessLevel, { StructInst(name, source, node: node) }
         )
     }
 
     public static func createClass(
-        name: String, _ source: SourceTrackable, node: ClassDeclaration
+        name: String, _ source: SourceTrackable, node: ClassDeclaration,
+        accessLevel: AccessLevel? = nil
     ) throws -> ClassInst {
         return try currentScope.createInst(
-            name, source, { ClassInst(name, source, node: node) }
+            name, source, accessLevel, { ClassInst(name, source, node: node) }
         )
     }
 
     public static func createProtocol(
-        name: String, _ source: SourceTrackable, node: ProtocolDeclaration
+        name: String, _ source: SourceTrackable, node: ProtocolDeclaration,
+        accessLevel: AccessLevel? = nil
     ) throws -> ProtocolInst {
         return try currentScope.createInst(
-            name, source, { ProtocolInst(name, source, node: node) }
+            name, source, accessLevel, { ProtocolInst(name, source, node: node) }
         )
     }
 
     public static func createExtension(
-        name: String, _ source: SourceTrackable, node: ExtensionDeclaration
+        name: String, _ source: SourceTrackable, node: ExtensionDeclaration,
+        accessLevel: AccessLevel? = nil
     ) throws -> ExtensionInst {
         return try currentScope.createInst(
-            name, source, { ExtensionInst(name, source, node: node) }
+            name, source, accessLevel, { ExtensionInst(name, source, node: node) }
         )
     }
 

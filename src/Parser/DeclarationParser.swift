@@ -323,7 +323,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedConstantName)
         }
-        let v = try ScopeManager.createConstant(s, trackable)
+        let v = try ScopeManager.createConstant(s, trackable, accessLevel: al)
         guard let (t, typeAttrs) = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
         }
@@ -348,7 +348,8 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedVariableName)
         }
         let x = VariableBlockDeclaration(
-            attrs, al, mods, name: try ScopeManager.createVariable(s, trackable)
+            attrs, al, mods,
+            name: try ScopeManager.createVariable(s, trackable, accessLevel: al)
         )
         guard let (t, typeAttrs) = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
@@ -537,7 +538,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedAssociatedTypeName)
         }
-        x.name = try ScopeManager.createType(s, trackable)
+        x.name = try ScopeManager.createType(s, trackable, accessLevel: al)
         x.inherits = try typeInheritanceClause()
         if ts.test([.AssignmentOperator]) {
             x.type = try tp.type()
@@ -553,7 +554,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedTypealiasName)
         }
-        x.name = try ScopeManager.createType(s, trackable)
+        x.name = try ScopeManager.createType(s, trackable, accessLevel: al)
         if !ts.test([.AssignmentOperator]) {
             try ts.error(.ExpectedTypealiasAssignment)
         }
@@ -566,7 +567,7 @@ class DeclarationParser : GrammarParser {
         forModule: Bool = false
     ) throws -> FunctionDeclaration {
         let x = FunctionDeclaration(attrs, al, mods)
-        x.name = try functionName()
+        x.name = try functionName(al)
         ScopeManager.enterScope(.Function)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClauses(forModule)
@@ -584,19 +585,27 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
-    private func functionName() throws -> FunctionReference {
+    private func functionName(al: AccessLevel?) throws -> FunctionReference {
         let trackable = ts.look()
         switch ts.match([
             identifier, prefixOperator, binaryOperator, postfixOperator
         ]) {
         case let .Identifier(s):
-            return .Function(try ScopeManager.createFunction(s, trackable))
+            return .Function(
+                try ScopeManager.createFunction(s, trackable, accessLevel: al)
+            )
         case let .PrefixOperator(o):
-            return .Operator(try ScopeManager.createFunction(o, trackable))
+            return .Operator(
+                try ScopeManager.createFunction(o, trackable, accessLevel: al)
+            )
         case let .BinaryOperator(o):
-            return .Operator(try ScopeManager.createFunction(o, trackable))
+            return .Operator(
+                try ScopeManager.createFunction(o, trackable, accessLevel: al)
+            )
         case let .PostfixOperator(o):
-            return .Operator(try ScopeManager.createFunction(o, trackable))
+            return .Operator(
+                try ScopeManager.createFunction(o, trackable, accessLevel: al)
+            )
         default:
             throw ts.fatal(.ExpectedFunctionName)
         }
@@ -911,7 +920,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedStructName)
         }
-        x.name = try ScopeManager.createStruct(s, trackable, node: x)
+        x.name = try ScopeManager.createStruct(s, trackable, node: x, accessLevel: al)
         ScopeManager.enterScope(.Struct)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
@@ -935,7 +944,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedClassName)
         }
-        x.name = try ScopeManager.createClass(s, trackable, node: x)
+        x.name = try ScopeManager.createClass(s, trackable, node: x, accessLevel: al)
         ScopeManager.enterScope(.Class)
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
@@ -959,7 +968,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedProtocolName)
         }
-        x.name = try ScopeManager.createProtocol(s, trackable, node: x)
+        x.name = try ScopeManager.createProtocol(s, trackable, node: x, accessLevel: al)
         ScopeManager.enterScope(.Protocol)
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {

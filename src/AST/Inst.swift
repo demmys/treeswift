@@ -11,6 +11,7 @@ public class ModuleInst {
 public class Inst : SourceTrackable {
     private let name: String
     private let info: SourceInfo
+    public var isPublic: Bool = false
     public var sourceInfo: SourceInfo {
         return info
     }
