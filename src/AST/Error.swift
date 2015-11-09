@@ -44,37 +44,47 @@ public enum ErrorReport : ErrorType {
 }
 
 public class ErrorReporter {
-    private static var errors: [Error] = []
-    private static var bundledErrors: [(String, [Error])] = []
-    private static var errorCount: Int = 0
+    private static var _instance = ErrorReporter()
+    public static var instance: ErrorReporter {
+        return _instance
+    }
+    private var errors: [Error] = []
+    private var bundledErrors: [(String, [Error])] = []
+    private var errorCount: Int = 0
 
-    public static func hasErrors() -> Bool {
+    private init() {}
+
+    public func reset() {
+        ErrorReporter._instance = ErrorReporter()
+    }
+
+    public func hasErrors() -> Bool {
         return errorCount > 0
     }
 
-    public static func bundle(fileName: String) {
+    public func bundle(fileName: String) {
         bundledErrors.append((fileName, errors))
         errors = []
     }
 
-    public static func fatal(
+    public func fatal(
         message: ErrorMessage, _ source: SourceTrackable?
     ) -> ErrorReport {
         errors.append((.Fatal, message, source?.sourceInfo))
         return .Fatal
     }
-    public static func error(message: ErrorMessage, _ source: SourceTrackable?) throws {
+    public func error(message: ErrorMessage, _ source: SourceTrackable?) throws {
         errors.append((.Error, message, source?.sourceInfo))
         ++errorCount
         if errorCount > 15 {
             throw ErrorReport.Full
         }
     }
-    public static func warning(message: ErrorMessage, _ source: SourceTrackable?) {
+    public func warning(message: ErrorMessage, _ source: SourceTrackable?) {
         errors.append((.Warning, message, source?.sourceInfo))
     }
 
-    public static func report() {
+    public func report() {
         for (fileName, errors) in bundledErrors {
             for (kind, msg, info) in errors {
                 if let i = info {
@@ -94,9 +104,10 @@ public class ErrorReporter {
                 }
             }
         }
+        reset()
     }
 
-    private static func printMarker(charNo: Int) {
+    private func printMarker(charNo: Int) {
         for var i = 0; i < charNo - 1; ++i {
             print(" ", terminator: "", toStream: &STDERR)
         }
@@ -115,10 +126,11 @@ public enum ErrorMessage : CustomStringConvertible {
     case UnresolvedScopeRemains
     case ScopeTypeMismatch(ScopeType, ScopeType)
     case LeavingModuleScope
-    case InvalidScope(InstKind)
-    case AlreadyExist(InstKind, String)
+    case InvalidScope(Inst.Type)
+    case AlreadyExist(RefKind, String)
     case InvalidRefScope(RefKind)
-    case NotExist(InstKind, String)
+    case NotExist(RefKind, RefIdentifier)
+    case ImplicitParameterIsNotImplemented
     // TokenStream
     case UnexpectedEOF
     case InvalidToken
@@ -303,40 +315,34 @@ public enum ErrorMessage : CustomStringConvertible {
             return "<system error> leaving scope type mismatch. Expected type is '\(expected)', but actual type is '\(current)'"
         case .LeavingModuleScope:
             return "<system error> leaving module scope"
-        case let .InvalidScope(kind):
-            var target = ""
-            switch kind {
-            case .Type: target = "a type"
-            case .Constant: target = "a constant"
-            case .Variable: target = "a variable"
-            case .Function: target = "a function"
-            case .Operator: target = "an operator"
-            case .Enum: target = "an enum"
-            case .EnumCase: target = "an enum case"
-            case .Struct: target = "a struct"
-            case .Class: target = "a class"
-            case .Protocol: target = "a protocol"
-            case .Extension: target = "an extension"
+        case let .InvalidScope(type):
+            let target: String
+            switch type {
+            case is TypeInst.Type: target = "a type"
+            case is ConstantInst.Type: target = "a constant"
+            case is VariableInst.Type: target = "a variable"
+            case is FunctionInst.Type: target = "a function"
+            case is OperatorInst.Type: target = "an operator"
+            case is EnumInst.Type: target = "an enum"
+            case is EnumCaseInst.Type: target = "an enum case"
+            case is StructInst.Type: target = "a struct"
+            case is ClassInst.Type: target = "a class"
+            case is ProtocolInst.Type: target = "a protocol"
+            default: target = "<error type>"
             }
             return "You cannot declare \(target) in this scope"
         case let .AlreadyExist(kind, name):
-            var target = ""
+            let target: String
             switch kind {
             case .Type: target = "Type"
-            case .Constant: target = "Constant"
-            case .Variable: target = "Variable"
-            case .Function: target = "Function"
+            case .Value : target = "Value"
             case .Operator: target = "Operator"
-            case .Enum: target = "Enum"
             case .EnumCase: target = "Enum case"
-            case .Struct: target = "Struct"
-            case .Class: target = "Class"
-            case .Protocol: target = "Protocol"
-            case .Extension: target = "Extension"
+            case .ImplicitParameter: target = "Implicit parameter"
             }
             return "\(target) with name '\(name)' already exists"
         case let .InvalidRefScope(kind):
-            var target = ""
+            let target: String
             switch kind {
             case .Type: target = "a type"
             case .Value: target = "a constant or a variable"
@@ -345,22 +351,18 @@ public enum ErrorMessage : CustomStringConvertible {
             case .ImplicitParameter: target = "an implicit parameter"
             }
             return "You cannot refer \(target) in this scope"
-        case let .NotExist(kind, name):
-            var target = ""
+        case let .NotExist(kind, id):
+            let target: String
             switch kind {
             case .Type: target = "Type"
-            case .Constant: target = "Constant"
-            case .Variable: target = "Variable"
-            case .Function: target = "Function"
+            case .Value : target = "Value"
             case .Operator: target = "Operator"
-            case .Enum: target = "Enum"
             case .EnumCase: target = "Enum case"
-            case .Struct: target = "Struct"
-            case .Class: target = "Class"
-            case .Protocol: target = "Protocol"
-            case .Extension: target = "Extension"
+            case .ImplicitParameter: target = "Implicit parameter"
             }
-            return "\(target) '\(name)' not exists in this scope"
+            return "\(target) '\(id)' not exists in this scope"
+        case .ImplicitParameterIsNotImplemented:
+            return "Implicit parameter is not implemented."
         // AttributesParser
         case .ExpectedAttributeIdentifier:
             return "Expected identifier for attribute"

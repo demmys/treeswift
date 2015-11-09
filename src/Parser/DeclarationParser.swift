@@ -24,9 +24,9 @@ class DeclarationParser : GrammarParser {
         self.gp = gp
     }
 
-    func topLevelDeclaration() throws -> TopLevelDeclaration {
+    func topLevelDeclaration(fileName: String) throws -> TopLevelDeclaration {
         ScopeManager.enterScope(.File)
-        try ScopeManager.importModule("TreeSwift", nil)
+        ScopeManager.setFileName(fileName)
         return TopLevelDeclaration(
             procedures: try prp.procedures(),
             fileScope: try ScopeManager.leaveScope(.File, nil)

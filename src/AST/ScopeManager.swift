@@ -25,32 +25,26 @@ public protocol ScopeTrackable {
     var scope: Scope { get }
 }
 
-public enum InstKind {
-    case Type, Constant, Variable, Function, Operator
-    case Enum, EnumCase, Struct, Class, Protocol, Extension
-
-    private static func fromType(type: Inst.Type) -> InstKind {
-        switch type {
-        case is TypeInst.Type: return .Type
-        case is ConstantInst.Type: return .Constant
-        case is VariableInst.Type: return .Variable
-        case is FunctionInst.Type: return .Function
-        case is OperatorInst.Type: return .Operator
-        case is EnumInst.Type: return .Enum
-        case is EnumCaseInst.Type: return .EnumCase
-        case is StructInst.Type: return .Struct
-        case is ClassInst.Type: return .Class
-        case is ProtocolInst.Type: return .Protocol
-        case is ExtensionInst.Type: return .Extension
-        default: assert(false, "<system error> invalid inst type.")
-        }
-    }
-}
-
 public enum RefKind {
     case Type, Value, Operator, EnumCase, ImplicitParameter
 
-    private static func fromType(type: Ref.Type) -> RefKind {
+    private static func fromInstType(type: Inst.Type) -> RefKind {
+        switch type {
+        case is TypeInst.Type: return .Type
+        case is ConstantInst.Type: return .Value
+        case is VariableInst.Type: return .Value
+        case is FunctionInst.Type: return .Value
+        case is OperatorInst.Type: return .Operator
+        case is EnumInst.Type: return .Type
+        case is EnumCaseInst.Type: return .EnumCase
+        case is StructInst.Type: return .Type
+        case is ClassInst.Type: return .Type
+        case is ProtocolInst.Type: return .Type
+        default: assert(false, "<system error> invalid inst type.")
+        }
+    }
+
+    private static func fromRefType(type: Ref.Type) -> RefKind {
         switch type {
         case is TypeRef.Type: return .Type
         case is ValueRef.Type: return .Value
@@ -66,8 +60,8 @@ public class Scope {
     public let type: ScopeType
     public let parent: Scope?
     public var children: [Scope] = []
-    private var modules: [String:ModuleInst]?
-    private var insts: [InstKind:[String:Inst]] = [:]
+    private var modules: [String:Module]?
+    private var insts: [RefKind:[String:Inst]]
     private var refs: [RefKind:[Ref]] = [:]
     public var explicitType: ScopeType {
         guard type == .Implicit else {
@@ -82,20 +76,28 @@ public class Scope {
     private init(_ type: ScopeType, _ parent: Scope?) {
         self.type = type
         self.parent = parent
+        insts = [
+            .Type: [:], .Value: [:], .Operator: [:], .EnumCase: [:],
+            .ImplicitParameter: [:]
+        ]
         self.parent?.children.append(self)
     }
 
     func importModule(
-        name: String, _ module: ModuleInst, _ source: SourceTrackable?
+        name: String, _ module: Module, _ source: SourceTrackable?
     ) throws {
         guard modules != nil else {
             if type == .Implicit, let p = parent {
                 try p.importModule(name, module, source)
                 return
             }
-            throw ErrorReporter.fatal(.InvalidScopeToImport, source)
+            throw ErrorReporter.instance.fatal(.InvalidScopeToImport, source)
         }
         modules?[name] = module
+    }
+
+    private func isPermittedInst(type: Inst.Type) -> Bool {
+        return false
     }
 
     private func createInst<ConcreteInst : Inst>(
@@ -127,12 +129,13 @@ public class Scope {
         default:
             break
         }
-        let kind = InstKind.fromType(ConcreteInst.self)
-        guard insts[kind] != nil else {
-            throw ErrorReporter.fatal(.InvalidScope(kind), source)
+
+        let kind = RefKind.fromInstType(ConcreteInst.self)
+        guard isPermittedInst(ConcreteInst.self) else {
+            throw ErrorReporter.instance.fatal(.InvalidScope(ConcreteInst.self), source)
         }
-        guard insts[kind]?[name] == nil else {
-            throw ErrorReporter.fatal(.AlreadyExist(kind, name), source)
+        guard insts[kind]![name] == nil else {
+            throw ErrorReporter.instance.fatal(.AlreadyExist(kind, name), source)
         }
         let i = constructor()
         if type == .Module, let al = accessLevel where al == .Public || al == .PublicSet {
@@ -142,43 +145,61 @@ public class Scope {
         return i
     }
 
-    public func getInst(
-        kind: InstKind, _ name: String, _ source: SourceTrackable
-    ) throws -> Inst {
-        if let i = insts[kind]?[name] {
-            return i
-        }
-        guard let p = parent else {
-            throw ErrorReporter.fatal(.NotExist(kind, name), source)
-        }
-        return try p.getInst(kind, name, source)
-    }
-
     private func createRef<ConcreteRef: Ref>(
         source: SourceTrackable, _ constructor: () -> ConcreteRef
     ) throws -> ConcreteRef {
-        let kind = RefKind.fromType(ConcreteRef.self)
+        let kind = RefKind.fromRefType(ConcreteRef.self)
         guard refs[kind] != nil else {
-            throw ErrorReporter.fatal(.InvalidRefScope(kind), source)
+            throw ErrorReporter.instance.fatal(.InvalidRefScope(kind), source)
         }
         let r = constructor()
         refs[kind]?.append(r)
         return r
     }
 
+    private func resolveRef(kind: RefKind, _ ref: Ref) throws -> Inst? {
+        guard case let .Name(name) = ref.id else {
+            throw ErrorReporter.instance.fatal(.ImplicitParameterIsNotImplemented, ref)
+        }
+        if let i = insts[kind]![name] {
+            return i
+        }
+        if let ms = modules {
+            for (_, m) in ms {
+                if let i = try m.moduleScope.resolveRef(kind, ref) {
+                    return i
+                }
+            }
+        }
+        guard let p = parent else {
+            return nil
+        }
+        return try p.resolveRef(kind, ref)
+    }
+
+    private func resolveRefs() throws {
+        for (kind, rs) in refs {
+            guard rs.count > 0 else {
+                continue
+            }
+            for r in rs {
+                guard let inst = try resolveRef(kind, r) else {
+                    throw ErrorReporter.instance.fatal(.NotExist(kind, r.id), r)
+                }
+                r.inst = inst
+            }
+        }
+        for child in children {
+            try child.resolveRefs()
+        }
+    }
+
     private func printMembers() {
         print("\tmodules: \(modules)")
         print("\ttypes: \(insts[.Type])")
-        print("\tconstants: \(insts[.Constant])")
-        print("\tvariable: \(insts[.Variable])")
-        print("\tfunctions: \(insts[.Function])")
+        print("\tvalues: \(insts[.Value])")
         print("\toperators: \(insts[.Operator])")
-        print("\tenums: \(insts[.Enum])")
         print("\tenumCases: \(insts[.EnumCase])")
-        print("\tstructs: \(insts[.Struct])")
-        print("\tclasses: \(insts[.Class])")
-        print("\tprotocols: \(insts[.Protocol])")
-        print("\textensions: \(insts[.Extension])")
         print("\ttypeRefs: \(refs[.Type])")
         print("\tvalueRefs: \(refs[.Value])")
         print("\toperatorRefs: \(refs[.Operator])")
@@ -191,45 +212,66 @@ private class ModuleScope : Scope {
     init() {
         super.init(.Module, nil)
         modules = [:]
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = [:]
-        insts[.Extension] = [:]
-        insts[.Operator] = [:]
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
     }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return true
+        case is OperatorInst.Type: return true
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
+    }
 }
 
 private class FileScope : Scope {
+    var fileName: String!
+
     init(_ parent: Scope) {
         super.init(.File, parent)
         modules = [:]
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = [:]
-        insts[.Extension] = [:]
-        insts[.Operator] = [:]
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return true
+        case is OperatorInst.Type: return true
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
+    }
+
+    override private func resolveRefs() throws {
+        do {
+            try super.resolveRefs()
+        } catch let e {
+            ErrorReporter.instance.bundle(fileName)
+            throw e
+        }
     }
 }
 
@@ -237,22 +279,27 @@ private class ImplicitScope : Scope {
     init(_ parent: Scope) {
         super.init(.Implicit, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = [:]
-        insts[.Extension] = [:]
-        insts[.Operator] = [:]
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = []
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return true
+        case is OperatorInst.Type: return true
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -260,22 +307,27 @@ private class FlowScope : Scope {
     init(_ type: ScopeType, _ parent: Scope) {
         super.init(type, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = []
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -283,22 +335,27 @@ private class FunctionScope : Scope {
     init(_ type: ScopeType, _ parent: Scope) {
         super.init(type, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -306,22 +363,27 @@ private class ClosureScope : Scope {
     init(_ parent: Scope) {
         super.init(.Closure, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = []
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -329,22 +391,27 @@ private class EnumScope : Scope {
     init(_ parent: Scope) {
         super.init(.Enum, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = nil
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = [:]
         refs[.Type] = []
         refs[.Value] = nil
         refs[.Operator] = nil
         refs[.EnumCase] = nil
         refs[.ImplicitParameter] = nil
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return false
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return true
+        default: return false
+        }
     }
 }
 
@@ -352,22 +419,27 @@ private class StructScope : Scope {
     init(_ parent: Scope) {
         super.init(.Struct, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -375,22 +447,27 @@ private class ClassScope : Scope {
     init(_ parent: Scope) {
         super.init(.Class, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = [:]
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = []
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return true
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -398,22 +475,27 @@ private class ProtocolScope : Scope {
     init(_ parent: Scope) {
         super.init(.Protocol, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = nil
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = nil
-        insts[.Struct] = nil
-        insts[.Class] = nil
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = nil
         refs[.Operator] = nil
         refs[.EnumCase] = nil
         refs[.ImplicitParameter] = nil
+    }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return false
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return false
+        case is StructInst.Type: return false
+        case is ClassInst.Type: return false
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
     }
 }
 
@@ -421,27 +503,32 @@ private class ExtensionScope : Scope {
     init(_ parent: Scope) {
         super.init(.Extension, parent)
         modules = nil
-        insts[.Type] = [:]
-        insts[.Constant] = nil
-        insts[.Variable] = [:]
-        insts[.Function] = [:]
-        insts[.Enum] = [:]
-        insts[.Struct] = [:]
-        insts[.Class] = [:]
-        insts[.Protocol] = nil
-        insts[.Extension] = nil
-        insts[.Operator] = nil
-        insts[.EnumCase] = nil
         refs[.Type] = []
         refs[.Value] = nil
         refs[.Operator] = nil
         refs[.EnumCase] = nil
         refs[.ImplicitParameter] = nil
     }
+
+    override private func isPermittedInst(type: Inst.Type) -> Bool {
+        switch type {
+        case is TypeInst.Type: return true
+        case is ConstantInst.Type: return false
+        case is VariableInst.Type: return true
+        case is FunctionInst.Type: return true
+        case is EnumInst.Type: return true
+        case is StructInst.Type: return true
+        case is ClassInst.Type: return true
+        case is ProtocolInst.Type: return false
+        case is OperatorInst.Type: return false
+        case is EnumCaseInst.Type: return false
+        default: return false
+        }
+    }
 }
 
 public class ScopeManager {
-    private static var modules: [String:ModuleInst] = [:]
+    private static var modules: [String:Module] = [:]
     private static var importableModules: [String:() throws -> [Declaration]] = [:]
     private static var currentScope: Scope = ModuleScope()
     private static var importingScopeStack: [Scope] = []
@@ -453,28 +540,33 @@ public class ScopeManager {
     }
 
     public static func importModule(name: String, _ source: SourceTrackable?) throws {
-        if let moduleInst = modules[name] {
-            try currentScope.importModule(name, moduleInst, source)
+        if let module = modules[name] {
+            try currentScope.importModule(name, module, source)
             if let nestedImportingScope = importingScopeStack.popLast() {
                 currentScope = nestedImportingScope
             }
             return
         }
         guard let importMethod = importableModules[name] else {
-            throw ErrorReporter.fatal(.NoSuchModule(name), source)
+            throw ErrorReporter.instance.fatal(.NoSuchModule(name), source)
         }
         importingScopeStack.append(currentScope)
         currentScope = ModuleScope()
         let declarations = try importMethod()
         guard case let moduleScope as ModuleScope = currentScope else {
-            throw ErrorReporter.fatal(.UnresolvedScopeRemains, source)
+            throw ErrorReporter.instance.fatal(.UnresolvedScopeRemains, source)
         }
-        let moduleInst = ModuleInst(
-            name, module: Module(declarations: declarations, moduleScope: moduleScope)
-        )
-        modules[name] = moduleInst
+        let module = Module(declarations: declarations, moduleScope: moduleScope)
+        modules[name] = module
         currentScope = importingScopeStack.popLast()!
-        try currentScope.importModule(name, moduleInst, source)
+        try currentScope.importModule(name, module, source)
+    }
+
+    public static func setFileName(fileName: String) {
+        guard case let fileScope as FileScope = currentScope else {
+            assert(false, "<system error> Cannot set file name to the current scope")
+        }
+        fileScope.fileName = fileName
     }
 
     public static func enterScope(type: ScopeType) {
@@ -519,17 +611,17 @@ public class ScopeManager {
     ) throws -> Scope {
         while currentScope.type == .Implicit {
             guard let s = currentScope.parent else {
-                throw ErrorReporter.fatal(.LeavingModuleScope, source)
+                throw ErrorReporter.instance.fatal(.LeavingModuleScope, source)
             }
             currentScope = s
         }
         guard currentScope.type == type else {
-            throw ErrorReporter.fatal(
+            throw ErrorReporter.instance.fatal(
                 .ScopeTypeMismatch(currentScope.type, type), source
             )
         }
         guard let parent = currentScope.parent else {
-            throw ErrorReporter.fatal(.LeavingModuleScope, source)
+            throw ErrorReporter.instance.fatal(.LeavingModuleScope, source)
         }
         let child = currentScope
         currentScope = parent
@@ -620,15 +712,6 @@ public class ScopeManager {
         )
     }
 
-    public static func createExtension(
-        name: String, _ source: SourceTrackable, node: ExtensionDeclaration,
-        accessLevel: AccessLevel? = nil
-    ) throws -> ExtensionInst {
-        return try currentScope.createInst(
-            name, source, accessLevel, { ExtensionInst(name, source, node: node) }
-        )
-    }
-
     public static func createTypeRef(
         name: String, _ source: SourceTrackable
     ) throws -> TypeRef {
@@ -661,6 +744,13 @@ public class ScopeManager {
         return try currentScope.createRef(
             source, { ImplicitParameterRef(index, source) }
         )
+    }
+
+    public static func resolveRefs() throws {
+        guard currentScope.type == .Module else {
+            assert(false, "<system error> Parsing is not ended yet.")
+        }
+        try currentScope.resolveRefs()
     }
 
     public static func printScopes() {

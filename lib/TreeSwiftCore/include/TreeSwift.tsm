@@ -1,0 +1,96 @@
+infix operator % {
+    associativity left
+    precedence 150
+}
+
+infix operator * {
+    associativity left
+    precedence 150
+}
+
+infix operator / {
+    associativity left
+    precedence 150
+}
+
+infix operator + {
+    associativity left
+    precedence 140
+}
+
+infix operator - {
+    associativity left
+    precedence 140
+}
+
+infix operator == {
+    associativity none
+    precedence 130
+}
+
+infix operator != {
+    associativity none
+    precedence 130
+}
+
+infix operator < {
+    associativity none
+    precedence 130
+}
+
+infix operator <= {
+    associativity none
+    precedence 130
+}
+
+infix operator >= {
+    associativity none
+    precedence 130
+}
+
+infix operator > {
+    associativity none
+    precedence 130
+}
+
+public struct String {
+    public init(_builtinStringLiteral start: Builtin.RawPointer, byteSize: Builtin.Int32, isASCII: Builtin.Int1)
+}
+
+public protocol CustomStringConvertible {
+    public var description: String { get }
+}
+
+public struct Bool {
+    public init(_builtinBooleanLiteral value: Builtin.Int1)
+}
+
+extension Bool : CustomStringConvertible {
+    public var description: String { get }
+}
+
+public struct Int {
+    public var value: Builtin.Int64 { get set }
+    public init (_builtinIntegerLiteral value: Builtin.Int64)
+}
+
+extension Int : CustomStringConvertible {
+    public var description: String { get }
+}
+
+// Equatable
+public func ==(lhs: Int, rhs: Int) -> Bool
+public func !=(lhs: Int, rhs: Int) -> Bool
+// Comparable
+public func <(lhs: Int, rhs: Int) -> Bool
+public func <=(lhs: Int, rhs: Int) -> Bool
+public func >=(lhs: Int, rhs: Int) -> Bool
+public func >(lhs: Int, rhs: Int) -> Bool
+// IntegerArithmeticType
+public func +(lhs: Int, rhs: Int) -> Int
+public func -(lhs: Int, rhs: Int) -> Int
+public func *(lhs: Int, rhs: Int) -> Int
+public func /(lhs: Int, rhs: Int) -> Int
+public func %(lhs: Int, rhs: Int) -> Int
+
+public func print(items: CustomStringConvertible..., separator: String = default, terminator: String = default)

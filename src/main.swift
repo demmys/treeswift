@@ -109,18 +109,19 @@ do {
             print("main:modules:\n\t\(modules)") // DEBUG
             let parser = Parser(moduleName: moduleName(parseOptions), modules: modules)
             let result = try parser.parse(Array(arguments.dropFirst(1)))
-            ErrorReporter.report()
-            printParseResult(result) // DEBUG
+            ErrorReporter.instance.report()
             ScopeManager.printScopes() // DEBUG
+            try ScopeManager.resolveRefs()
+            printParseResult(result) // DEBUG
         } catch ErrorReport.Fatal {
             printError("Compile process aborted because of the fatal error.")
-            ErrorReporter.report()
+            ErrorReporter.instance.report()
         } catch ErrorReport.Full {
             printError("Compile process aborted because of too much errors.")
-            ErrorReporter.report()
+            ErrorReporter.instance.report()
         } catch ErrorReport.Found {
             printError("Some errors found in compile process.")
-            ErrorReporter.report()
+            ErrorReporter.instance.report()
         } catch let e {
             printError("Compile process aborted because of unexpected error.")
             printError(e)

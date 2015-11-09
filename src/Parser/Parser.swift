@@ -16,36 +16,34 @@ public class Parser {
             let parser = prepareDeclarationParser(try createStream(fileName))
             return try parser.moduleDeclarations()
         } catch let e {
-            ErrorReporter.bundle(fileName)
+            ErrorReporter.instance.bundle(fileName)
             throw e
         }
     }
 
     public func parse(fileNames: [String]) throws -> [String:TopLevelDeclaration] {
         var result: [String:TopLevelDeclaration] = [:]
+        try ScopeManager.importModule("TreeSwift", nil)
         for fileName in fileNames {
             do {
                 let parser = prepareDeclarationParser(try createStream(fileName))
-                result[fileName] = try parser.topLevelDeclaration()
-                ErrorReporter.bundle(fileName)
+                result[fileName] = try parser.topLevelDeclaration(fileName)
+                ErrorReporter.instance.bundle(fileName)
             } catch let e {
-                ErrorReporter.bundle(fileName)
+                ErrorReporter.instance.bundle(fileName)
                 throw e
             }
         }
         try specifyMain(result)
-        if ErrorReporter.hasErrors() {
-            throw ErrorReport.Found
-        }
         return result
     }
 
     private func createStream(fileName: String) throws -> TokenStream {
         guard let f = File(name: fileName, mode: "r") else {
-            throw ErrorReporter.fatal(.FileNotFound(fileName), nil)
+            throw ErrorReporter.instance.fatal(.FileNotFound(fileName), nil)
         }
         guard let ts = TokenStream(file: f) else {
-            throw ErrorReporter.fatal(.FileCanNotRead(fileName), nil)
+            throw ErrorReporter.instance.fatal(.FileCanNotRead(fileName), nil)
         }
         return ts
     }
@@ -56,7 +54,7 @@ public class Parser {
             for p in tld.procedures {
                 guard case .DeclarationProcedure = p else {
                     if let n = found {
-                        throw ErrorReporter.fatal(.MultipleMain(n, name), nil)
+                        throw ErrorReporter.instance.fatal(.MultipleMain(n, name), nil)
                     }
                     tld.isMain = true
                     found = name

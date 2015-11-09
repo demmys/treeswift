@@ -1,13 +1,3 @@
-public class ModuleInst {
-    private let name: String
-    private let module: Module
-
-    public init(_ name: String, module: Module) {
-        self.name = name
-        self.module = module
-    }
-}
-
 public class Inst : SourceTrackable {
     private let name: String
     private let info: SourceInfo
@@ -130,40 +120,23 @@ public class ProtocolInst : Inst, CustomStringConvertible {
     }
 }
 
-public class ExtensionInst : Inst, CustomStringConvertible {
-    private let node: ExtensionDeclaration
-
-    public init(
-        _ name: String, _ source: SourceTrackable, node: ExtensionDeclaration
-    ) {
-        self.node = node
-        super.init(name, source)
-    }
-
-    public var description: String {
-        return "(ExtensionInst \(name))"
-    }
-}
-
 public enum RefIdentifier : CustomStringConvertible{
     case Name(String)
     case Index(Int)
 
     public var description: String {
         switch self {
-        case let .Name(n): return "name: \(n)"
-        case let .Index(i): return "index: \(i)"
+        case let .Name(n): return n
+        case let .Index(i): return "$\(i)"
         }
     }
 }
 
 public class Ref : SourceTrackable {
-    private let id: RefIdentifier
-    private let info: SourceInfo
+    public let id: RefIdentifier
     public var inst: Inst!
-    public var sourceInfo: SourceInfo {
-        return info
-    }
+    private let info: SourceInfo
+    public var sourceInfo: SourceInfo { return info }
 
     public init(_ id: RefIdentifier, _ source: SourceTrackable) {
         self.id = id
@@ -177,7 +150,7 @@ public class TypeRef : Ref, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(TypeRef \(id))"
+        return "(TypeRef \(id) \(inst))"
     }
 }
 
@@ -187,7 +160,7 @@ public class ValueRef : Ref, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(ValueRef \(id))"
+        return "(ValueRef \(id) \(inst))"
     }
 }
 
@@ -197,7 +170,7 @@ public class OperatorRef : Ref, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(OperatorRef \(id))"
+        return "(OperatorRef \(id) \(inst))"
     }
 }
 
@@ -210,7 +183,7 @@ public class EnumCaseRef : Ref, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(EnumCaseRef \(id))"
+        return "(EnumCaseRef \(id) \(inst))"
     }
 }
 
@@ -220,6 +193,6 @@ public class ImplicitParameterRef : Ref, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(ImplicitParameterRef \(id))"
+        return "(ImplicitParameterRef \(id) \(inst))"
     }
 }

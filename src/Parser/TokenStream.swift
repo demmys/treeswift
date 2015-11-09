@@ -69,13 +69,13 @@ class TokenStream {
     }
 
     func fatal(message: ErrorMessage, token: Token? = nil) -> ErrorReport {
-        return ErrorReporter.fatal(message, token ?? look())
+        return ErrorReporter.instance.fatal(message, token ?? look())
     }
     func error(message: ErrorMessage, token: Token? = nil) throws {
-        try ErrorReporter.error(message, token ?? look())
+        try ErrorReporter.instance.error(message, token ?? look())
     }
     func warning(message: ErrorMessage, token: Token? = nil) {
-        ErrorReporter.warning(message, token ?? look())
+        ErrorReporter.instance.warning(message, token ?? look())
     }
 
     func look(var ahead: Int = 0, skipLineFeed: Bool = true) -> Token {
