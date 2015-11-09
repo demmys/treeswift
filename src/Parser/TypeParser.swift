@@ -23,7 +23,7 @@ class TypeParser : GrammarParser {
         return try containerType(try primaryType())
     }
 
-    func primaryType() throws -> Type {
+    private func primaryType() throws -> Type {
         let trackable = ts.look()
         switch ts.match([identifier, .LeftBracket, .LeftParenthesis, .Protocol]) {
         case let .Identifier(s):
@@ -43,8 +43,21 @@ class TypeParser : GrammarParser {
         s: String, _ trackable: SourceTrackable
     ) throws -> IdentifierType {
         return IdentifierType(
-            try ScopeManager.createTypeRef(s, trackable), try gp.genericArgumentClause()
+            try ScopeManager.createTypeRef(s, trackable),
+            try gp.genericArgumentClause(),
+            try nestedTypes()
         )
+    }
+
+    private func nestedTypes() throws -> [(String, [Type]?)] {
+        var x: [(String, [Type]?)] = []
+        while ts.look().kind == .Dot {
+            guard case let .Identifier(s) = ts.match([identifier], ahead: 1) else {
+                return x
+            }
+            x.append(s, try gp.genericArgumentClause())
+        }
+        return x
     }
 
     private func collectionType() throws -> Type {

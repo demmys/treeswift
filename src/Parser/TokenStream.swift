@@ -1,7 +1,7 @@
 import Util
 import AST
 
-public struct Token : SourceTrackable {
+public struct Token : SourceTrackable, CustomStringConvertible {
     public var kind: TokenKind
     private let info: SourceInfo
 
@@ -12,6 +12,10 @@ public struct Token : SourceTrackable {
     private init(kind: TokenKind, info: SourceInfo) {
         self.kind = kind
         self.info = info
+    }
+
+    public var description: String {
+        return "\(kind)"
     }
 }
 
@@ -52,7 +56,6 @@ class TokenStream {
     }
 
     private var queue: [Token]!
-    private var index: Int!
     private var ctx: Context!
     private var classifier: CharacterClassifier!
 
@@ -63,7 +66,6 @@ class TokenStream {
         self.ctx = ctx
         classifier = CharacterClassifier(cp: ctx.cp)
         queue = [load()]
-        index = 0
     }
 
     func fatal(message: ErrorMessage, token: Token? = nil) -> ErrorReport {
@@ -76,13 +78,21 @@ class TokenStream {
         ErrorReporter.warning(message, token ?? look())
     }
 
-    func look(ahead: Int = 0, skipLineFeed: Bool = true) -> Token {
-        if index + ahead >= queue.count {
-            for var i = queue.count - 1; i < index + ahead; ++i {
+    func look(var ahead: Int = 0, skipLineFeed: Bool = true) -> Token {
+        if skipLineFeed {
+            for var i = 0; i < ahead; ++i {
+                if queue[i].kind == .LineFeed {
+                    ++ahead
+                }
+            }
+        }
+        if ahead >= queue.count {
+            for var i = queue.count - 1; i < ahead; ++i {
                 queue.append(load())
             }
         }
-        let top = queue[index + ahead]
+        // print("\tlooking queue: \(queue) (currently ahead: \(ahead))") // DEBUG
+        let top = queue[ahead]
         if skipLineFeed && top.kind == .LineFeed {
             return look(ahead + 1, skipLineFeed: false)
         }
@@ -93,11 +103,10 @@ class TokenStream {
         guard n > 0 else {
             return
         }
-        if skipLineFeed && queue[index].kind == .LineFeed {
-            ++index!
+        let first = queue.removeFirst()
+        if skipLineFeed && first.kind == .LineFeed {
             next(n, skipLineFeed: skipLineFeed)
         } else {
-            ++index!
             next(n - 1, skipLineFeed: skipLineFeed)
         }
     }
@@ -357,6 +366,7 @@ class TokenStream {
                     WordLiteralComposer("in", .In),
                     WordLiteralComposer("indirect", .Indirect),
                     WordLiteralComposer("infix", .Infix),
+                    WordLiteralComposer("init", .Init),
                     WordLiteralComposer("inout", .InOut),
                     WordLiteralComposer("internal", .Modifier(.Internal)),
                     WordLiteralComposer("is", .Is)

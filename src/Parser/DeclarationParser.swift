@@ -26,6 +26,7 @@ class DeclarationParser : GrammarParser {
 
     func topLevelDeclaration() throws -> TopLevelDeclaration {
         ScopeManager.enterScope(.File)
+        try ScopeManager.importModule("TreeSwift", nil)
         return TopLevelDeclaration(
             procedures: try prp.procedures(),
             fileScope: try ScopeManager.leaveScope(.File, nil)
@@ -34,8 +35,13 @@ class DeclarationParser : GrammarParser {
 
     func moduleDeclarations() throws -> [Declaration] {
         var xs: [Declaration] = []
-        while !ts.test([.EndOfFile]) {
-            xs.append(try moduleDeclaration())
+        declarationLoop: while true {
+            switch ts.look().kind {
+            case .RightBrace, .EndOfFile:
+                break declarationLoop
+            default:
+                xs.append(try moduleDeclaration())
+            }
         }
         return xs
     }
@@ -139,7 +145,10 @@ class DeclarationParser : GrammarParser {
 
     private func declarations() throws -> [Declaration] {
         var xs: [Declaration] = []
-        while !ts.test([.RightBrace]) {
+        while true {
+            if case .RightBrace = ts.look().kind {
+                break
+            }
             xs.append(try declaration())
         }
         return xs
@@ -519,8 +528,12 @@ class DeclarationParser : GrammarParser {
     private func patternInitializerList(isVariable: Bool) throws -> [(Pattern, Expression?)] {
         var pi: [(Pattern, Expression?)] = []
         repeat {
-            let p = isVariable ? try ptp.declarativePattern(.VariableCreation)
-                               : try ptp.declarativePattern(.ConstantCreation)
+            let p: Pattern
+            if isVariable {
+                p = try ptp.declarativePattern(.VariableCreation)
+            } else {
+                p = try ptp.declarativePattern(.ConstantCreation)
+            }
             if ts.test([.AssignmentOperator]) {
                 pi.append((p, try ep.expression()))
             } else {
@@ -567,7 +580,18 @@ class DeclarationParser : GrammarParser {
         forModule: Bool = false
     ) throws -> FunctionDeclaration {
         let x = FunctionDeclaration(attrs, al, mods)
-        x.name = try functionName(al)
+        var kind: OperatorDeclarationKind?
+        for m in mods {
+            switch m {
+            case .Prefix:
+                kind == nil ? kind = .Prefix : try ts.error(.DuplicateOperatorModifier)
+            case .Postfix:
+                kind == nil ? kind = .Postfix : try ts.error(.DuplicateOperatorModifier)
+            default:
+                break
+            }
+        }
+        x.name = try functionName(al, kind)
         ScopeManager.enterScope(.Function)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClauses(forModule)
@@ -585,34 +609,28 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
-    private func functionName(al: AccessLevel?) throws -> FunctionReference {
+    private func functionName(
+        al: AccessLevel?, _ kind: OperatorDeclarationKind?
+    ) throws -> FunctionReference {
         let trackable = ts.look()
-        switch ts.match([
-            identifier, prefixOperator, binaryOperator, postfixOperator
-        ]) {
+        switch ts.match([identifier]) {
         case let .Identifier(s):
             return .Function(
                 try ScopeManager.createFunction(s, trackable, accessLevel: al)
             )
-        case let .PrefixOperator(o):
-            return .Operator(
-                try ScopeManager.createFunction(o, trackable, accessLevel: al)
-            )
-        case let .BinaryOperator(o):
-            return .Operator(
-                try ScopeManager.createFunction(o, trackable, accessLevel: al)
-            )
-        case let .PostfixOperator(o):
-            return .Operator(
-                try ScopeManager.createFunction(o, trackable, accessLevel: al)
-            )
         default:
-            throw ts.fatal(.ExpectedFunctionName)
+            let o = try operatorName(
+                kind ?? .Infix(precedence: 0, associativity: .None),
+                error: .ExpectedFunctionName
+            )
+            return .Operator(
+                try ScopeManager.createFunction(o, trackable, accessLevel: al)
+            )
         }
     }
 
-    private func parameterClauses(forModule: Bool) throws -> [ParameterClause] {
-        var xs: [ParameterClause] = []
+    private func parameterClauses(forModule: Bool) throws -> [[Parameter]] {
+        var xs: [[Parameter]] = []
         while case .LeftParenthesis = ts.look().kind {
             xs.append(try parameterClause(forModule))
         }
@@ -637,24 +655,17 @@ class DeclarationParser : GrammarParser {
         return (try ap.attributes(), try tp.type())
     }
 
-    func parameterClause(forModule: Bool) throws -> ParameterClause {
+    func parameterClause(forModule: Bool) throws -> [Parameter] {
         if !ts.test([.LeftParenthesis]) {
             try ts.error(.ExpectedLeftParenthesisForParameter)
         }
-        let pc = ParameterClause()
+        var pc: [Parameter] = []
         if ts.test([.RightParenthesis]) {
             return pc
         }
         repeat {
-            pc.body.append(try parameter(forModule))
+            pc.append(try parameter(forModule))
         } while ts.test([.Comma])
-        switch ts.look().kind {
-        case .PrefixOperator("..."), .BinaryOperator("..."), .PostfixOperator("..."):
-            ts.next()
-            pc.isVariadic = true
-        default:
-            break
-        }
         if !ts.test([.RightParenthesis]) {
             try ts.error(.ExpectedRightParenthesisAfterParameter)
         }
@@ -662,31 +673,12 @@ class DeclarationParser : GrammarParser {
     }
 
     private func parameter(forModule: Bool) throws -> Parameter {
-        switch ts.look().kind {
-        case .InOut, .Var, .Let, .Underscore:
-            return try namedParameter(forModule)
-        case .Atmark, .LeftBracket, .LeftParenthesis, .Protocol:
-            return try unnamedParameter()
-        case .Identifier:
-            switch ts.look(1).kind {
-            case .Underscore, .Identifier, .Colon:
-                return try namedParameter(forModule)
-            default:
-                return try unnamedParameter()
-            }
-        default:
-            throw ts.fatal(.ExpectedParameter)
-        }
-    }
-
-    private func namedParameter(forModule: Bool) throws -> Parameter {
-        let p = NamedParameter()
-        if ts.test([.InOut]) {
-            p.isInout = true
-        }
-        var isVariable = false
-        if case .Var = ts.match([.Var, .Let]) {
-            isVariable = true
+        let p = Parameter()
+        switch ts.match([.InOut, .Var, .Let]) {
+        case .InOut: p.kind = .InOut
+        case .Var: p.kind = .Variable
+        case .Let: p.kind = .Constant
+        default: break
         }
         let name = try parameterName()
         let followName = try parameterName()
@@ -697,24 +689,26 @@ class DeclarationParser : GrammarParser {
             switch followName {
             case .NotSpecified:
                 p.externalName = .NotSpecified
-                if isVariable {
-                    p.internalName = .SpecifiedVariableInst(
-                        try ScopeManager.createVariable(s, i)
-                    )
-                } else {
+                switch p.kind {
+                case .Constant, .None:
                     p.internalName = .SpecifiedConstantInst(
                         try ScopeManager.createConstant(s, i)
+                    )
+                default:
+                    p.internalName = .SpecifiedVariableInst(
+                        try ScopeManager.createVariable(s, i)
                     )
                 }
             case let .Specified(s, i):
                 p.externalName = name
-                if isVariable {
-                    p.internalName = .SpecifiedVariableInst(
-                        try ScopeManager.createVariable(s, i)
-                    )
-                } else {
+                switch p.kind {
+                case .Constant, .None:
                     p.internalName = .SpecifiedConstantInst(
                         try ScopeManager.createConstant(s, i)
+                    )
+                default:
+                    p.internalName = .SpecifiedVariableInst(
+                        try ScopeManager.createVariable(s, i)
                     )
                 }
             case .Needless:
@@ -730,13 +724,14 @@ class DeclarationParser : GrammarParser {
                 p.internalName = .Needless
             case let .Specified(s, i):
                 p.externalName = .Needless
-                if isVariable {
-                    p.internalName = .SpecifiedVariableInst(
-                        try ScopeManager.createVariable(s, i)
-                    )
-                } else {
+                switch p.kind {
+                case .Constant, .None:
                     p.internalName = .SpecifiedConstantInst(
                         try ScopeManager.createConstant(s, i)
+                    )
+                default:
+                    p.internalName = .SpecifiedVariableInst(
+                        try ScopeManager.createVariable(s, i)
                     )
                 }
             case .Needless:
@@ -753,7 +748,12 @@ class DeclarationParser : GrammarParser {
         } else {
             try ts.error(.ExpectedParameterNameTypeAnnotation)
         }
-        if ts.test([.AssignmentOperator]) {
+        switch ts.look().kind {
+        case .AssignmentOperator:
+            if p.kind == .InOut {
+                try ts.error(.InOutParameterWithDefaultArgument)
+            }
+            ts.next()
             if forModule {
                 guard ts.test([.Default]) else {
                     throw ts.fatal(.ExplicitDefaultArgumentInModuleDeclaration)
@@ -761,8 +761,16 @@ class DeclarationParser : GrammarParser {
             } else {
                 p.defaultArg = try ep.expression()
             }
+        case .PrefixOperator("..."), .BinaryOperator("..."), .PostfixOperator("..."):
+            if p.kind != .None {
+                try ts.error(.VariadicParameterWithAnotherKind)
+            }
+            ts.next()
+            p.kind = .Variadic
+        default:
+            break
         }
-        return .Named(p)
+        return p
     }
 
     private func parameterName() throws -> ParameterName {
@@ -775,11 +783,6 @@ class DeclarationParser : GrammarParser {
         default:
             return .NotSpecified
         }
-    }
-
-    private func unnamedParameter() throws -> Parameter {
-        let a = try ap.attributes()
-        return .Unnamed(a, try tp.type())
     }
 
     private func enumDeclaration(
@@ -932,6 +935,9 @@ class DeclarationParser : GrammarParser {
         } else {
             x.body = try declarations()
         }
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterDeclarationBody)
+        }
         x.associatedScope = try ScopeManager.leaveScope(.Struct, ts.look())
         return x
     }
@@ -955,6 +961,9 @@ class DeclarationParser : GrammarParser {
             x.body = try moduleDeclarations()
         } else {
             x.body = try declarations()
+        }
+        if !ts.test([.RightBrace]) {
+            try ts.error(.ExpectedRightBraceAfterDeclarationBody)
         }
         x.associatedScope = try ScopeManager.leaveScope(.Class, ts.look())
         return x
@@ -1136,6 +1145,64 @@ class DeclarationParser : GrammarParser {
         return x
     }
 
+    private func checkReservation(
+        kind: OperatorDeclarationKind, _ o: String
+    ) -> String? {
+        switch kind {
+        case .Prefix:
+            switch o {
+            case "&": return nil
+            case "<": return nil
+            case "?": return nil
+            default: break
+            }
+        case .Postfix:
+            switch o {
+            case "!": return nil
+            case ">": return nil
+            case "?": return nil
+            default: break
+            }
+        case .Infix:
+            switch o {
+            case "?": return nil
+            default: break
+            }
+        }
+        return o
+    }
+
+    private func operatorName(
+        kind: OperatorDeclarationKind, error: ErrorMessage = .ExpectedOperatorName
+    ) throws -> String {
+        var name: String?
+        switch ts.look().kind {
+        case let .PrefixOperator(o):
+            name = checkReservation(kind, o)
+        case let .BinaryOperator(o):
+            name = checkReservation(kind, o)
+        case let .PostfixOperator(o):
+            name = checkReservation(kind, o)
+        case .PostfixExclamation:
+            name = checkReservation(kind, "!")
+        case .PostfixGraterThan:
+            name = checkReservation(kind, ">")
+        case .PrefixAmpersand:
+            name = checkReservation(kind, "&")
+        case .PrefixLessThan:
+            name = checkReservation(kind, "<")
+        case .BinaryQuestion, .PostfixQuestion, .PrefixQuestion:
+            name = nil
+        default:
+            throw ts.fatal(error)
+        }
+        guard let n = name else {
+            throw ts.fatal(.ReservedOperator)
+        }
+        ts.next()
+        return n
+    }
+
     private func operatorDeclaration(
         kind: OperatorDeclarationKind
     ) throws -> OperatorDeclaration {
@@ -1143,10 +1210,8 @@ class DeclarationParser : GrammarParser {
             try ts.error(.ExpectedOperator)
         }
         let trackable = ts.look()
-        guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
-            throw ts.fatal(.ExpectedOperatorName)
-        }
-        let name = try ScopeManager.createOperator(s, trackable)
+        let o = try operatorName(kind)
+        let name = try ScopeManager.createOperator(o, trackable)
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForOperator)
         }
@@ -1161,15 +1226,20 @@ class DeclarationParser : GrammarParser {
             try ts.error(.ExpectedOperator)
         }
         let trackable = ts.look()
-        guard case let .BinaryOperator(s) = ts.match([binaryOperator]) else {
-            throw ts.fatal(.ExpectedOperatorName)
-        }
-        let name = try ScopeManager.createOperator(s, trackable)
+        let o = try operatorName(.Infix(precedence: 0, associativity: .None))
+        let name = try ScopeManager.createOperator(o, trackable)
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForOperator)
         }
-        let p = try precedenceClause()
-        let a = try associativityClause()
+        let p: Int64
+        let a: Associativity
+        if case .Precedence = ts.look().kind {
+            p = try precedenceClause()
+            a = try associativityClause()
+        } else {
+            a = try associativityClause()
+            p = try precedenceClause()
+        }
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceForOperator)
         }
@@ -1178,6 +1248,7 @@ class DeclarationParser : GrammarParser {
 
     private func precedenceClause() throws -> Int64 {
         guard ts.test([.Precedence]) else {
+            // precedence value defaults to 100
             return 100
         }
         guard case let .IntegerLiteral(i, decimalDigits: d)

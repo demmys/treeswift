@@ -157,7 +157,7 @@ public class TypealiasDeclaration : Declaration {
 public class FunctionDeclaration : Declaration, ScopeTrackable {
     public var name: FunctionReference!
     public var genParam: GenericParameterClause?
-    public var params: [ParameterClause]!
+    public var params: [[Parameter]]!
     public var throwType: ThrowType!
     public var returns: ([Attribute], Type)?
     public var body: [Procedure] = []
@@ -182,20 +182,12 @@ public enum ThrowType : String {
     case Nothing, Throws, Rethrows
 }
 
-public class ParameterClause {
-    public var body: [Parameter] = []
-    public var isVariadic = false
-
-    public init() {}
+public enum ParameterKind {
+    case Constant, Variable, InOut, Variadic, None
 }
 
-public enum Parameter {
-    case Named(NamedParameter)
-    case Unnamed([Attribute], Type)
-}
-
-public class NamedParameter {
-    public var isInout = false
+public class Parameter {
+    public var kind = ParameterKind.None
     public var externalName: ParameterName!
     public var internalName: ParameterName!
     public var type: (Type, [Attribute])!
@@ -345,7 +337,7 @@ public class ProtocolDeclaration : Declaration, ScopeTrackable {
 public class InitializerDeclaration : Declaration, ScopeTrackable {
     public var failable: FailableType!
     public var genParam: GenericParameterClause?
-    public var params: ParameterClause!
+    public var params: [Parameter]!
     public var body: [Procedure] = []
     public var associatedScope: Scope!
 
@@ -395,7 +387,7 @@ public class ExtensionDeclaration : Declaration, ScopeTrackable {
 }
 
 public class SubscriptDeclaration : Declaration, ScopeTrackable {
-    public var params: ParameterClause!
+    public var params: [Parameter]!
     public var returns: ([Attribute], Type)!
     public var body: VariableBlocks!
     public var associatedScope: Scope!

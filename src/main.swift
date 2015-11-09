@@ -99,15 +99,19 @@ optionParser.setOption(
 
 do {
     let (result: parseOptions, remains: arguments) = try optionParser.parse()
+    print("main:parseOptions:\n\t\(parseOptions)") // DEBUG
+    print("main:arguments:\n\t\(arguments)") // DEBUG
     if arguments.count < 2 {
         printError("No input file.")
     } else {
         do {
             let modules = modulePaths(parseOptions)
+            print("main:modules:\n\t\(modules)") // DEBUG
             let parser = Parser(moduleName: moduleName(parseOptions), modules: modules)
             let result = try parser.parse(Array(arguments.dropFirst(1)))
             ErrorReporter.report()
-            printParseResult(result)
+            printParseResult(result) // DEBUG
+            ScopeManager.printScopes() // DEBUG
         } catch ErrorReport.Fatal {
             printError("Compile process aborted because of the fatal error.")
             ErrorReporter.report()

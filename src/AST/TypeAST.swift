@@ -3,10 +3,12 @@ public protocol Type : CustomStringConvertible {}
 public class IdentifierType : Type {
     public let ref: TypeRef
     public let genArgs: [Type]?
+    public let nestedTypes: [(String, [Type]?)]?
 
-    public init(_ r: TypeRef, _ g: [Type]?) {
+    public init(_ r: TypeRef, _ g: [Type]?, _ n: [(String, [Type]?)]?) {
         ref = r
         genArgs = g
+        nestedTypes = n
     }
 }
 

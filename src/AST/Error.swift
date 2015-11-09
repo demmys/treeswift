@@ -164,6 +164,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedDidSetterWillSetter
     case ExpectedTypealiasName
     case ExpectedTypealiasAssignment
+    case DuplicateOperatorModifier
     case ProcedureInModulableFunctionDeclaration
     case ExpectedFunctionName
     case ExpectedLeftParenthesisForParameter
@@ -172,7 +173,9 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedInternalParameterName
     case UnexpectedParameterType
     case ExpectedParameterNameTypeAnnotation
+    case InOutParameterWithDefaultArgument
     case ExplicitDefaultArgumentInModuleDeclaration
+    case VariadicParameterWithAnotherKind
     case ExpectedEnumName
     case ExpectedLeftBraceForEnumCase
     case RawValueStyleEnumWithUnionStyle
@@ -188,6 +191,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedVariableName
     case ExpectedStructName
     case ExpectedLeftBraceForDeclarationBody
+    case ExpectedRightBraceAfterDeclarationBody
     case ExpectedClassName
     case ExpectedProtocolName
     case ExpectedTypeAnnotationForConstantOrVariable
@@ -203,6 +207,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedLeftBraceForSubscript
     case ExpectedOperator
     case ExpectedOperatorName
+    case ReservedOperator
     case ExpectedLeftBraceForOperator
     case ExpectedRightBraceForOperator
     case ExpectedPrecedence
@@ -432,6 +437,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected identifier for typealias name."
         case .ExpectedTypealiasAssignment:
             return "Expected '=' for typealias declaration"
+        case .DuplicateOperatorModifier:
+            return "Duplicate operator modifier"
         case .ProcedureInModulableFunctionDeclaration:
             return "Function declaration in modulable scope cannot have a body procedures."
         case .ExpectedFunctionName:
@@ -448,8 +455,12 @@ public enum ErrorMessage : CustomStringConvertible {
             return "<system error> Unexpected parameter type."
         case .ExpectedParameterNameTypeAnnotation:
             return "Expected type annotation after parameter name."
+        case .InOutParameterWithDefaultArgument:
+            return "'inout' parameter cannot have a default argument."
         case .ExplicitDefaultArgumentInModuleDeclaration:
             return "Do not explicitly write the value of default argument. Just write 'default'."
+        case .VariadicParameterWithAnotherKind:
+            return "Variadic parameter cannot declare as 'let', 'var' or 'inout'."
         case .ExpectedEnumName:
             return "Expected enum name."
         case .ExpectedLeftBraceForEnumCase:
@@ -480,6 +491,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected struct name"
         case .ExpectedLeftBraceForDeclarationBody:
             return "Expected '{' for declaration body."
+        case .ExpectedRightBraceAfterDeclarationBody:
+            return "Expected '}' after declaration body."
         case .ExpectedClassName:
             return "Expected class name"
         case .ExpectedProtocolName:
@@ -510,6 +523,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected 'operator' for operator declaration."
         case .ExpectedOperatorName:
             return "Expected operator name."
+        case .ReservedOperator:
+            return "The prefix operators '&', '<' and '?', the infix operator '?', and the postfix operators '!', '>', and '?' are reserved."
         case .ExpectedLeftBraceForOperator:
             return "Expected '{' for operator declaration."
         case .ExpectedRightBraceForOperator:

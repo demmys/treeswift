@@ -132,7 +132,7 @@ public enum CaptureSpecifier {
 
 public enum ClosureParameters {
     case NotProvided
-    case ExplicitTyped(ParameterClause)
+    case ExplicitTyped([Parameter])
     case ImplicitTyped([ConstantInst])
 }
 

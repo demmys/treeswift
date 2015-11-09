@@ -84,7 +84,7 @@ extension FlowSwitch : CustomStringConvertible {
  */
 extension TopLevelDeclaration : CustomStringConvertible {
     public var description: String {
-        return "(TopLevelDeclaration \(procedures))"
+        return "(TopLevelDeclaration main: \(isMain) \(procedures))"
     }
 }
 
@@ -144,25 +144,9 @@ extension ThrowType : CustomStringConvertible {
     }
 }
 
-extension ParameterClause : CustomStringConvertible {
+extension Parameter : CustomStringConvertible {
     public var description: String {
-        return "(ParameterClause variadic: \(isVariadic) \(body))"
-    }
-}
-
-extension Parameter: CustomStringConvertible {
-    public var description: String {
-        let name = "parameter:"
-        switch self {
-        case let .Named(p): return "\(name) named \(p)"
-        case let.Unnamed(attrs, t): return "\(name) unnamed \(attrs) \(t)"
-        }
-    }
-}
-
-extension NamedParameter : CustomStringConvertible {
-    public var description: String {
-        return "inout: \(isInout) \(externalName) \(internalName) \(type) \(defaultArg)"
+        return "kind: \(kind) \(externalName) \(internalName) \(type) \(defaultArg)"
     }
 }
 
@@ -370,7 +354,7 @@ extension ClosureParameters : CustomStringConvertible {
  */
 extension IdentifierType {
     public var description: String {
-        return "(IdentifierType \(ref) \(genArgs))"
+        return "(IdentifierType \(ref) \(genArgs) \(nestedTypes))"
     }
 }
 

@@ -85,7 +85,9 @@ public class Scope {
         self.parent?.children.append(self)
     }
 
-    func importModule(name: String, _ module: ModuleInst, _ source: SourceTrackable) throws {
+    func importModule(
+        name: String, _ module: ModuleInst, _ source: SourceTrackable?
+    ) throws {
         guard modules != nil else {
             if type == .Implicit, let p = parent {
                 try p.importModule(name, module, source)
@@ -165,7 +167,6 @@ public class Scope {
     }
 
     private func printMembers() {
-        print("Scope: \(type)")
         print("\tmodules: \(modules)")
         print("\ttypes: \(insts[.Type])")
         print("\tconstants: \(insts[.Constant])")
@@ -188,7 +189,7 @@ public class Scope {
 
 private class ModuleScope : Scope {
     init() {
-        super.init(.File, nil)
+        super.init(.Module, nil)
         modules = [:]
         insts[.Type] = [:]
         insts[.Constant] = [:]
@@ -451,7 +452,7 @@ public class ScopeManager {
         importableModules[name] = importMethod
     }
 
-    public static func importModule(name: String, _ source: SourceTrackable) throws {
+    public static func importModule(name: String, _ source: SourceTrackable?) throws {
         if let moduleInst = modules[name] {
             try currentScope.importModule(name, moduleInst, source)
             if let nestedImportingScope = importingScopeStack.popLast() {
@@ -483,7 +484,7 @@ public class ScopeManager {
         case .Module:
             assert(false, "<system error> duplicated module scope")
         case .File:
-            if currentScope.type != .Module {
+            guard currentScope.type == .Module else {
                 assert(false, "<system error> file scope should be under a module scope")
             }
             currentScope = FileScope(currentScope)
@@ -520,7 +521,6 @@ public class ScopeManager {
             guard let s = currentScope.parent else {
                 throw ErrorReporter.fatal(.LeavingModuleScope, source)
             }
-            currentScope.printMembers()
             currentScope = s
         }
         guard currentScope.type == type else {
@@ -533,7 +533,6 @@ public class ScopeManager {
         }
         let child = currentScope
         currentScope = parent
-        child.printMembers()
         return child
     }
 
@@ -662,5 +661,18 @@ public class ScopeManager {
         return try currentScope.createRef(
             source, { ImplicitParameterRef(index, source) }
         )
+    }
+
+    public static func printScopes() {
+        func printScope(scope: Scope) {
+            print("\(scope.type)Scope {")
+            scope.printMembers()
+            print("")
+            for child in scope.children {
+                printScope(child)
+            }
+            print("}")
+        }
+        printScope(currentScope)
     }
 }

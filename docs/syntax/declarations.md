@@ -123,11 +123,12 @@ function-body      -> procedure-block
 
 parameter-clauses       -> parameter-clause parameter-clauses?
 parameter-clause        -> LeftParenthesis RightParenthesis
-                         | LeftParenthesis parameter-list VariadicSymbol? RightParenthesis
+                         | LeftParenthesis parameter-list RightParenthesis
 parameter-list          -> parameter parameter-list-tail?
 parameter-list-tail     -> Comma parameter-list
-parameter               -> Inout? (Let | Var)? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
-                         | attributes? type
+parameter               -> (Let | Var)? external-parameter-name? local-parameter-name type-annotation default-argument-clause?
+                         | Inout external-parameter-name? local-parameter-name type-annotation 
+                         | external-parameter-name? local-parameter-name type-annotation VariadicSymbol
 external-parameter-name -> Identifier | Underscore
 local-parameter-name    -> Identifier | Underscore
 default-argument-clause -> AssignmentOperator expression
@@ -253,6 +254,7 @@ postfix-operator-declaration -> Postfix Operator BinaryOperator LeftBrace RightB
 
 infix-operator-declaration -> Infix Operator BinaryOperator LeftBrace infix-operator-attributes? RightBrace
 infix-operator-attributes  -> precedence-clause? associativity-clause?
+                            | associativity-clause? precedence-clause?
 precedence-clause          -> Precedence precedence-level
 precedence-level           -> DecimalDigits(0...255)
 associativity-clause       -> Associativity associativity

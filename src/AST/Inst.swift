@@ -160,6 +160,7 @@ public enum RefIdentifier : CustomStringConvertible{
 public class Ref : SourceTrackable {
     private let id: RefIdentifier
     private let info: SourceInfo
+    public var inst: Inst!
     public var sourceInfo: SourceInfo {
         return info
     }
