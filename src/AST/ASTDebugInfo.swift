@@ -82,6 +82,12 @@ extension FlowSwitch : CustomStringConvertible {
 /*
  * DeclarationAST
  */
+extension Module : CustomStringConvertible {
+    public var description: String {
+        return "(Module \(declarations))"
+    }
+}
+
 extension TopLevelDeclaration : CustomStringConvertible {
     public var description: String {
         return "(TopLevelDeclaration main: \(isMain) \(procedures))"

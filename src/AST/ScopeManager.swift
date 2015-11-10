@@ -146,7 +146,7 @@ public class Scope {
     }
 
     private func createRef<ConcreteRef: Ref>(
-        source: SourceTrackable, _ constructor: () -> ConcreteRef
+        source: SourceTrackable, _ constructor: () -> ConcreteRef, resolve: Bool
     ) throws -> ConcreteRef {
         let kind = RefKind.fromRefType(ConcreteRef.self)
         guard refs[kind] != nil else {
@@ -154,6 +154,12 @@ public class Scope {
         }
         let r = constructor()
         refs[kind]?.append(r)
+        if resolve {
+            guard let inst = try resolveRef(kind, r) else {
+                throw ErrorReporter.instance.fatal(.NotExist(kind, r.id), r)
+            }
+            r.inst = inst
+        }
         return r
     }
 
@@ -195,7 +201,6 @@ public class Scope {
     }
 
     private func printMembers() {
-        print("\tmodules: \(modules)")
         print("\ttypes: \(insts[.Type])")
         print("\tvalues: \(insts[.Value])")
         print("\toperators: \(insts[.Operator])")
@@ -209,6 +214,10 @@ public class Scope {
 }
 
 private class ModuleScope : Scope {
+    static let BUILTIN_TYPE = TypeInst(
+        "Builtin", SourceInfo(seekNo: 0, lineNo: 0, charNo: 0)
+    )
+
     init() {
         super.init(.Module, nil)
         modules = [:]
@@ -217,6 +226,7 @@ private class ModuleScope : Scope {
         refs[.Operator] = []
         refs[.EnumCase] = []
         refs[.ImplicitParameter] = nil
+        insts[.Type] = ["Builtin": ModuleScope.BUILTIN_TYPE]
     }
 
     override private func isPermittedInst(type: Inst.Type) -> Bool {
@@ -528,10 +538,11 @@ private class ExtensionScope : Scope {
 }
 
 public class ScopeManager {
-    private static var modules: [String:Module] = [:]
+    public static var modules: [String:Module] = [:]
     private static var importableModules: [String:() throws -> [Declaration]] = [:]
     private static var currentScope: Scope = ModuleScope()
     private static var importingScopeStack: [Scope] = []
+    private static var moduleParsing: Bool { return importingScopeStack.count > 0 }
 
     public static func addImportableModule(
         name: String, _ importMethod: () throws -> [Declaration]
@@ -553,10 +564,11 @@ public class ScopeManager {
         importingScopeStack.append(currentScope)
         currentScope = ModuleScope()
         let declarations = try importMethod()
-        guard case let moduleScope as ModuleScope = currentScope else {
+        printScopes() // DEBUG
+        guard case .Module = currentScope.type else {
             throw ErrorReporter.instance.fatal(.UnresolvedScopeRemains, source)
         }
-        let module = Module(declarations: declarations, moduleScope: moduleScope)
+        let module = Module(declarations: declarations, moduleScope: currentScope)
         modules[name] = module
         currentScope = importingScopeStack.popLast()!
         try currentScope.importModule(name, module, source)
@@ -715,26 +727,33 @@ public class ScopeManager {
     public static func createTypeRef(
         name: String, _ source: SourceTrackable
     ) throws -> TypeRef {
-        return try currentScope.createRef(source, { TypeRef(name, source) })
+        return try currentScope.createRef(
+            source, { TypeRef(name, source) }, resolve: moduleParsing
+        )
     }
 
     public static func createValueRef(
         name: String, _ source: SourceTrackable
     ) throws -> ValueRef {
-        return try currentScope.createRef(source, { ValueRef(name, source) })
+        return try currentScope.createRef(
+            source, { ValueRef(name, source) }, resolve: moduleParsing
+        )
     }
 
     public static func createOperatorRef(
         name: String, _ source: SourceTrackable
     ) throws -> OperatorRef {
-        return try currentScope.createRef(source, { OperatorRef(name, source) })
+        return try currentScope.createRef(
+            source, { OperatorRef(name, source) }, resolve: moduleParsing
+        )
     }
 
     public static func createEnumCaseRef(
         name: String, _ source: SourceTrackable, className: String? = nil
     ) throws -> EnumCaseRef {
         return try currentScope.createRef(
-            source, { EnumCaseRef(name, source, className: className) }
+            source, { EnumCaseRef(name, source, className: className) },
+            resolve: moduleParsing
         )
     }
 
@@ -742,7 +761,7 @@ public class ScopeManager {
         index: Int, _ source: SourceTrackable
     ) throws -> ImplicitParameterRef {
         return try currentScope.createRef(
-            source, { ImplicitParameterRef(index, source) }
+            source, { ImplicitParameterRef(index, source) }, resolve: moduleParsing
         )
     }
 

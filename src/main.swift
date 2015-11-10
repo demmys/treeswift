@@ -41,6 +41,20 @@ func prettyPrint(target: CustomStringConvertible) {
     print("")
 }
 
+func printParseResult(parseResult: [String:TopLevelDeclaration]) {
+    for (fileName, tld) in parseResult {
+        print("----- \(fileName) -----")
+        prettyPrint(tld)
+    }
+}
+
+func printModules() {
+    for (moduleName, module) in ScopeManager.modules {
+        print("----- \(moduleName) -----")
+        prettyPrint(module)
+    }
+}
+
 func printError(message: Any) {
     print("\(Process.arguments[0]): ", terminator: "", toStream: &STDERR)
     print(message, toStream: &STDERR)
@@ -77,15 +91,6 @@ func moduleName(parseOptions: [CompilerOption]) -> String {
     return name
 }
 
-func printParseResult(parseResult: [String:TopLevelDeclaration]) {
-    for (fileName, tld) in parseResult {
-        print("----- \(fileName) -----")
-        for p in tld.procedures {
-            prettyPrint(p)
-        }
-    }
-}
-
 let optionParser = OptionParser<CompilerOption>()
 optionParser.setOption(
     "I", { (arg) in CompilerOption.IncludePath(arg!) }, requireArgument: true
@@ -112,6 +117,7 @@ do {
             ErrorReporter.instance.report()
             ScopeManager.printScopes() // DEBUG
             try ScopeManager.resolveRefs()
+            printModules() // DEBUG
             printParseResult(result) // DEBUG
         } catch ErrorReport.Fatal {
             printError("Compile process aborted because of the fatal error.")
