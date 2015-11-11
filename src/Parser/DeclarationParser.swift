@@ -333,11 +333,11 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedConstantName)
         }
         let v = try ScopeManager.createConstant(s, trackable, accessLevel: al)
-        guard let (t, typeAttrs) = try tp.typeAnnotation() else {
+        guard let annotation = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
         }
         return PatternInitializerDeclaration(
-            attrs, al, mods, inits: [(.TypedConstantIdentifierPattern(v, t, typeAttrs), nil)]
+            attrs, al, mods, inits: [(.ConstantIdentifierPattern(v), annotation, nil)]
         )
     }
 
@@ -360,10 +360,10 @@ class DeclarationParser : GrammarParser {
             attrs, al, mods,
             name: try ScopeManager.createVariable(s, trackable, accessLevel: al)
         )
-        guard let (t, typeAttrs) = try tp.typeAnnotation() else {
+        guard let annotation = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
         }
-        x.specifier = .TypeAnnotation(t, typeAttrs)
+        x.specifier = .Typed(annotation)
         x.blocks = try getterSetterKeywordBlock()
         return x
     }
@@ -391,30 +391,28 @@ class DeclarationParser : GrammarParser {
     }
 
     private func variableBlockDeclaration(
-        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], ini: (Pattern, Expression?)
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], ini: PatternInitializer
     ) throws -> VariableBlockDeclaration {
-        switch ini.0 {
-        case let .VariableIdentifierPattern(v):
-            guard let e = ini.1 else {
-                throw ts.fatal(.ExpectedVariableSpecifierWithBlock)
-            }
-            let x = VariableBlockDeclaration(attrs, al, mods, name: v)
-            x.specifier = .Initializer(e)
-            x.blocks = try willSetDidSetBlock()
-            return x
-        case let .TypedVariableIdentifierPattern(v, t, attrs):
-            let x = VariableBlockDeclaration(attrs, al, mods, name: v)
-            if let e = ini.1 {
-                x.specifier = .TypedInitializer(t, attrs, e)
+        guard case let .VariableIdentifierPattern(v) = ini.0 else {
+            throw ts.fatal(.ExpectedIdentifierPatternWithVariableBlock)
+        }
+        let x = VariableBlockDeclaration(attrs, al, mods, name: v)
+        if let annotation = ini.1 {
+            if let e = ini.2 {
+                x.specifier = .TypedInitializer(annotation, e)
                 x.blocks = try willSetDidSetBlock()
                 return x
             }
-            x.specifier = .TypeAnnotation(t, attrs)
+            x.specifier = .Typed(annotation)
             x.blocks = try getterSetterBlock()
             return x
-        default:
-            throw ts.fatal(.ExpectedIdentifierPatternWithVariableBlock)
         }
+        guard let e = ini.2 else {
+            throw ts.fatal(.ExpectedVariableSpecifierWithBlock)
+        }
+        x.specifier = .Initializer(e)
+        x.blocks = try willSetDidSetBlock()
+        return x
     }
 
     private func getterSetterBlock(
@@ -525,8 +523,8 @@ class DeclarationParser : GrammarParser {
         }
     }
 
-    private func patternInitializerList(isVariable: Bool) throws -> [(Pattern, Expression?)] {
-        var pi: [(Pattern, Expression?)] = []
+    private func patternInitializerList(isVariable: Bool) throws -> [PatternInitializer] {
+        var pi: [PatternInitializer] = []
         repeat {
             let p: Pattern
             if isVariable {
@@ -534,10 +532,11 @@ class DeclarationParser : GrammarParser {
             } else {
                 p = try ptp.declarativePattern(.ConstantCreation)
             }
+            let a = try tp.typeAnnotation()
             if ts.test([.AssignmentOperator]) {
-                pi.append((p, try ep.expression()))
+                pi.append((p, a, try ep.expression()))
             } else {
-                pi.append((p, nil))
+                pi.append((p, a, nil))
             }
         } while ts.test([.Comma])
         return pi

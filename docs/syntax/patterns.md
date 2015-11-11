@@ -14,9 +14,9 @@ primary-pattern -> wildcard-pattern
                  | type-pattern
                  | expression-pattern
 
-wildcard-pattern -> Underscore type-annotation?
+wildcard-pattern -> Underscore
 
-identifier-pattern -> Identifier type-annotation?
+identifier-pattern -> Identifier
 
 value-binding-pattern -> Var conditional-pattern
                        | Let conditional-pattern

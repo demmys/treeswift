@@ -110,7 +110,7 @@ public enum ExpressionCore {
     case SuperClassSubscript([Expression])
     case ClosureExpression(Closure)
     case TupleExpression(Tuple)
-    case ImplicitMember(String) // TODO enumCase?
+    case ImplicitMember(String)
     case Wildcard
 }
 

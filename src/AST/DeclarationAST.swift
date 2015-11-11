@@ -80,12 +80,14 @@ public enum ImportKind : String {
     case Typealias, Struct, Class, Enum, Protocol, Var, Func
 }
 
+public typealias PatternInitializer = (Pattern, TypeAnnotation?, Expression?)
+
 public class PatternInitializerDeclaration : Declaration {
-    public var inits: [(Pattern, Expression?)] = []
+    public var inits: [PatternInitializer] = []
 
     public init(
         _ attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier],
-        inits: [(Pattern, Expression?)]
+        inits: [PatternInitializer]
     ) {
         super.init(attrs, al, mods)
         self.inits = inits
@@ -115,8 +117,8 @@ public class VariableBlockDeclaration : Declaration {
 
 public enum VariableBlockSpecifier {
     case Initializer(Expression)
-    case TypeAnnotation(Type, [Attribute])
-    case TypedInitializer(Type, [Attribute], Expression)
+    case Typed(TypeAnnotation)
+    case TypedInitializer(TypeAnnotation, Expression)
 }
 
 public enum VariableBlocks {
@@ -190,7 +192,7 @@ public class Parameter {
     public var kind = ParameterKind.None
     public var externalName: ParameterName!
     public var internalName: ParameterName!
-    public var type: (Type, [Attribute])!
+    public var type: TypeAnnotation!
     public var defaultArg: Expression?
 
     public init() {}

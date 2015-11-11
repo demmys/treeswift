@@ -95,7 +95,7 @@ didSet-clause        -> attributes? DidSet setter-name? procedure-block
 
 pattern-initializer-list -> pattern-initializer pattern-initializer-tail?
 pattern-initializer-tail -> Comma pattern-initializer-list
-pattern-initializer      -> declarative-pattern initializer?
+pattern-initializer      -> declarative-pattern type-annotation? initializer?
 initializer              -> AssignmentOperator expression
 ```
 

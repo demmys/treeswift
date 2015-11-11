@@ -12,7 +12,7 @@ class TypeParser : GrammarParser {
         self.gp = gp
     }
 
-    func typeAnnotation() throws -> (Type, [Attribute])? {
+    func typeAnnotation() throws -> TypeAnnotation? {
         if ts.test([.Colon]) {
             return (try type(), try ap.attributes())
         }

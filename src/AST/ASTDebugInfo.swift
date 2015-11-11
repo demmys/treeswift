@@ -105,8 +105,8 @@ extension VariableBlockSpecifier : CustomStringConvertible {
         let name = "specifier:"
         switch self {
         case let .Initializer(e): return "\(name) initializer \(e)"
-        case let .TypeAnnotation(t, attrs): return "\(name) type-annotation \(t) \(attrs)"
-        case let .TypedInitializer(t, attrs, e): return "\(name) typed-initializer \(t) \(attrs) \(e)"
+        case let .Typed(a): return "\(name) type-annotation \(a)"
+        case let .TypedInitializer(a, e): return "\(name) typed-initializer \(a) \(e)"
         }
     }
 }
@@ -442,16 +442,8 @@ extension Pattern : CustomStringConvertible {
             return "\(pre) type: variable-identifier \(r)\(post)"
         case let .ReferenceIdentifierPattern(r):
             return "\(pre) type: reference-identifier \(r)\(post)"
-        case let .TypedConstantIdentifierPattern(r, t, attrs):
-            return "\(pre) type: typed-constant-identifier \(r) \(t) \(attrs)\(post)"
-        case let .TypedVariableIdentifierPattern(r, t, attrs):
-            return "\(pre) type: typed-variable-identifier \(r) \(t) \(attrs)\(post)"
-        case let .TypedReferenceIdentifierPattern(r, t, attrs):
-            return "\(pre) type: typed-reference-identifier \(r) \(t) \(attrs)\(post)"
         case .WildcardPattern:
             return "\(pre) type: wildcard-pattern)\(post)"
-        case let .TypedWildcardPattern(t, attrs):
-            return "\(pre) type: typed-wildcard \(t) \(attrs)\(post)"
         case let .TuplePattern(pt):
             return "\(pre) type: tuple \(pt)\(post)"
         case let .VariableBindingPattern(p):

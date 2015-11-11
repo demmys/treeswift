@@ -1,5 +1,7 @@
 public protocol Type : CustomStringConvertible {}
 
+public typealias TypeAnnotation = (Type, attrs: [Attribute])
+
 public class IdentifierType : Type {
     public let ref: TypeRef
     public let genArgs: [Type]?

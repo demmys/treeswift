@@ -154,7 +154,7 @@ class ProcedureParser : GrammarParser {
     private func forInFlow(label: String? = nil) throws -> ForInFlow {
         ScopeManager.enterScope(.ForIn)
         let x = ForInFlow(label)
-        var p: Pattern!
+        let p: Pattern
         if ts.test([.Case]) {
             p = try pp.conditionalPattern()
         } else {

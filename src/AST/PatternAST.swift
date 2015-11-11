@@ -4,11 +4,7 @@ public indirect enum Pattern {
     case ConstantIdentifierPattern(ConstantInst)
     case VariableIdentifierPattern(VariableInst)
     case ReferenceIdentifierPattern(ValueRef)
-    case TypedConstantIdentifierPattern(ConstantInst, Type, [Attribute])
-    case TypedVariableIdentifierPattern(VariableInst, Type, [Attribute])
-    case TypedReferenceIdentifierPattern(ValueRef, Type, [Attribute])
     case WildcardPattern
-    case TypedWildcardPattern(Type, [Attribute]?)
     case TuplePattern(PatternTuple)
     case VariableBindingPattern(Pattern)
     case ConstantBindingPattern(Pattern)

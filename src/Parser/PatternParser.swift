@@ -24,7 +24,7 @@ class PatternParser : GrammarParser {
         case let .Identifier(s):
             return try identifierPattern(s, info, usage: usage)
         case .Underscore:
-            return try wildcardPattern()
+            return .WildcardPattern
         case .LeftParenthesis:
             return .TuplePattern(try declarativeTuplePattern(usage))
         default:
@@ -41,7 +41,7 @@ class PatternParser : GrammarParser {
             .Underscore, .LeftParenthesis, .Var, .Let, .Is, .Dot, identifier
         ]) {
         case .Underscore:
-            return try wildcardPattern()
+            return .WildcardPattern
         case .LeftParenthesis:
             return .TuplePattern(try conditionalTuplePattern(valueBinding))
         case .Var:
@@ -93,22 +93,6 @@ class PatternParser : GrammarParser {
     private func identifierPattern(
         s: String, _ info: SourceInfo, usage: PatternUsage
     ) throws -> Pattern {
-        if let (type, attrs) = try tp.typeAnnotation() {
-            switch usage {
-            case .ConstantCreation:
-                return .TypedConstantIdentifierPattern(
-                    try ScopeManager.createConstant(s, info), type, attrs
-                )
-            case .VariableCreation:
-                return .TypedVariableIdentifierPattern(
-                    try ScopeManager.createVariable(s, info), type, attrs
-                )
-            case .VariableReference:
-                return .TypedReferenceIdentifierPattern(
-                    try ScopeManager.createValueRef(s, info), type, attrs
-                )
-            }
-        }
         switch usage {
         case .ConstantCreation:
             return .ConstantIdentifierPattern(try ScopeManager.createConstant(s, info))
@@ -117,13 +101,6 @@ class PatternParser : GrammarParser {
         case .VariableReference:
             return .ReferenceIdentifierPattern(try ScopeManager.createValueRef(s, info))
         }
-    }
-
-    private func wildcardPattern() throws -> Pattern {
-        if let (type, attrs) = try tp.typeAnnotation() {
-            return .TypedWildcardPattern(type, attrs)
-        }
-        return .WildcardPattern
     }
 
     private func declarativeTuplePattern(usage: PatternUsage) throws -> PatternTuple {
