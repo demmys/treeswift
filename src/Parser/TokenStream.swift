@@ -79,16 +79,19 @@ class TokenStream {
     }
 
     func look(var ahead: Int = 0, skipLineFeed: Bool = true) -> Token {
+        if ahead >= queue.count {
+            for var i = queue.count - 1; i < ahead; ++i {
+                queue.append(load())
+            }
+        }
         if skipLineFeed {
             for var i = 0; i < ahead; ++i {
                 if queue[i].kind == .LineFeed {
                     ++ahead
+                    if ahead >= queue.count {
+                        queue.append(load())
+                    }
                 }
-            }
-        }
-        if ahead >= queue.count {
-            for var i = queue.count - 1; i < ahead; ++i {
-                queue.append(load())
             }
         }
         // print("\tlooking queue: \(queue) (currently ahead: \(ahead))") // DEBUG

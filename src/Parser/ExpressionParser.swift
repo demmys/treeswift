@@ -195,12 +195,28 @@ class ExpressionParser : GrammarParser {
     ) throws -> ExpressionCore {
         let trackable = ts.look()
         switch ts.match([
-            identifier, implicitParameterName, integerLiteral, floatingPointLiteral,
-            stringLiteral, booleanLiteral, .Nil, .LeftBracket,
+            identifier, binaryOperator, implicitParameterName, integerLiteral,
+            floatingPointLiteral, stringLiteral, booleanLiteral, .Nil, .LeftBracket,
             .FILE, .LINE, .COLUMN, .FUNCTION,
             .`Self`, .Super, .LeftBrace, .LeftParenthesis, .Dot, .Underscore
         ]) {
         case let .Identifier(s):
+            switch valueBinding {
+            case .None:
+                return .Value(
+                    try ScopeManager.createValueRef(s, trackable),
+                    genArgs: try gp.genericArgumentClause()
+                )
+            case .Constant:
+                return .BindingConstant(
+                    try ScopeManager.createConstant(s, trackable)
+                )
+            case .Variable:
+                return .BindingVariable(
+                    try ScopeManager.createVariable(s, trackable)
+                )
+            }
+        case let .BinaryOperator(s):
             switch valueBinding {
             case .None:
                 return .Value(

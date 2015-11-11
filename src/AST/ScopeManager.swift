@@ -28,18 +28,18 @@ public protocol ScopeTrackable {
 public enum RefKind {
     case Type, Value, Operator, EnumCase, ImplicitParameter
 
-    private static func fromInstType(type: Inst.Type) -> RefKind {
+    private static func fromInstType(type: Inst.Type) -> [RefKind] {
         switch type {
-        case is TypeInst.Type: return .Type
-        case is ConstantInst.Type: return .Value
-        case is VariableInst.Type: return .Value
-        case is FunctionInst.Type: return .Value
-        case is OperatorInst.Type: return .Operator
-        case is EnumInst.Type: return .Type
-        case is EnumCaseInst.Type: return .EnumCase
-        case is StructInst.Type: return .Type
-        case is ClassInst.Type: return .Type
-        case is ProtocolInst.Type: return .Type
+        case is TypeInst.Type: return [.Type]
+        case is ConstantInst.Type: return [.Value]
+        case is VariableInst.Type: return [.Value]
+        case is FunctionInst.Type: return [.Value]
+        case is OperatorInst.Type: return [.Operator]
+        case is EnumInst.Type: return [.Type, .Value]
+        case is EnumCaseInst.Type: return [.EnumCase]
+        case is StructInst.Type: return [.Type, .Value]
+        case is ClassInst.Type: return [.Type, .Value]
+        case is ProtocolInst.Type: return [.Type]
         default: assert(false, "<system error> invalid inst type.")
         }
     }
@@ -130,19 +130,21 @@ public class Scope {
             break
         }
 
-        let kind = RefKind.fromInstType(ConcreteInst.self)
         guard isPermittedInst(ConcreteInst.self) else {
             throw ErrorReporter.instance.fatal(.InvalidScope(ConcreteInst.self), source)
         }
-        guard insts[kind]![name] == nil else {
-            throw ErrorReporter.instance.fatal(.AlreadyExist(kind, name), source)
+        let inst = constructor()
+        if type == .Module,
+           let al = accessLevel where al == .Public || al == .PublicSet {
+            inst.isPublic = true
         }
-        let i = constructor()
-        if type == .Module, let al = accessLevel where al == .Public || al == .PublicSet {
-            i.isPublic = true
+        for kind in RefKind.fromInstType(ConcreteInst.self) {
+            guard insts[kind]![name] == nil else {
+                throw ErrorReporter.instance.fatal(.AlreadyExist(kind, name), source)
+            }
+            insts[kind]![name] = inst
         }
-        insts[kind]?[name] = i
-        return i
+        return inst
     }
 
     private func createRef<ConcreteRef: Ref>(
