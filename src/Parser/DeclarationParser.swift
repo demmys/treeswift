@@ -337,7 +337,7 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
         }
         return PatternInitializerDeclaration(
-            attrs, al, mods, inits: [(.ConstantIdentifierPattern(v), annotation, nil)]
+            attrs, al, mods, inits: [(ConstantIdentifierPattern(v), annotation, nil)]
         )
     }
 
@@ -363,7 +363,7 @@ class DeclarationParser : GrammarParser {
         guard let annotation = try tp.typeAnnotation() else {
             throw ts.fatal(.ExpectedTypeAnnotationForConstantOrVariable)
         }
-        x.specifier = .Typed(annotation)
+        x.annotation = annotation
         x.blocks = try getterSetterKeywordBlock()
         return x
     }
@@ -393,24 +393,24 @@ class DeclarationParser : GrammarParser {
     private func variableBlockDeclaration(
         attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], ini: PatternInitializer
     ) throws -> VariableBlockDeclaration {
-        guard case let .VariableIdentifierPattern(v) = ini.0 else {
+        guard case let p as VariableIdentifierPattern = ini.0 else {
             throw ts.fatal(.ExpectedIdentifierPatternWithVariableBlock)
         }
-        let x = VariableBlockDeclaration(attrs, al, mods, name: v)
+        let x = VariableBlockDeclaration(attrs, al, mods, name: p.inst)
         if let annotation = ini.1 {
+            x.annotation = annotation
             if let e = ini.2 {
-                x.specifier = .TypedInitializer(annotation, e)
+                x.initializer = e
                 x.blocks = try willSetDidSetBlock()
                 return x
             }
-            x.specifier = .Typed(annotation)
             x.blocks = try getterSetterBlock()
             return x
         }
         guard let e = ini.2 else {
             throw ts.fatal(.ExpectedVariableSpecifierWithBlock)
         }
-        x.specifier = .Initializer(e)
+        x.initializer = e
         x.blocks = try willSetDidSetBlock()
         return x
     }
@@ -630,9 +630,9 @@ class DeclarationParser : GrammarParser {
 
     private func parameterClauses(forModule: Bool) throws -> [[Parameter]] {
         var xs: [[Parameter]] = []
-        while case .LeftParenthesis = ts.look().kind {
+        repeat {
             xs.append(try parameterClause(forModule))
-        }
+        } while ts.look().kind == .LeftParenthesis
         return xs
     }
 
@@ -718,8 +718,8 @@ class DeclarationParser : GrammarParser {
             }
         case .Needless:
             switch followName {
-            case .NotSpecified:
-                p.externalName = .NotSpecified
+            case .NotSpecified, .Needless:
+                p.externalName = .Needless
                 p.internalName = .Needless
             case let .Specified(s, i):
                 p.externalName = .Needless
@@ -733,9 +733,6 @@ class DeclarationParser : GrammarParser {
                         try ScopeManager.createVariable(s, i)
                     )
                 }
-            case .Needless:
-                p.externalName = .Needless
-                p.internalName = .Needless
             default:
                 throw ts.fatal(.UnexpectedParameterType)
             }

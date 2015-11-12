@@ -19,8 +19,8 @@ array-type -> LeftBracket type RightBracket
 dictionary-type -> LeftBracket type Colon type RightBracket
 
 tuple-type                   -> LeftParenthesis tuple-type-body? RightParenthesis
-tuple-type-body              -> tuple-type-element-list VariadicSymbol?
-tuple-type-element-list      -> tuple-type-element tuple-type-element-list-tail?
+tuple-type-body              -> tuple-type-element-list
+tuple-type-element-list      -> tuple-type-element VariadicSymbol? tuple-type-element-list-tail?
 tuple-type-element-list-tail -> Comma tuple-type-element-list
 tuple-type-element           -> attributes? Inout? type
                               | Inout? Identifier type-annotation

@@ -24,7 +24,7 @@ type-inheritance-list        -> type-identifier type-inheritance-list-tail?
 type-inheritance-list-tail   -> Comma type-inheritance-list
 ```
 
-### Module declaration
+#### Module declaration
 
 ```
 module-declarations -> module-declaration module-declarations?

@@ -81,19 +81,10 @@ class TypeParser : GrammarParser {
         repeat {
             x.elems.append(try tupleTypeElement())
         } while ts.test([.Comma])
-        switch ts.match([.RightParenthesis]) {
-        case .PrefixOperator("..."), .BinaryOperator("..."), .PostfixOperator("..."):
-            ts.next()
-            x.variadic = true
-            if !ts.test([.RightParenthesis]) {
-                try ts.error(.ExpectedRightParenthesisAfterTupleType)
-            }
-            return x
-        case .RightParenthesis:
-            return x
-        default:
-            throw ts.fatal(.ExpectedRightParenthesisAfterTupleType)
+        if !ts.test([.RightParenthesis]) {
+            try ts.error(.ExpectedRightParenthesisAfterTupleType)
         }
+        return x
     }
 
     private func tupleTypeElement() throws -> TupleTypeElement {
@@ -105,35 +96,38 @@ class TypeParser : GrammarParser {
                 x.inOut = true
             }
             x.type = try type()
-            return x
         case .InOut:
             x.inOut = true
             ts.next()
             if case let .Identifier(s) = ts.match([identifier]) {
-                return try tupleTypeElementBody(x, s)
+                try tupleTypeElementBody(x, s)
+            } else {
+                x.type = try type()
             }
-            x.type = try type()
-            return x
         case let .Identifier(s):
             ts.next()
-            return try tupleTypeElementBody(x, s)
+            try tupleTypeElementBody(x, s)
         default:
             x.type = try type()
-            return x
         }
+        switch ts.look().kind {
+        case .PrefixOperator("..."), .BinaryOperator("..."), .PostfixOperator("..."):
+            ts.next()
+            x.variadic = true
+        default:
+            break
+        }
+        return x
     }
 
-    private func tupleTypeElementBody(
-        x: TupleTypeElement, _ s: String
-    ) throws -> TupleTypeElement {
+    private func tupleTypeElementBody(x: TupleTypeElement, _ s: String) throws {
         if let (type, attrs) = try typeAnnotation() {
             x.label = s
             x.attrs = attrs
             x.type = type
-            return x
+            return
         }
         x.type = try type()
-        return x
     }
 
     func protocolCompositionType() throws -> ProtocolCompositionType {
@@ -187,6 +181,6 @@ class TypeParser : GrammarParser {
     }
 
     private func functionType(t: Type, _ throwType: ThrowType) throws -> Type {
-        return FunctionType(t, .Nothing, try type())
+        return FunctionType(t, throwType, try type())
     }
 }

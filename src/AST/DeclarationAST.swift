@@ -100,7 +100,8 @@ public class PatternInitializerDeclaration : Declaration {
 
 public class VariableBlockDeclaration : Declaration {
     public var name: VariableInst!
-    public var specifier: VariableBlockSpecifier!
+    public var annotation: TypeAnnotation?
+    public var initializer: Expression?
     public var blocks: VariableBlocks!
 
     public init(
@@ -111,14 +112,8 @@ public class VariableBlockDeclaration : Declaration {
     }
 
     public override var description: String {
-        return "(VariableBlockDeclaration \(attrs) \(al) \(mods) \(name) \(specifier) \(blocks))"
+        return "(VariableBlockDeclaration \(attrs) \(al) \(mods) \(name) \(annotation) \(initializer) \(blocks))"
     }
-}
-
-public enum VariableBlockSpecifier {
-    case Initializer(Expression)
-    case Typed(TypeAnnotation)
-    case TypedInitializer(TypeAnnotation, Expression)
 }
 
 public enum VariableBlocks {
@@ -128,7 +123,8 @@ public enum VariableBlocks {
     case WillSetDidSet(willSetter: VariableBlock?, didSetter: VariableBlock?)
 }
 
-public class VariableBlock : ScopeTrackable {
+public class VariableBlock : ScopeTrackable, Typeable {
+    public var type: Type?
     public var attrs: [Attribute] = []
     public var param: ConstantInst?
     public var body: [Procedure]!

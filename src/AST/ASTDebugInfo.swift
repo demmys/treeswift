@@ -100,17 +100,6 @@ extension ImportKind : CustomStringConvertible {
     }
 }
 
-extension VariableBlockSpecifier : CustomStringConvertible {
-    public var description: String {
-        let name = "specifier:"
-        switch self {
-        case let .Initializer(e): return "\(name) initializer \(e)"
-        case let .Typed(a): return "\(name) type-annotation \(a)"
-        case let .TypedInitializer(a, e): return "\(name) typed-initializer \(a) \(e)"
-        }
-    }
-}
-
 extension VariableBlocks : CustomStringConvertible {
     public var description: String {
         let pre = "(VariableBlocks type:"
@@ -378,13 +367,13 @@ extension DictionaryType {
 
 extension TupleType {
     public var description: String {
-        return "(TupleType variadic: \(variadic) \(elems))"
+        return "(TupleType \(elems))"
     }
 }
 
 extension TupleTypeElement {
     public var description: String {
-        return "(TupleTypeElement inout: \(inOut) label: \(label) \(attrs) \(type))"
+        return "(TupleTypeElement inout: \(inOut) variadic: \(variadic) label: \(label) \(attrs) \(type))"
     }
 }
 
@@ -426,7 +415,6 @@ extension MetaProtocol {
 
 /*
  * PatternAST
- */
 extension Pattern : CustomStringConvertible {
     public var description: String {
         let pre = "(Pattern"
@@ -463,6 +451,7 @@ extension Pattern : CustomStringConvertible {
         }
     }
 }
+ */
 
 /*
  * GenericsAST

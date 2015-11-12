@@ -24,9 +24,9 @@ class PatternParser : GrammarParser {
         case let .Identifier(s):
             return try identifierPattern(s, info, usage: usage)
         case .Underscore:
-            return .WildcardPattern
+            return WildcardPattern()
         case .LeftParenthesis:
-            return .TuplePattern(try declarativeTuplePattern(usage))
+            return TuplePattern(try declarativeTuplePattern(usage))
         default:
             throw ts.fatal(.ExpectedDeclarativePattern)
         }
@@ -41,41 +41,41 @@ class PatternParser : GrammarParser {
             .Underscore, .LeftParenthesis, .Var, .Let, .Is, .Dot, identifier
         ]) {
         case .Underscore:
-            return .WildcardPattern
+            return WildcardPattern()
         case .LeftParenthesis:
-            return .TuplePattern(try conditionalTuplePattern(valueBinding))
+            return TuplePattern(try conditionalTuplePattern(valueBinding))
         case .Var:
             if valueBinding != .None {
                 throw ts.fatal(.NestedBindingPattern)
             }
-            return .VariableBindingPattern(try conditionalPattern(.Variable))
+            return VariableBindingPattern(try conditionalPattern(.Variable))
         case .Let:
             if valueBinding != .None {
                 throw ts.fatal(.NestedBindingPattern)
             }
-            return .ConstantBindingPattern(try conditionalPattern(.Constant))
+            return ConstantBindingPattern(try conditionalPattern(.Constant))
         case .Is:
-            return .TypePattern(try tp.type())
+            return TypePattern(try tp.type())
         case .Dot:
             let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedEnumCasePatternIdentifier)
             }
-            return .EnumCasePattern(
+            return EnumCasePattern(
                 try ScopeManager.createEnumCaseRef(s, trackable),
                 try conditionalTuplePattern(valueBinding)
             )
         case let .Identifier(s):
             let trackable = ts.look()
             if let m = testEnumCasePattern(s) {
-                return .EnumCasePattern(
+                return EnumCasePattern(
                     try ScopeManager.createEnumCaseRef(m, trackable, className: s),
                     try conditionalTuplePattern(valueBinding)
                 )
             }
             fallthrough
         default:
-            return .ExpressionPattern(try ep.expression(valueBinding))
+            return ExpressionPattern(try ep.expression(valueBinding))
         }
     }
 
@@ -95,11 +95,11 @@ class PatternParser : GrammarParser {
     ) throws -> Pattern {
         switch usage {
         case .ConstantCreation:
-            return .ConstantIdentifierPattern(try ScopeManager.createConstant(s, info))
+            return ConstantIdentifierPattern(try ScopeManager.createConstant(s, info))
         case .VariableCreation:
-            return .VariableIdentifierPattern(try ScopeManager.createVariable(s, info))
+            return VariableIdentifierPattern(try ScopeManager.createVariable(s, info))
         case .VariableReference:
-            return .ReferenceIdentifierPattern(try ScopeManager.createValueRef(s, info))
+            return ReferenceIdentifierPattern(try ScopeManager.createValueRef(s, info))
         }
     }
 
@@ -141,10 +141,10 @@ class PatternParser : GrammarParser {
     private func containerPattern(p: Pattern) throws -> Pattern {
         switch ts.match([.PostfixQuestion, .As]) {
         case .PostfixQuestion:
-            return try containerPattern(.OptionalPattern(p))
+            return try containerPattern(OptionalPattern(p))
         case .As:
             let t = try tp.type()
-            return try containerPattern(.TypeCastingPattern(p, t))
+            return try containerPattern(TypeCastingPattern(p, t))
         default:
             return p
         }

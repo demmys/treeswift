@@ -243,7 +243,7 @@ class ProcedureParser : GrammarParser {
                 ps.appendContentsOf(try matchingPattern())
             } while ts.test([.Comma])
         default:
-            ps.append(PatternMatching(.BooleanPattern, try ep.expression(), nil))
+            ps.append(PatternMatching(BooleanPattern(), try ep.expression(), nil))
             if ts.test([.Comma]) {
                 repeat {
                     ps.appendContentsOf(try matchingPattern())
@@ -280,9 +280,9 @@ class ProcedureParser : GrammarParser {
         repeat {
             let pm = PatternMatching()
             if isVariable {
-                pm.pat = .OptionalPattern(try pp.declarativePattern(.VariableCreation))
+                pm.pat = OptionalPattern(try pp.declarativePattern(.VariableCreation))
             } else {
-                pm.pat = .OptionalPattern(try pp.declarativePattern(.ConstantCreation))
+                pm.pat = OptionalPattern(try pp.declarativePattern(.ConstantCreation))
             }
             if !ts.test([.AssignmentOperator]) {
                 try ts.error(.ExpectedEqualForOptionalBinding)
@@ -309,9 +309,9 @@ class ProcedureParser : GrammarParser {
             let c = CatchFlow()
             switch ts.match([.Where]) {
             case .Where:
-                c.pats = [PatternMatching(.IdentityPattern, nil, try ep.expression())]
+                c.pats = [PatternMatching(IdentityPattern(), nil, try ep.expression())]
             case .LeftBrace:
-                c.pats = [PatternMatching(.IdentityPattern, nil, nil)]
+                c.pats = [PatternMatching(IdentityPattern(), nil, nil)]
             default:
                 let p = try pp.conditionalPattern()
                 if ts.test([.Where]) {
@@ -379,7 +379,7 @@ class ProcedureParser : GrammarParser {
             try ts.error(.ExpectedColonAfterDefault)
         }
         let x = CaseFlow()
-        x.pats = [PatternMatching(.IdentityPattern, nil, nil)]
+        x.pats = [PatternMatching(IdentityPattern(), nil, nil)]
         x.block = try procedures()
         guard x.block.count > 0 else {
             throw ts.fatal(.EmptyCaseFlow)
@@ -405,9 +405,9 @@ class ProcedureParser : GrammarParser {
     private func returnOperation() throws -> Operation {
         switch ts.look().kind {
         case .Semicolon, .LineFeed, .EndOfFile:
-            return .ReturnOperation(nil)
+            return .ReturnOperation(ReturnValue(nil))
         default:
-            return .ReturnOperation(try ep.expression())
+            return .ReturnOperation(ReturnValue(try ep.expression()))
         }
     }
 

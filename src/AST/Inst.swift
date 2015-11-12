@@ -1,5 +1,5 @@
 public class Inst : SourceTrackable {
-    private let name: String
+    public let name: String
     private let info: SourceInfo
     public var isPublic: Bool = false
     public var sourceInfo: SourceInfo {
@@ -22,25 +22,29 @@ public class TypeInst : Inst, CustomStringConvertible {
     }
 }
 
-public class ConstantInst : Inst, CustomStringConvertible {
+public class ConstantInst : Inst, Typeable, CustomStringConvertible {
+    public var type: Type?
     public var description: String {
         return "(ConstantInst \(name))"
     }
 }
 
-public class VariableInst : Inst, CustomStringConvertible {
+public class VariableInst : Inst, Typeable, CustomStringConvertible {
+    public var type: Type?
     public var description: String {
         return "(VariableInst \(name))"
     }
 }
 
-public class FunctionInst : Inst, CustomStringConvertible {
+public class FunctionInst : Inst, Typeable, CustomStringConvertible {
+    public var type: Type?
     public var description: String {
         return "(FunctionInst \(name))"
     }
 }
 
-public class OperatorInst : Inst, CustomStringConvertible {
+public class OperatorInst : Inst, Typeable, CustomStringConvertible {
+    public var type: Type?
     override public init(_ name: String, _ source: SourceTrackable) {
         super.init(name, source)
     }

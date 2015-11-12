@@ -1,8 +1,8 @@
 public enum Procedure {
     case DeclarationProcedure(Declaration)
-    case OperationProcedure(Operation)
-    case FlowProcedure(Flow)
     case FlowSwitchProcedure(FlowSwitch)
+    case FlowProcedure(Flow)
+    case OperationProcedure(Operation)
 }
 
 public enum Operation {
@@ -11,8 +11,17 @@ public enum Operation {
     case BreakOperation(String?)
     case ContinueOperation(String?)
     case FallthroughOperation
-    case ReturnOperation(Expression?)
+    case ReturnOperation(ReturnValue)
     case ThrowOperation(Expression)
+}
+
+public class ReturnValue : Typeable {
+    public var type: Type?
+    let value: Expression?
+
+    public init(_ v: Expression?) {
+        value = v
+    }
 }
 
 public class Flow : ScopeTrackable, CustomStringConvertible {
@@ -49,7 +58,7 @@ public class ForFlow : Flow {
     }
 
     public func setCond(c: Expression) {
-        pats = [PatternMatching(.BooleanPattern, c, nil)]
+        pats = [PatternMatching(BooleanPattern(), c, nil)]
     }
 
     public override var description: String { get {
@@ -94,7 +103,7 @@ public class RepeatWhileFlow : Flow {
     }
 
     public func setCond(c: Expression) {
-        pats = [PatternMatching(.BooleanPattern, c, nil)]
+        pats = [PatternMatching(BooleanPattern(), c, nil)]
     }
 
     public override var description: String { get {

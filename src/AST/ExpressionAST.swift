@@ -1,4 +1,5 @@
-public class Expression {
+public class Expression : Typeable {
+    public var type: Type?
     public var tryType: TryType!
     public var body: ExpressionBody!
 
