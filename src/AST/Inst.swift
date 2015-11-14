@@ -2,22 +2,25 @@ public class Inst : Typeable, SourceTrackable {
     public var type = TypeCandidate()
     public let name: String
     private let info: SourceInfo
-    public var isPublic: Bool = false
+    public var accessLevel: AccessLevel?
+    public var nestedTypes: [String:Inst] = [:]
+    public var members: [String:Inst] = [:]
     public var sourceInfo: SourceInfo {
         return info
     }
 
-    public init(_ name: String, _ source: SourceTrackable) {
+    public init(
+        _ name: String, _ source: SourceTrackable, nestedTypes: [Inst] = []
+    ) {
         self.name = name
         self.info = source.sourceInfo
+        for inst in nestedTypes {
+            self.nestedTypes[inst.name] = inst
+        }
     }
 }
 
 public class TypeInst : Inst, CustomStringConvertible {
-    override public init(_ name: String, _ source: SourceTrackable) {
-        super.init(name, source)
-    }
-
     public var description: String {
         return "(TypeInst \(name))"
     }
@@ -42,12 +45,14 @@ public class FunctionInst : Inst, CustomStringConvertible {
 }
 
 public class OperatorInst : Inst, CustomStringConvertible {
-    override public init(_ name: String, _ source: SourceTrackable) {
+    public var implementations: [FunctionInst] = []
+
+    public init(_ name: String, _ source: SourceTrackable) {
         super.init(name, source)
     }
 
     public var description: String {
-        return "(TypeInst \(name))"
+        return "(OperatorInst \(name) \(implementations))"
     }
 }
 
@@ -67,12 +72,12 @@ public class EnumInst : Inst, CustomStringConvertible {
 }
 
 public class EnumCaseInst : Inst, CustomStringConvertible {
-    override public init(_ name: String, _ source: SourceTrackable) {
+    public init(_ name: String, _ source: SourceTrackable) {
         super.init(name, source)
     }
 
     public var description: String {
-        return "(TypeInst \(name))"
+        return "(EnumCaseInst \(name))"
     }
 }
 
@@ -136,24 +141,49 @@ public enum RefIdentifier : CustomStringConvertible{
 public class Ref : Typeable, SourceTrackable {
     public let id: RefIdentifier
     public var inst: Inst!
+    private var onResolved: [() throws -> ()] = []
     public var type = TypeCandidate()
     private let info: SourceInfo
     public var sourceInfo: SourceInfo { return info }
 
+    func resolvedCallback() throws {
+        for callback in onResolved {
+            try callback()
+        }
+    }
+
     public init(_ id: RefIdentifier, _ source: SourceTrackable) {
         self.id = id
         self.info = source.sourceInfo
-        type.addCandidate({ self.inst.type })
     }
 }
 
+public typealias NestedType = (String, [Type]?, SourceTrackable)
+
 public class TypeRef : Ref, CustomStringConvertible {
-    public init(_ name: String, _ source: SourceTrackable) {
+    private let nestedTypes: [NestedType]
+
+    public init(
+        _ name: String, _ source: SourceTrackable, _ nested: [NestedType]
+    ) {
+        self.nestedTypes = nested
         super.init(.Name(name), source)
+        onResolved.append(resolveNestedTypes)
+    }
+
+    private func resolveNestedTypes() throws {
+        for (name, _, source) in nestedTypes {
+            guard let child = inst.nestedTypes[name] else {
+                throw ErrorReporter.instance.fatal(
+                    .NoNestedType(parent: inst.name, child: name), source
+                )
+            }
+            inst = child
+        }
     }
 
     public var description: String {
-        return "(TypeRef \(id) \(inst))"
+        return "(TypeRef \(id) \(nestedTypes) \(inst))"
     }
 }
 
@@ -168,12 +198,24 @@ public class ValueRef : Ref, CustomStringConvertible {
 }
 
 public class OperatorRef : Ref, CustomStringConvertible {
-    public init(_ name: String, _ source: SourceTrackable) {
+    public let impl: FunctionInst?
+
+    public init(
+        _ name: String, _ source: SourceTrackable, _ impl: FunctionInst? = nil
+    ) {
+        self.impl = impl
         super.init(.Name(name), source)
+        onResolved.append({
+            if let i = self.impl {
+                if case let operatorInst as OperatorInst = self.inst {
+                    operatorInst.implementations.append(i)
+                }
+            }
+        })
     }
 
     public var description: String {
-        return "(OperatorRef \(id) \(inst))"
+        return "(OperatorRef \(id) \(inst) \(impl))"
     }
 }
 

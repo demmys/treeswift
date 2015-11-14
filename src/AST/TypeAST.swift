@@ -13,23 +13,20 @@ public typealias TypeAnnotation = (Type, attrs: [Attribute])
 public class IdentifierType : Type {
     public let ref: TypeRef
     public let genArgs: [Type]?
-    public let nestedTypes: [(String, [Type]?)]
 
     public init(_ r: TypeRef) {
         ref = r
         genArgs = nil
-        nestedTypes = []
         super.init()
     }
-    public init(_ r: TypeRef, _ g: [Type]?, _ n: [(String, [Type]?)]) {
+    public init(_ r: TypeRef, _ g: [Type]?) {
         ref = r
         genArgs = g
-        nestedTypes = n
         super.init()
     }
 
     public override var description: String {
-        return "(IdentifierType \(ref) \(genArgs) \(nestedTypes))"
+        return "(IdentifierType \(ref) \(genArgs))"
     }
 }
 

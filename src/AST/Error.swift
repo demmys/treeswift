@@ -130,13 +130,14 @@ public enum ErrorMessage : CustomStringConvertible {
     case InvalidScopeToImport
     case NoSuchModule(String)
     case UnresolvedScopeRemains
-    case ScopeTypeMismatch(ScopeType, ScopeType)
     case LeavingModuleScope
     case InvalidScope(Inst.Type)
     case AlreadyExist(RefKind, String)
     case InvalidRefScope(RefKind)
     case NotExist(RefKind, RefIdentifier)
     case ImplicitParameterIsNotImplemented
+    // Inst
+    case NoNestedType(parent: String, child: String)
     // TokenStream
     case UnexpectedEOF
     case InvalidToken
@@ -320,8 +321,6 @@ public enum ErrorMessage : CustomStringConvertible {
             return "No such module '\(name)'"
         case .UnresolvedScopeRemains:
             return "<system error> unresolved scope remains"
-        case let .ScopeTypeMismatch(current, expected):
-            return "<system error> leaving scope type mismatch. Expected type is '\(expected)', but actual type is '\(current)'"
         case .LeavingModuleScope:
             return "<system error> leaving module scope"
         case let .InvalidScope(type):
@@ -372,6 +371,9 @@ public enum ErrorMessage : CustomStringConvertible {
             return "\(target) '\(id)' not exists in this scope"
         case .ImplicitParameterIsNotImplemented:
             return "Implicit parameter is not implemented."
+        // Inst
+        case let .NoNestedType(parent: p, child: c):
+            return "Type '\(p)' has no nested type '\(c)'"
         // AttributesParser
         case .ExpectedAttributeIdentifier:
             return "Expected identifier for attribute"

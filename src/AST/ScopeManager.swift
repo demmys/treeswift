@@ -7,7 +7,7 @@ public enum ScopeType {
     case Implicit
     case For, ForIn, While, RepeatWhile, If, Guard, Defer, Do, Catch, Case
     case Function, VariableBlock, Initializer, Deinitializer, Subscript
-    case Closure, Enum, Struct, Class, Protocol, Extension
+    case Closure, Enum(Inst), Struct(Inst), Class(Inst), Protocol(Inst), Extension
 
     var policy: MemberPolicy {
         switch self {
@@ -17,6 +17,16 @@ public enum ScopeType {
              .Defer, .Do, .Catch, .Case, .Function, .VariableBlock, .Initializer,
              .Deinitializer, .Subscript, .Closure:
             return .Procedural
+        }
+    }
+
+    private var ownerInst: Inst? {
+        switch self {
+        case let .Enum(i): return i
+        case let .Struct(i): return i
+        case let .Class(i): return i
+        case let .Protocol(i): return i
+        default: return nil
         }
     }
 }
@@ -64,7 +74,7 @@ public class Scope {
     private var insts: [RefKind:[String:Inst]]
     private var refs: [RefKind:[Ref]] = [:]
     public var explicitType: ScopeType {
-        guard type == .Implicit else {
+        guard case .Implicit = type else {
             return type
         }
         guard let p = parent else {
@@ -87,7 +97,7 @@ public class Scope {
         name: String, _ module: Module, _ source: SourceTrackable?
     ) throws {
         guard modules != nil else {
-            if type == .Implicit, let p = parent {
+            if case .Implicit = type, let p = parent {
                 try p.importModule(name, module, source)
                 return
             }
@@ -108,13 +118,13 @@ public class Scope {
         switch type {
         case .Implicit:
             var p = parent
-            while p != nil && p!.type == .Implicit {
+            while p != nil, case .Implicit = p!.type {
                 p = p!.parent
             }
             if p == nil {
                 assert(false, "ImplicitScope with no parent.")
             }
-            if p!.type == .File {
+            if case .File = p!.type {
                 explicitScope = p
                 fallthrough
             }
@@ -134,15 +144,22 @@ public class Scope {
             throw ErrorReporter.instance.fatal(.InvalidScope(ConcreteInst.self), source)
         }
         let inst = constructor()
-        if type == .Module,
-           let al = accessLevel where al == .Public || al == .PublicSet {
-            inst.isPublic = true
-        }
-        for kind in RefKind.fromInstType(ConcreteInst.self) {
+        inst.accessLevel = accessLevel
+        let kinds = RefKind.fromInstType(ConcreteInst.self)
+        for kind in kinds {
             guard insts[kind]![name] == nil else {
                 throw ErrorReporter.instance.fatal(.AlreadyExist(kind, name), source)
             }
             insts[kind]![name] = inst
+        }
+        if let owner = type.ownerInst {
+            for kind in kinds {
+                switch kind {
+                case .Type: owner.nestedTypes[name] = inst
+                case .Value: owner.members[name] = inst
+                default: break
+                }
+            }
         }
         return inst
     }
@@ -161,6 +178,7 @@ public class Scope {
                 throw ErrorReporter.instance.fatal(.NotExist(kind, r.id), r)
             }
             r.inst = inst
+            try r.resolvedCallback()
         }
         return r
     }
@@ -195,6 +213,7 @@ public class Scope {
                     throw ErrorReporter.instance.fatal(.NotExist(kind, r.id), r)
                 }
                 r.inst = inst
+                try r.resolvedCallback()
             }
         }
         for child in children {
@@ -216,7 +235,14 @@ public class Scope {
 }
 
 private class ModuleScope : Scope {
-    static let BUILTIN_TYPE = TypeInst("Builtin", SourceInfo.PHANTOM)
+    static let BUILTIN_INT1_TYPE = TypeInst("Int1", SourceInfo.PHANTOM)
+    static let BUILTIN_INT32_TYPE = TypeInst("Int32", SourceInfo.PHANTOM)
+    static let BUILTIN_INT64_TYPE = TypeInst("Int64", SourceInfo.PHANTOM)
+    static let BUILTIN_RAWPOINTER_TYPE = TypeInst("RawPointer", SourceInfo.PHANTOM)
+    static let BUILTIN_TYPE = TypeInst("Builtin", SourceInfo.PHANTOM, nestedTypes: [
+        BUILTIN_INT1_TYPE, BUILTIN_INT32_TYPE, BUILTIN_INT64_TYPE,
+        BUILTIN_RAWPOINTER_TYPE
+    ])
 
     init() {
         super.init(.Module, nil)
@@ -398,8 +424,8 @@ private class ClosureScope : Scope {
 }
 
 private class EnumScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Enum, parent)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         modules = nil
         refs[.Type] = []
         refs[.Value] = nil
@@ -426,8 +452,8 @@ private class EnumScope : Scope {
 }
 
 private class StructScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Struct, parent)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         modules = nil
         refs[.Type] = []
         refs[.Value] = []
@@ -454,8 +480,8 @@ private class StructScope : Scope {
 }
 
 private class ClassScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Class, parent)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         modules = nil
         refs[.Type] = []
         refs[.Value] = []
@@ -482,8 +508,8 @@ private class ClassScope : Scope {
 }
 
 private class ProtocolScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Protocol, parent)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         modules = nil
         refs[.Type] = []
         refs[.Value] = nil
@@ -588,7 +614,7 @@ public class ScopeManager {
         case .Module:
             assert(false, "<system error> duplicated module scope")
         case .File:
-            guard currentScope.type == .Module else {
+            guard case .Module = currentScope.type else {
                 assert(false, "<system error> file scope should be under a module scope")
             }
             currentScope = FileScope(currentScope)
@@ -600,13 +626,13 @@ public class ScopeManager {
         case .Closure:
             currentScope = ClosureScope(currentScope)
         case .Enum:
-            currentScope = EnumScope(currentScope)
+            currentScope = EnumScope(type, currentScope)
         case .Struct:
-            currentScope = StructScope(currentScope)
+            currentScope = StructScope(type, currentScope)
         case .Class:
-            currentScope = ClassScope(currentScope)
+            currentScope = ClassScope(type, currentScope)
         case .Protocol:
-            currentScope = ProtocolScope(currentScope)
+            currentScope = ProtocolScope(type, currentScope)
         case .Extension:
             currentScope = ExtensionScope(currentScope)
         }
@@ -618,19 +644,12 @@ public class ScopeManager {
         }
     }
 
-    public static func leaveScope(
-        type: ScopeType, _ source: SourceTrackable?
-    ) throws -> Scope {
-        while currentScope.type == .Implicit {
+    public static func leaveScope(source: SourceTrackable?) throws -> Scope {
+        while case .Implicit = currentScope.type {
             guard let s = currentScope.parent else {
                 throw ErrorReporter.instance.fatal(.LeavingModuleScope, source)
             }
             currentScope = s
-        }
-        guard currentScope.type == type else {
-            throw ErrorReporter.instance.fatal(
-                .ScopeTypeMismatch(currentScope.type, type), source
-            )
         }
         guard let parent = currentScope.parent else {
             throw ErrorReporter.instance.fatal(.LeavingModuleScope, source)
@@ -725,10 +744,10 @@ public class ScopeManager {
     }
 
     public static func createTypeRef(
-        name: String, _ source: SourceTrackable
+        name: String, _ source: SourceTrackable, nestedTypes: [NestedType] = []
     ) throws -> TypeRef {
         return try currentScope.createRef(
-            source, { TypeRef(name, source) }, resolve: moduleParsing
+            source, { TypeRef(name, source, nestedTypes) }, resolve: moduleParsing
         )
     }
 
@@ -741,10 +760,10 @@ public class ScopeManager {
     }
 
     public static func createOperatorRef(
-        name: String, _ source: SourceTrackable
+        name: String, _ source: SourceTrackable, impl: FunctionInst? = nil
     ) throws -> OperatorRef {
         return try currentScope.createRef(
-            source, { OperatorRef(name, source) }, resolve: moduleParsing
+            source, { OperatorRef(name, source, impl) }, resolve: moduleParsing
         )
     }
 
@@ -766,7 +785,7 @@ public class ScopeManager {
     }
 
     public static func resolveRefs() throws {
-        guard currentScope.type == .Module else {
+        guard case .Module = currentScope.type else {
             assert(false, "<system error> Parsing is not ended yet.")
         }
         try currentScope.resolveRefs()

@@ -471,7 +471,7 @@ class ExpressionParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterClosure)
         }
-        c.associatedScope = try ScopeManager.leaveScope(.Closure, ts.look())
+        c.associatedScope = try ScopeManager.leaveScope(ts.look())
         return .ClosureExpression(c)
     }
 

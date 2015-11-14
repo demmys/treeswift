@@ -29,7 +29,7 @@ class DeclarationParser : GrammarParser {
         ScopeManager.setFileName(fileName)
         return TopLevelDeclaration(
             procedures: try prp.procedures(),
-            fileScope: try ScopeManager.leaveScope(.File, nil)
+            fileScope: try ScopeManager.leaveScope(nil)
         )
     }
 
@@ -424,7 +424,7 @@ class DeclarationParser : GrammarParser {
             ScopeManager.enterScope(.VariableBlock)
             let g = VariableBlock(attrs)
             g.body = try prp.proceduresBlock()
-            g.associatedScope = try ScopeManager.leaveScope(.VariableBlock, ts.look())
+            g.associatedScope = try ScopeManager.leaveScope(ts.look())
             if ts.test([.RightBrace]) {
                 x = .GetterSetter(getter: g, setter: nil)
             } else {
@@ -444,7 +444,7 @@ class DeclarationParser : GrammarParser {
             ScopeManager.enterScope(.VariableBlock)
             let g = VariableBlock(getAttrs)
             g.body = try prp.proceduresBlock()
-            g.associatedScope = try ScopeManager.leaveScope(.VariableBlock, ts.look())
+            g.associatedScope = try ScopeManager.leaveScope(ts.look())
             x = .GetterSetter(getter: g, setter: s)
         case .Atmark:
             // Expect getter, setter or procedure beggining with attributes
@@ -483,7 +483,7 @@ class DeclarationParser : GrammarParser {
             }
         }
         x.body = try prp.proceduresBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.VariableBlock, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -600,11 +600,11 @@ class DeclarationParser : GrammarParser {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInModulableFunctionDeclaration)
             }
-            x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+            x.associatedScope = try ScopeManager.leaveScope(ts.look())
             return x
         }
         x.body = try prp.proceduresBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Function, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -622,10 +622,9 @@ class DeclarationParser : GrammarParser {
                 kind ?? .Infix(precedence: 0, associativity: .None),
                 error: .ExpectedFunctionName
             )
-            return .Operator(
-                try ScopeManager.createOperatorRef(o, trackable),
-                try ScopeManager.createFunction(o, trackable, accessLevel: al)
-            )
+            let inst = try ScopeManager.createFunction(o, trackable, accessLevel: al)
+            let ref = try ScopeManager.createOperatorRef(o, trackable, impl: inst)
+            return .Operator(ref, inst)
         }
     }
 
@@ -791,19 +790,20 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedEnumName)
         }
-        x.name = try ScopeManager.createEnum(s, trackable, node: x)
-        ScopeManager.enterScope(.Enum)
+        let inst = try ScopeManager.createEnum(s, trackable, node: x)
+        x.name = inst
+        ScopeManager.enterScope(.Enum(inst))
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForEnumCase)
         }
         if ts.test([.RightBrace]) {
-            x.associatedScope = try ScopeManager.leaveScope(.Enum, ts.look())
+            x.associatedScope = try ScopeManager.leaveScope(ts.look())
             return x
         }
         x.members = try enumMembers(isIndirect, forModule: forModule)
-        x.associatedScope = try ScopeManager.leaveScope(.Enum, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -920,8 +920,11 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedStructName)
         }
-        x.name = try ScopeManager.createStruct(s, trackable, node: x, accessLevel: al)
-        ScopeManager.enterScope(.Struct)
+        let inst = try ScopeManager.createStruct(
+            s, trackable, node: x, accessLevel: al
+        )
+        x.name = inst
+        ScopeManager.enterScope(.Struct(inst))
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
@@ -935,7 +938,7 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterDeclarationBody)
         }
-        x.associatedScope = try ScopeManager.leaveScope(.Struct, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -947,8 +950,11 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedClassName)
         }
-        x.name = try ScopeManager.createClass(s, trackable, node: x, accessLevel: al)
-        ScopeManager.enterScope(.Class)
+        let inst = try ScopeManager.createClass(
+            s, trackable, node: x, accessLevel: al
+        )
+        x.name = inst
+        ScopeManager.enterScope(.Class(inst))
         x.genParam = try gp.genericParameterClause()
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
@@ -962,7 +968,7 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterDeclarationBody)
         }
-        x.associatedScope = try ScopeManager.leaveScope(.Class, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -974,14 +980,17 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedProtocolName)
         }
-        x.name = try ScopeManager.createProtocol(s, trackable, node: x, accessLevel: al)
-        ScopeManager.enterScope(.Protocol)
+        let inst = try ScopeManager.createProtocol(
+            s, trackable, node: x, accessLevel: al
+        )
+        x.name = inst
+        ScopeManager.enterScope(.Protocol(inst))
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForDeclarationBody)
         }
         x.body = try protocolMemberDeclarations()
-        x.associatedScope = try ScopeManager.leaveScope(.Protocol, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -1066,11 +1075,11 @@ class DeclarationParser : GrammarParser {
             if case .LeftBrace = ts.look().kind {
                 try ts.error(.ProcedureInModulableFunctionDeclaration)
             }
-            x.associatedScope = try ScopeManager.leaveScope(.Initializer, ts.look())
+            x.associatedScope = try ScopeManager.leaveScope(ts.look())
             return x
         }
         x.body = try prp.proceduresBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Initializer, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -1079,7 +1088,7 @@ class DeclarationParser : GrammarParser {
     ) throws -> DeinitializerDeclaration {
         ScopeManager.enterScope(.Deinitializer)
         let x = DeinitializerDeclaration(attrs, try prp.proceduresBlock())
-        x.associatedScope = try ScopeManager.leaveScope(.Deinitializer, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -1105,7 +1114,7 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterExtension)
         }
-        x.associatedScope = try ScopeManager.leaveScope(.Extension, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -1123,7 +1132,7 @@ class DeclarationParser : GrammarParser {
             try ts.error(.ExpectedLeftBraceForSubscript)
         }
         x.body = try getterSetterBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Subscript, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 
@@ -1138,7 +1147,7 @@ class DeclarationParser : GrammarParser {
         }
         x.returns = r
         x.body = try getterSetterKeywordBlock()
-        x.associatedScope = try ScopeManager.leaveScope(.Subscript, ts.look())
+        x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x
     }
 

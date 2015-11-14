@@ -42,22 +42,23 @@ class TypeParser : GrammarParser {
     func identifierType(
         s: String, _ trackable: SourceTrackable
     ) throws -> IdentifierType {
-        return IdentifierType(
-            try ScopeManager.createTypeRef(s, trackable),
-            try gp.genericArgumentClause(),
-            try nestedTypes()
+        let nested = try nestedTypes()
+        let parentType = try ScopeManager.createTypeRef(
+            s, trackable, nestedTypes: nested
         )
+        return IdentifierType(parentType, try gp.genericArgumentClause())
     }
 
-    private func nestedTypes() throws -> [(String, [Type]?)] {
-        var x: [(String, [Type]?)] = []
+    private func nestedTypes() throws -> [NestedType] {
+        var xs: [NestedType] = []
         while ts.look().kind == .Dot {
+            let trackable = ts.look()
             guard case let .Identifier(s) = ts.match([identifier], ahead: 1) else {
-                return x
+                return xs
             }
-            x.append(s, try gp.genericArgumentClause())
+            xs.append((s, try gp.genericArgumentClause(), trackable))
         }
-        return x
+        return xs
     }
 
     private func collectionType() throws -> Type {
