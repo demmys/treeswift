@@ -17,10 +17,10 @@ public enum Operation {
 
 public class ReturnValue : Typeable {
     public var type: Type?
-    let value: Expression?
+    public let exp: Expression?
 
-    public init(_ v: Expression?) {
-        value = v
+    public init(_ e: Expression?) {
+        exp = e
     }
 }
 

@@ -31,6 +31,26 @@ public protocol ASTVisitor {
     func visit(node: OperatorDeclaration) throws
     // ExpressionAST
     func visit(node: Expression) throws
+    func visit(node: BinaryExpressionBody) throws
+    func visit(node: ConditionalExpressionBody) throws
+    func visit(node: TypeCastingExpressionBody) throws
+    func visit(node: ExpressionUnit) throws
+    func visit(node: ExpressionCore) throws
+    // PatternAST
+    func visit(node: IdentityPattern) throws
+    func visit(node: BooleanPattern) throws
+    func visit(node: ConstantIdentifierPattern) throws
+    func visit(node: VariableIdentifierPattern) throws
+    func visit(node: ReferenceIdentifierPattern) throws
+    func visit(node: WildcardPattern) throws
+    func visit(node: TuplePattern) throws
+    func visit(node: VariableBindingPattern) throws
+    func visit(node: ConstantBindingPattern) throws
+    func visit(node: OptionalPattern) throws
+    func visit(node: TypeCastingPattern) throws
+    func visit(node: EnumCasePattern) throws
+    func visit(node: TypePattern) throws
+    func visit(node: ExpressionPattern) throws
 }
 
 public protocol ASTNode {
@@ -108,4 +128,46 @@ extension VariableBlock : ASTNode {
 // ExpressionAST
 extension Expression : ASTNode {
     public func accept(visitor: ASTVisitor) throws { try visitor.visit(self) }
+}
+
+extension ExpressionBody : ASTNode {
+    public func accept(visitor: ASTVisitor) throws {
+        switch self {
+        case let e as BinaryExpressionBody: try visitor.visit(e)
+        case let e as ConditionalExpressionBody: try visitor.visit(e)
+        case let e as TypeCastingExpressionBody: try visitor.visit(e)
+        default: assert(false, "<system error> Unexpected type of declaration.")
+        }
+    }
+}
+
+extension ExpressionUnit : ASTNode {
+    public func accept(visitor: ASTVisitor) throws { try visitor.visit(self) }
+}
+
+extension ExpressionCore : ASTNode {
+    public func accept(visitor: ASTVisitor) throws { try visitor.visit(self) }
+}
+
+// PatternAST
+extension Pattern : ASTNode {
+    public func accept(visitor: ASTVisitor) throws {
+        switch self {
+        case let p as IdentityPattern: try visitor.visit(p)
+        case let p as BooleanPattern: try visitor.visit(p)
+        case let p as ConstantIdentifierPattern: try visitor.visit(p)
+        case let p as VariableIdentifierPattern: try visitor.visit(p)
+        case let p as ReferenceIdentifierPattern: try visitor.visit(p)
+        case let p as WildcardPattern: try visitor.visit(p)
+        case let p as TuplePattern: try visitor.visit(p)
+        case let p as VariableBindingPattern: try visitor.visit(p)
+        case let p as ConstantBindingPattern: try visitor.visit(p)
+        case let p as OptionalPattern: try visitor.visit(p)
+        case let p as TypeCastingPattern: try visitor.visit(p)
+        case let p as EnumCasePattern: try visitor.visit(p)
+        case let p as TypePattern: try visitor.visit(p)
+        case let p as ExpressionPattern: try visitor.visit(p)
+        default: assert(false, "<system error> Unexpected type of declaration.")
+        }
+    }
 }

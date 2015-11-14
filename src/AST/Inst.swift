@@ -1,4 +1,5 @@
-public class Inst : SourceTrackable {
+public class Inst : Typeable, SourceTrackable {
+    public var type: Type?
     public let name: String
     private let info: SourceInfo
     public var isPublic: Bool = false
@@ -22,29 +23,25 @@ public class TypeInst : Inst, CustomStringConvertible {
     }
 }
 
-public class ConstantInst : Inst, Typeable, CustomStringConvertible {
-    public var type: Type?
+public class ConstantInst : Inst, CustomStringConvertible {
     public var description: String {
         return "(ConstantInst \(name))"
     }
 }
 
-public class VariableInst : Inst, Typeable, CustomStringConvertible {
-    public var type: Type?
+public class VariableInst : Inst, CustomStringConvertible {
     public var description: String {
         return "(VariableInst \(name))"
     }
 }
 
-public class FunctionInst : Inst, Typeable, CustomStringConvertible {
-    public var type: Type?
+public class FunctionInst : Inst, CustomStringConvertible {
     public var description: String {
         return "(FunctionInst \(name))"
     }
 }
 
-public class OperatorInst : Inst, Typeable, CustomStringConvertible {
-    public var type: Type?
+public class OperatorInst : Inst, CustomStringConvertible {
     override public init(_ name: String, _ source: SourceTrackable) {
         super.init(name, source)
     }
@@ -136,9 +133,13 @@ public enum RefIdentifier : CustomStringConvertible{
     }
 }
 
-public class Ref : SourceTrackable {
+public class Ref : Typeable, SourceTrackable {
     public let id: RefIdentifier
     public var inst: Inst!
+    public var type: Type? {
+        get { return inst.type }
+        set (type) { inst.type = type }
+    }
     private let info: SourceInfo
     public var sourceInfo: SourceInfo { return info }
 

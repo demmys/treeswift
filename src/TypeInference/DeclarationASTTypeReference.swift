@@ -18,6 +18,7 @@ extension TypeInference {
                 addConstraint(pattern, e)
                 try e.accept(self)
             }
+            try pattern.accept(self)
         }
     }
 
@@ -69,7 +70,7 @@ extension TypeInference {
 
     public func visit(node: FunctionDeclaration) throws {
         if node.params.count > 0 {
-            assert(false, "Curry function is not implemented.") // TODO
+            assert(false, "Curried function is not implemented.")
         }
         if node.params.count == 0 {
             assert(false, "<system error> no parameter found.")
@@ -126,7 +127,7 @@ extension TypeInference {
             }
             x.type = p.type.0
             if p.defaultArg != nil {
-                assert(false, "Default argument of function declaration is not implemented.") // TODO
+                assert(false, "Default argument of function declaration is not implemented.")
             }
             xs.elems.append(x)
         }
@@ -134,29 +135,38 @@ extension TypeInference {
     }
 
     public func visit(node: EnumDeclaration) throws {
+        assert(false, "Enum declaration is not implemented.")
     }
 
     public func visit(node: StructDeclaration) throws {
+        assert(false, "Struc declaration is not implemented.")
     }
 
     public func visit(node: ClassDeclaration) throws {
+        assert(false, "Class declaration is not implemented.")
     }
 
     public func visit(node: ProtocolDeclaration) throws {
+        assert(false, "Protocol declaration is not implemented.")
     }
 
     public func visit(node: InitializerDeclaration) throws {
+        assert(false, "Initializer declaration is not implemented.")
     }
 
     public func visit(node: DeinitializerDeclaration) throws {
+        assert(false, "Deinitializer declaration is not implemented.")
     }
 
     public func visit(node: ExtensionDeclaration) throws {
+        assert(false, "Extension declaration is not implemented.")
     }
 
     public func visit(node: SubscriptDeclaration) throws {
+        assert(false, "Subscript declaration is not implemented.")
     }
 
     public func visit(node: OperatorDeclaration) throws {
+        assert(false, "Operator declaration is not implemented.")
     }
 }

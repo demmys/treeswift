@@ -10,7 +10,8 @@ public enum TryType : String {
     case Nothing, Try, ForcedTry
 }
 
-public class ExpressionBody : CustomStringConvertible {
+public class ExpressionBody : Typeable, CustomStringConvertible {
+    public var type: Type?
     public var unit: ExpressionUnit!
     public var left: ExpressionUnit! {
         get { return unit }
@@ -52,12 +53,12 @@ public class ConditionalExpressionBody : ExpressionBody {
 
 public class TypeCastingExpressionBody : ExpressionBody {
     public var castType: CastType!
-    public var type: Type!
+    public var dist: Type!
 
     public override init() {}
 
     public override var description: String { get {
-        return "(TypeCastingExpressionBody \(castType) \(type))"
+        return "(TypeCastingExpressionBody \(castType) \(dist))"
     } }
 }
 
@@ -66,7 +67,8 @@ public enum CastType : String {
 }
 
 // prefix-expression
-public class ExpressionUnit {
+public class ExpressionUnit : Typeable {
+    public var type: Type?
     public var pre: ExpressionPrefix!
     public var core: ExpressionCore!
     public var posts: [ExpressionPostfix] = []
@@ -81,17 +83,31 @@ public enum ExpressionPrefix {
 }
 
 public enum ExpressionPostfix {
-    case Initializer, PostfixSelf, DynamicType
-    case ForcedValue, OptionalChaining
     case Operator(OperatorRef)
-    case ExplicitNamedMember(String, genArgs: [Type]?)
-    case ExplicitUnnamedMember(Int64)
-    case Subscript([Expression])
     case FunctionCall(Tuple)
+    case Member(PostfixMember)
+    case Subscript([Expression])
+    case ForcedValue
+    case OptionalChaining(PostfixMember)
+}
+
+public enum PostfixMember {
+    case Initializer, PostfixSelf, DynamicType
+    case ExplicitNamed(String, genArgs: [Type]?)
+    case ExplicitUnnamed(Int64)
 }
 
 // primary-expression
-public enum ExpressionCore {
+public class ExpressionCore : Typeable {
+    public var type: Type?
+    public let value: ExpressionCoreValue
+
+    public init(_ v: ExpressionCoreValue) {
+        value = v
+    }
+}
+
+public enum ExpressionCoreValue {
     case Value(ValueRef, genArgs: [Type]?)
     case BindingConstant(ConstantInst)
     case BindingVariable(VariableInst)

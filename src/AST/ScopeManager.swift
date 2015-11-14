@@ -216,9 +216,7 @@ public class Scope {
 }
 
 private class ModuleScope : Scope {
-    static let BUILTIN_TYPE = TypeInst(
-        "Builtin", SourceInfo(seekNo: 0, lineNo: 0, charNo: 0)
-    )
+    static let BUILTIN_TYPE = TypeInst("Builtin", SourceInfo.PHANTOM)
 
     init() {
         super.init(.Module, nil)

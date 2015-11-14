@@ -6,6 +6,7 @@ public protocol SourceTrackable {
 }
 
 public struct SourceInfo : SourceTrackable {
+    public static let PHANTOM: SourceInfo = SourceInfo()
     public var sourceInfo: SourceInfo {
         return self
     }
@@ -13,6 +14,11 @@ public struct SourceInfo : SourceTrackable {
     public var lineNo: Int
     public var charNo: Int
 
+    private init() {
+        seekNo = 0
+        lineNo = 0
+        charNo = 0
+    }
     public init(seekNo: Int, lineNo: Int, charNo: Int) {
         self.seekNo = seekNo
         self.lineNo = lineNo
@@ -227,6 +233,7 @@ public enum ErrorMessage : CustomStringConvertible {
     // ExpressionParser
     case ExpectedColonAfterCondition
     case ExpectedRightBracketAfterSubscript
+    case DotOperatorAfterOptionalChaining
     case UnexpectedTokenForMember
     case ExpectedImplicitMember
     case ExpectedExpression
@@ -283,6 +290,8 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedTypeIdentifierForProtocolCompositionType
     case ExpectedGraterThanAfterProtocolCompositionType
     case ExpectedMetatypeType
+    // TypeInference
+    case UnwrappingNotAOptionalType
 
     public var description: String {
         switch self {
@@ -540,6 +549,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected ':' after true condition of conditional expression"
         case .ExpectedRightBracketAfterSubscript:
             return "Expected ']' at the end of subscript expression"
+        case .DotOperatorAfterOptionalChaining:
+            return "Expected '.' after optional chaining"
         case .UnexpectedTokenForMember:
             return "Unexpected token after '.'"
         case .ExpectedImplicitMember:
@@ -648,6 +659,9 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected '>' at the end of protocol composition type"
         case .ExpectedMetatypeType:
             return "Expected 'Type' or 'Protocol' for metatype type"
+        // TypeInference
+        case .UnwrappingNotAOptionalType:
+            return "Unwrapping not a optional type."
         }
     }
 }

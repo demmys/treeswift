@@ -263,16 +263,10 @@ extension ExpressionPostfix : CustomStringConvertible {
         let pre = "(ExpressionPostfix type:"
         let post = ")"
         switch self {
-        case .Initializer: return "\(pre) initializer\(post)"
-        case .PostfixSelf: return "\(pre) postfix-self\(post)"
-        case .DynamicType: return "\(pre) dynamic-type\(post)"
+        case let .Member(m): return "\(pre) member \(m) \(post)"
         case .ForcedValue: return "\(pre) foced-value\(post)"
-        case .OptionalChaining: return "\(pre) optional-chaining\(post)"
+        case let .OptionalChaining(m): return "\(pre) optional-chaining \(m) \(post)"
         case let .Operator(r): return "\(pre) operator \(r)\(post)"
-        case let .ExplicitNamedMember(s, genArgs: ts):
-            return "\(pre) explicit-named-member \(s) \(ts)\(post)"
-        case let .ExplicitUnnamedMember(s):
-            return "\(pre) explicit-unnamed-member \(s)\(post)"
         case let .Subscript(es):
             return "\(pre) subscript \(es)\(post)"
         case let .FunctionCall(t):
@@ -281,35 +275,55 @@ extension ExpressionPostfix : CustomStringConvertible {
     }
 }
 
+extension PostfixMember : CustomStringConvertible {
+    public var description: String {
+        let name = "postfix-member: "
+        switch self {
+        case .Initializer: return "\(name)initializer"
+        case .PostfixSelf: return "\(name)postfix-self"
+        case .DynamicType: return "\(name)dynamic-type"
+        case let .ExplicitNamed(s, genArgs: ts):
+            return "\(name)explicit-named \(s) \(ts)"
+        case let .ExplicitUnnamed(s):
+            return "\(name)explicit-unnamed \(s)"
+        }
+    }
+}
+
 extension ExpressionCore : CustomStringConvertible {
     public var description: String {
-        let pre = "(ExpressionCore type:"
-        let post = ")"
+        return "(ExpressionCore \(value))"
+    }
+}
+
+extension ExpressionCoreValue : CustomStringConvertible {
+    public var description: String {
+        let name = "value:"
         switch self {
-        case let .Value(r, genArgs: ts): return "\(pre) value \(r) \(ts)\(post)"
-        case let .BindingConstant(i): return "\(pre) binding-constant \(i)\(post)"
-        case let .BindingVariable(i): return "\(pre) binding-variable \(i)\(post)"
+        case let .Value(r, genArgs: ts): return "\(name) value \(r) \(ts)"
+        case let .BindingConstant(i): return "\(name) binding-constant \(i)"
+        case let .BindingVariable(i): return "\(name) binding-variable \(i)"
         case let .ImplicitParameter(r, genArgs: ts):
-            return "\(pre) implicit-parameter \(r) \(ts) \(post)"
-        case let .Integer(i): return "\(pre) integer \(i)\(post)"
-        case let .FloatingPoint(d): return "\(pre) floating-point \(d)\(post)"
-        case let .StringExpression(s): return "\(pre) string \(s)\(post)"
-        case let .Boolean(b): return "\(pre) boolean \(b)\(post)"
-        case .Nil: return "\(pre) nil\(post)"
-        case let .Array(es): return "\(pre) array \(es)\(post)"
-        case let .Dictionary(ees): return "\(pre) dictionary \(ees)\(post)"
-        case .SelfExpression: return "\(pre) self-expression\(post)"
-        case .SelfInitializer: return "\(pre) self-initializer\(post)"
-        case let .SelfMember(s): return "\(pre) self-member \(s)\(post)"
-        case let .SelfSubscript(es): return "\(pre) self-subscript \(es)\(post)"
-        case .SuperClassInitializer: return "\(pre) super-class-initializer \(post)"
-        case let .SuperClassMember(s): return "\(pre) super-class-member \(s)\(post)"
+            return "\(name) implicit-parameter \(r) \(ts) "
+        case let .Integer(i): return "\(name) integer \(i)"
+        case let .FloatingPoint(d): return "\(name) floating-point \(d)"
+        case let .StringExpression(s): return "\(name) string \(s)"
+        case let .Boolean(b): return "\(name) boolean \(b)"
+        case .Nil: return "\(name) nil"
+        case let .Array(es): return "\(name) array \(es)"
+        case let .Dictionary(ees): return "\(name) dictionary \(ees)"
+        case .SelfExpression: return "\(name) self-exnamession"
+        case .SelfInitializer: return "\(name) self-initializer"
+        case let .SelfMember(s): return "\(name) self-member \(s)"
+        case let .SelfSubscript(es): return "\(name) self-subscript \(es)"
+        case .SuperClassInitializer: return "\(name) super-class-initializer "
+        case let .SuperClassMember(s): return "\(name) super-class-member \(s)"
         case let .SuperClassSubscript(es):
-            return "\(pre) super-class-subscript \(es)\(post)"
-        case let .ClosureExpression(c): return "\(pre) closure-expression \(c)\(post)"
-        case let .TupleExpression(t): return "\(pre) tuple \(t)\(post)"
-        case let .ImplicitMember(s): return "\(pre) implicit-member \(s)\(post)"
-        case .Wildcard: return "\(pre) wildcard\(post)"
+            return "\(name) super-class-subscript \(es)"
+        case let .ClosureExpression(c): return "\(name) closure-exnamession \(c)"
+        case let .TupleExpression(t): return "\(name) tuple \(t)"
+        case let .ImplicitMember(s): return "\(name) implicit-member \(s)"
+        case .Wildcard: return "\(name) wildcard"
         }
     }
 }
@@ -412,46 +426,6 @@ extension MetaProtocol {
         return "(MetaProtocol \(proto))"
     }
 }
-
-/*
- * PatternAST
-extension Pattern : CustomStringConvertible {
-    public var description: String {
-        let pre = "(Pattern"
-        let post = ")"
-        switch self {
-        case .IdentityPattern:
-            return "\(pre) type: identity\(post)"
-        case .BooleanPattern:
-            return "\(pre) type: boolean\(post)"
-        case let .ConstantIdentifierPattern(r):
-            return "\(pre) type: constant-identifier \(r)\(post)"
-        case let .VariableIdentifierPattern(r):
-            return "\(pre) type: variable-identifier \(r)\(post)"
-        case let .ReferenceIdentifierPattern(r):
-            return "\(pre) type: reference-identifier \(r)\(post)"
-        case .WildcardPattern:
-            return "\(pre) type: wildcard-pattern)\(post)"
-        case let .TuplePattern(pt):
-            return "\(pre) type: tuple \(pt)\(post)"
-        case let .VariableBindingPattern(p):
-            return "\(pre) type: variable-binding \(p)\(post)"
-        case let .ConstantBindingPattern(p):
-            return "\(pre) type: constant-binding \(p)\(post)"
-        case let .EnumCasePattern(r, pt):
-            return "\(pre) type: enum-case \(r) \(pt)\(post)"
-        case let .TypePattern(t):
-            return "\(pre) type: type \(t)\(post)"
-        case let .ExpressionPattern(e):
-            return "\(pre) type: expression \(e)\(post)"
-        case let .OptionalPattern(p):
-            return "\(pre) type: optional \(p)\(post)"
-        case let .TypeCastingPattern(p, t):
-            return "\(pre) type: typeCasting \(p) \(t)\(post)"
-        }
-    }
-}
- */
 
 /*
  * GenericsAST

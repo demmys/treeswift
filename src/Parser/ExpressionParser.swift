@@ -98,9 +98,9 @@ class ExpressionParser : GrammarParser {
         preExp: ExpressionUnit
     ) throws -> TypeCastingExpressionBody {
         let x = TypeCastingExpressionBody()
-        x.left = preExp
+        x.unit = preExp
         x.castType = .Is
-        x.type = try tp.type()
+        x.dist = try tp.type()
         return x
     }
 
@@ -108,7 +108,7 @@ class ExpressionParser : GrammarParser {
         preExp: ExpressionUnit
     ) throws -> TypeCastingExpressionBody {
         let x = TypeCastingExpressionBody()
-        x.left = preExp
+        x.unit = preExp
         switch ts.match([.PostfixQuestion, .PostfixExclamation]) {
         case .PostfixQuestion:
             x.castType = .ConditionalAs
@@ -117,7 +117,7 @@ class ExpressionParser : GrammarParser {
         default:
             x.castType = .As
         }
-        x.type = try tp.type()
+        x.dist = try tp.type()
         return x
     }
 
@@ -126,7 +126,7 @@ class ExpressionParser : GrammarParser {
     ) throws -> ExpressionUnit {
         let x = ExpressionUnit()
         x.pre = try expressionPrefix()
-        x.core = try expressionCore(valueBinding)
+        x.core = ExpressionCore(try expressionCoreValue(valueBinding))
         while let ep = try expressionPostfix() {
             x.posts.append(ep)
         }
@@ -157,7 +157,7 @@ class ExpressionParser : GrammarParser {
             // because of ambiguity, TreeSwift do not support a trailing closure
             return .FunctionCall(try tupleExpression())
         case .Dot:
-            return try postfixMemberExpression()
+            return .Member(try postfixMemberExpression())
         case .LeftBracket:
             let es = try expressionList()
             if !ts.test([.RightBracket]) {
@@ -167,13 +167,16 @@ class ExpressionParser : GrammarParser {
         case .PostfixExclamation:
             return .ForcedValue
         case .PostfixQuestion:
-            return .OptionalChaining
+            guard ts.test([.Dot]) else {
+                throw ts.fatal(.DotOperatorAfterOptionalChaining)
+            }
+            return .OptionalChaining(try postfixMemberExpression())
         default:
             return nil
         }
     }
 
-    private func postfixMemberExpression() throws -> ExpressionPostfix {
+    private func postfixMemberExpression() throws -> PostfixMember {
         switch ts.match([.Init, .`Self`, .DynamicType, identifier, integerLiteral]) {
         case .Init:
             return .Initializer
@@ -182,17 +185,17 @@ class ExpressionParser : GrammarParser {
         case .DynamicType:
             return .DynamicType
         case let .Identifier(s):
-            return .ExplicitNamedMember(s, genArgs: try gp.genericArgumentClause())
+            return .ExplicitNamed(s, genArgs: try gp.genericArgumentClause())
         case .IntegerLiteral(let d, true):
-            return .ExplicitUnnamedMember(d)
+            return .ExplicitUnnamed(d)
         default:
             throw ts.fatal(.UnexpectedTokenForMember)
         }
     }
 
-    private func expressionCore(
+    private func expressionCoreValue(
         valueBinding: ValueBindingStatus
-    ) throws -> ExpressionCore {
+    ) throws -> ExpressionCoreValue {
         let trackable = ts.look()
         switch ts.match([
             identifier, binaryOperator, implicitParameterName, integerLiteral,
@@ -277,7 +280,7 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func correctionLiteral() throws -> ExpressionCore {
+    private func correctionLiteral() throws -> ExpressionCoreValue {
         let (_, k) = findInsideOfBrackets([TokenKind.Colon])
         switch k {
         case .Colon:
@@ -289,7 +292,7 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func dictionaryLiteral() throws -> ExpressionCore {
+    private func dictionaryLiteral() throws -> ExpressionCoreValue {
         // empty dictionary
         if ts.test([.Colon]) {
             if !ts.test([.RightBracket]) {
@@ -312,7 +315,7 @@ class ExpressionParser : GrammarParser {
         return .Dictionary(es)
     }
 
-    private func arrayLiteral() throws -> ExpressionCore {
+    private func arrayLiteral() throws -> ExpressionCoreValue {
         // empty array
         if ts.test([.RightBracket]) {
             return .Array([])
@@ -327,7 +330,7 @@ class ExpressionParser : GrammarParser {
         return .Array(es)
     }
 
-    private func selfExpression() throws -> ExpressionCore {
+    private func selfExpression() throws -> ExpressionCoreValue {
         switch ts.match([.Dot, .LeftBracket]) {
         case .Dot:
             switch ts.match([identifier, .Init]) {
@@ -349,7 +352,7 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func superClassExpression() throws -> ExpressionCore {
+    private func superClassExpression() throws -> ExpressionCoreValue {
         switch ts.match([.Dot, .LeftBracket]) {
         case .Dot:
             switch ts.match([identifier, .Init]) {
@@ -371,7 +374,7 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func closureExpression() throws -> ExpressionCore {
+    private func closureExpression() throws -> ExpressionCoreValue {
         ScopeManager.enterScope(.Closure)
         let c = Closure()
         switch ts.match([.LeftBracket]) {
@@ -463,7 +466,7 @@ class ExpressionParser : GrammarParser {
         } while ts.test([.Comma])
     }
 
-    private func closureExpressionTail(c: Closure) throws -> ExpressionCore {
+    private func closureExpressionTail(c: Closure) throws -> ExpressionCoreValue {
         c.body = try pp.procedures()
         if !ts.test([.RightBrace]) {
             try ts.error(.ExpectedRightBraceAfterClosure)

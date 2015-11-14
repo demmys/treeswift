@@ -49,10 +49,7 @@ postfix-expression           -> primary-expression postfix-expression-tail?
 postfix-expression-tail      -> postfix-expression-tail-body postfix-expression-tail?
 postfix-expression-tail-body -> PostfixOperator
                               | function-call-expression
-                              | initializer-expression
-                              | explicit-member-expression
-                              | postfix-self-expression
-                              | dynamic-type-expression
+                              | Dot postfix-member-expression
                               | subscript-expression
                               | forced-value-expression
                               | optional-chaining-expression
@@ -60,20 +57,21 @@ postfix-expression-tail-body -> PostfixOperator
 function-call-expression -> tuple-expression /* closure-expression? */
                           /* | closure-expression */
 
-initializer-expression -> Dot Init
-
-explicit-member-expression -> Dot DecimalDigits
-                            | Dot Identifier generic-argument-clause?
-
-postfix-self-expression -> Dot Self
-
-dynamic-type-expression -> Dot DynamicType
-
 subscript-expression -> LeftBracket expression-list RightBracket
 
 forced-value-expression -> PostfixExclamation
 
-optional-chaining-expression -> PostfixQuestion
+optional-chaining-expression -> PostfixQuestion postfix-member-expression
+
+postfix-member-expression  -> initializer-expression
+                            | explicit-member-expression
+                            | postfix-self-expression
+                            | dynamic-type-expression
+initializer-expression     -> Init
+explicit-member-expression -> DecimalDigits
+                            | Identifier generic-argument-clause?
+postfix-self-expression    -> Self
+dynamic-type-expression    -> DynamicType
 
 primary-expression -> value-reference generic-argument-clause?
                     | literal-expression
