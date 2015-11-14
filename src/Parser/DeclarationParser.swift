@@ -623,6 +623,7 @@ class DeclarationParser : GrammarParser {
                 error: .ExpectedFunctionName
             )
             return .Operator(
+                try ScopeManager.createOperatorRef(o, trackable),
                 try ScopeManager.createFunction(o, trackable, accessLevel: al)
             )
         }

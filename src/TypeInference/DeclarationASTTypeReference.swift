@@ -86,7 +86,7 @@ extension TypeInference {
 
         switch node.name! {
         case let .Function(inst): inst.type.addCandidate(type)
-        case let .Operator(inst): inst.type.addCandidate(type)
+        case let .Operator(_, inst): inst.type.addCandidate(type)
         }
         for p in node.body {
             if case let .OperationProcedure(o) = p {

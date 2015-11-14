@@ -173,7 +173,7 @@ public class FunctionDeclaration : Declaration, ScopeTrackable {
 
 public enum FunctionReference {
     case Function(FunctionInst)
-    case Operator(FunctionInst)
+    case Operator(OperatorRef, FunctionInst)
 }
 
 public enum ThrowType : String {
