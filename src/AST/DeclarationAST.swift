@@ -369,7 +369,7 @@ public class DeinitializerDeclaration : Declaration, ScopeTrackable {
 }
 
 public class ExtensionDeclaration : Declaration, ScopeTrackable {
-    public var type: IdentifierType!
+    public var id: IdentifierType!
     public var inherits: TypeInheritanceClause?
     public var body: [Declaration] = []
     public var associatedScope: Scope!
@@ -380,7 +380,7 @@ public class ExtensionDeclaration : Declaration, ScopeTrackable {
 
     public var scope: Scope { return associatedScope }
     public override var description: String {
-        return "(ExtensionDeclaration \(al) \(type) \(inherits) \(body))"
+        return "(ExtensionDeclaration \(al) \(id) \(inherits) \(body))"
     }
 }
 

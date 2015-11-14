@@ -1,6 +1,12 @@
 import AST
 
 extension TypeInference {
+    public func visit(node: Module) throws {
+        for d in node.declarations {
+            try d.accept(self)
+        }
+    }
+
     public func visit(node: TopLevelDeclaration) throws {
         for p in node.procedures {
             try p.accept(self)
@@ -139,15 +145,47 @@ extension TypeInference {
     }
 
     public func visit(node: StructDeclaration) throws {
-        assert(false, "Struc declaration is not implemented.")
+        if let inherits = node.inherits {
+            for inherit in inherits.types {
+                node.name.type.addSubtype(inherit)
+            }
+        }
+        for d in node.body {
+            try d.accept(self)
+        }
     }
 
     public func visit(node: ClassDeclaration) throws {
-        assert(false, "Class declaration is not implemented.")
+        if let inherits = node.inherits {
+            for inherit in inherits.types {
+                node.name.type.addSubtype(inherit)
+            }
+        }
+        for d in node.body {
+            try d.accept(self)
+        }
     }
 
     public func visit(node: ProtocolDeclaration) throws {
-        assert(false, "Protocol declaration is not implemented.")
+        if let inherits = node.inherits {
+            for inherit in inherits.types {
+                node.name.type.addSubtype(inherit)
+            }
+        }
+        for d in node.body {
+            try d.accept(self)
+        }
+    }
+
+    public func visit(node: ExtensionDeclaration) throws {
+        if let inherits = node.inherits {
+            for inherit in inherits.types {
+                node.id.ref.inst.type.addSubtype(inherit)
+            }
+        }
+        for d in node.body {
+            try d.accept(self)
+        }
     }
 
     public func visit(node: InitializerDeclaration) throws {
@@ -158,15 +196,9 @@ extension TypeInference {
         assert(false, "Deinitializer declaration is not implemented.")
     }
 
-    public func visit(node: ExtensionDeclaration) throws {
-        assert(false, "Extension declaration is not implemented.")
-    }
-
     public func visit(node: SubscriptDeclaration) throws {
         assert(false, "Subscript declaration is not implemented.")
     }
 
-    public func visit(node: OperatorDeclaration) throws {
-        assert(false, "Operator declaration is not implemented.")
-    }
+    public func visit(node: OperatorDeclaration) throws {}
 }

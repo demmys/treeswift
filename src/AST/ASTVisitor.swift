@@ -13,6 +13,7 @@ public protocol ASTVisitor {
     func visit(node: CaseFlow) throws
     func visit(node: Operation) throws
     // DeclarationAST
+    func visit(node: Module) throws
     func visit(node: TopLevelDeclaration) throws
     func visit(node: ImportDeclaration) throws
     func visit(node: PatternInitializerDeclaration) throws
@@ -93,6 +94,11 @@ extension Flow {
         default: assert(false, "<system error> Unexpected type of flow.")
         }
     }
+}
+
+// DeclarationAST
+extension Module : ASTNode {
+    public func accept(visitor: ASTVisitor) throws { try visitor.visit(self) }
 }
 
 extension TopLevelDeclaration : ASTNode {

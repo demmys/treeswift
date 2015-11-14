@@ -1091,7 +1091,7 @@ class DeclarationParser : GrammarParser {
         guard case let .Identifier(s) = ts.match([identifier]) else {
             throw ts.fatal(.ExpectedExtendedType)
         }
-        x.type = try tp.identifierType(s, trackable)
+        x.id = try tp.identifierType(s, trackable)
         ScopeManager.enterScope(.Extension)
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {

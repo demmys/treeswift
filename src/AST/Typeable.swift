@@ -5,6 +5,7 @@ public protocol Typeable {
 public class TypeCandidate {
     private var candidates: [Type] = []
     private var candidateGenerators: [() -> TypeCandidate] = []
+    private var subtypes: [IdentifierType] = []
 
     public init() {}
 
@@ -13,5 +14,9 @@ public class TypeCandidate {
     }
     public func addCandidate(generator: () -> TypeCandidate) {
         candidateGenerators.append(generator)
+    }
+
+    public func addSubtype(type: IdentifierType) {
+        subtypes.append(type)
     }
 }
