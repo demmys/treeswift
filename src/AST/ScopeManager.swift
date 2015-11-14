@@ -6,8 +6,8 @@ public enum ScopeType {
     case Module, File
     case Implicit
     case For, ForIn, While, RepeatWhile, If, Guard, Defer, Do, Catch, Case
-    case Function, VariableBlock, Initializer, Deinitializer, Subscript
-    case Closure, Enum(Inst), Struct(Inst), Class(Inst), Protocol(Inst), Extension
+    case Function, VariableBlock, Initializer, Deinitializer, Subscript, Closure
+    case Enum(Inst), Struct(Inst), Class(Inst), Protocol(Inst), Extension(TypeRef)
 
     var policy: MemberPolicy {
         switch self {
@@ -20,12 +20,13 @@ public enum ScopeType {
         }
     }
 
-    private var ownerInst: Inst? {
+    private var nestable: Nestable? {
         switch self {
         case let .Enum(i): return i
         case let .Struct(i): return i
         case let .Class(i): return i
         case let .Protocol(i): return i
+        case let .Extension(r): return r
         default: return nil
         }
     }
@@ -152,11 +153,11 @@ public class Scope {
             }
             insts[kind]![name] = inst
         }
-        if let owner = type.ownerInst {
+        if let nestable = type.nestable {
             for kind in kinds {
                 switch kind {
-                case .Type: owner.nestedTypes[name] = inst
-                case .Value: owner.members[name] = inst
+                case .Type: nestable.appendNestedTypes(name, inst)
+                case .Value: nestable.appendNestedValues(name, inst)
                 default: break
                 }
             }
@@ -239,7 +240,7 @@ private class ModuleScope : Scope {
     static let BUILTIN_INT32_TYPE = TypeInst("Int32", SourceInfo.PHANTOM)
     static let BUILTIN_INT64_TYPE = TypeInst("Int64", SourceInfo.PHANTOM)
     static let BUILTIN_RAWPOINTER_TYPE = TypeInst("RawPointer", SourceInfo.PHANTOM)
-    static let BUILTIN_TYPE = TypeInst("Builtin", SourceInfo.PHANTOM, nestedTypes: [
+    static let BUILTIN_TYPE = TypeInst("Builtin", SourceInfo.PHANTOM, [
         BUILTIN_INT1_TYPE, BUILTIN_INT32_TYPE, BUILTIN_INT64_TYPE,
         BUILTIN_RAWPOINTER_TYPE
     ])
@@ -536,8 +537,8 @@ private class ProtocolScope : Scope {
 }
 
 private class ExtensionScope : Scope {
-    init(_ parent: Scope) {
-        super.init(.Extension, parent)
+    init(_ type: ScopeType, _ parent: Scope) {
+        super.init(type, parent)
         modules = nil
         refs[.Type] = []
         refs[.Value] = nil
@@ -634,7 +635,7 @@ public class ScopeManager {
         case .Protocol:
             currentScope = ProtocolScope(type, currentScope)
         case .Extension:
-            currentScope = ExtensionScope(currentScope)
+            currentScope = ExtensionScope(type, currentScope)
         }
     }
 
@@ -653,6 +654,9 @@ public class ScopeManager {
         }
         guard let parent = currentScope.parent else {
             throw ErrorReporter.instance.fatal(.LeavingModuleScope, source)
+        }
+        if case let .Extension(r) = currentScope.type {
+            r.extendInst()
         }
         let child = currentScope
         currentScope = parent
@@ -744,10 +748,10 @@ public class ScopeManager {
     }
 
     public static func createTypeRef(
-        name: String, _ source: SourceTrackable, nestedTypes: [NestedType] = []
+        name: String, _ source: SourceTrackable, nests: [NestedTypeSpecifier] = []
     ) throws -> TypeRef {
         return try currentScope.createRef(
-            source, { TypeRef(name, source, nestedTypes) }, resolve: moduleParsing
+            source, { TypeRef(name, source, nests) }, resolve: moduleParsing
         )
     }
 

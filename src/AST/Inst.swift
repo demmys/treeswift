@@ -1,22 +1,35 @@
-public class Inst : Typeable, SourceTrackable {
+public protocol Nestable {
+    func appendNestedTypes(name: String, _ inst: Inst)
+    func appendNestedValues(name: String, _ inst: Inst)
+}
+
+public class Inst : Typeable, Nestable, SourceTrackable {
     public var type = TypeCandidate()
     public let name: String
-    private let info: SourceInfo
     public var accessLevel: AccessLevel?
-    public var nestedTypes: [String:Inst] = [:]
-    public var members: [String:Inst] = [:]
+    private let info: SourceInfo
     public var sourceInfo: SourceInfo {
         return info
     }
+    public var memberTypes: [String:Inst] = [:]
+    public var memberValues: [String:Inst] = [:]
 
     public init(
-        _ name: String, _ source: SourceTrackable, nestedTypes: [Inst] = []
+        _ name: String, _ source: SourceTrackable, _ memberTypes: [Inst] = []
     ) {
         self.name = name
         self.info = source.sourceInfo
-        for inst in nestedTypes {
-            self.nestedTypes[inst.name] = inst
+        for inst in memberTypes {
+            appendNestedTypes(inst.name, inst)
         }
+    }
+
+    public func appendNestedTypes(name: String, _ inst: Inst) {
+        self.memberTypes[name] = inst
+    }
+
+    public func appendNestedValues(name: String, _ inst: Inst) {
+        self.memberValues[name] = inst
     }
 }
 
@@ -67,7 +80,7 @@ public class EnumInst : Inst, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(EnumInst \(name))"
+        return "(EnumInst \(name) \(memberTypes) \(memberValues))"
     }
 }
 
@@ -92,7 +105,7 @@ public class StructInst : Inst, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(StructInst \(name))"
+        return "(StructInst \(name) \(memberTypes) \(memberValues))"
     }
 }
 
@@ -107,7 +120,7 @@ public class ClassInst : Inst, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(ClassInst \(name))"
+        return "(ClassInst \(name) \(memberTypes) \(memberValues))"
     }
 }
 
@@ -122,7 +135,7 @@ public class ProtocolInst : Inst, CustomStringConvertible {
     }
 
     public var description: String {
-        return "(ProtocolInst \(name))"
+        return "(ProtocolInst \(name) \(memberTypes) \(memberValues))"
     }
 }
 
@@ -158,22 +171,24 @@ public class Ref : Typeable, SourceTrackable {
     }
 }
 
-public typealias NestedType = (String, [Type]?, SourceTrackable)
+public typealias NestedTypeSpecifier = (String, [Type]?, SourceTrackable)
 
-public class TypeRef : Ref, CustomStringConvertible {
-    private let nestedTypes: [NestedType]
+public class TypeRef : Ref, Nestable, CustomStringConvertible {
+    private let nests: [NestedTypeSpecifier]
+    private var memberTypes: [String:Inst] = [:]
+    private var memberValues: [String:Inst] = [:]
 
     public init(
-        _ name: String, _ source: SourceTrackable, _ nested: [NestedType]
+        _ name: String, _ source: SourceTrackable, _ nests: [NestedTypeSpecifier]
     ) {
-        self.nestedTypes = nested
+        self.nests = nests
         super.init(.Name(name), source)
-        onResolved.append(resolveNestedTypes)
+        onResolved.append(resolveNests)
     }
 
-    private func resolveNestedTypes() throws {
-        for (name, _, source) in nestedTypes {
-            guard let child = inst.nestedTypes[name] else {
+    private func resolveNests() throws {
+        for (name, _, source) in nests {
+            guard let child = inst.memberTypes[name] else {
                 throw ErrorReporter.instance.fatal(
                     .NoNestedType(parent: inst.name, child: name), source
                 )
@@ -182,8 +197,25 @@ public class TypeRef : Ref, CustomStringConvertible {
         }
     }
 
+    func extendInst() {
+        for (name, inst) in memberTypes {
+            self.inst.appendNestedTypes(name, inst)
+        }
+        for (name, inst) in memberValues {
+            self.inst.appendNestedValues(name, inst)
+        }
+    }
+
+    public func appendNestedTypes(name: String, _ inst: Inst) {
+        self.memberTypes[name] = inst
+    }
+
+    public func appendNestedValues(name: String, _ inst: Inst) {
+        self.memberValues[name] = inst
+    }
+
     public var description: String {
-        return "(TypeRef \(id) \(nestedTypes) \(inst))"
+        return "(TypeRef \(id) \(nests) \(inst))"
     }
 }
 

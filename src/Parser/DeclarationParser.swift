@@ -1101,7 +1101,7 @@ class DeclarationParser : GrammarParser {
             throw ts.fatal(.ExpectedExtendedType)
         }
         x.id = try tp.identifierType(s, trackable)
-        ScopeManager.enterScope(.Extension)
+        ScopeManager.enterScope(.Extension(x.id.ref))
         x.inherits = try typeInheritanceClause()
         if !ts.test([.LeftBrace]) {
             try ts.error(.ExpectedLeftBraceForExtension)
