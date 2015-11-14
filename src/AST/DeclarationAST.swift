@@ -124,7 +124,7 @@ public enum VariableBlocks {
 }
 
 public class VariableBlock : ScopeTrackable, Typeable {
-    public var type: Type?
+    public var type = TypeCandidate()
     public var attrs: [Attribute] = []
     public var param: ConstantInst?
     public var body: [Procedure]!
@@ -141,14 +141,14 @@ public class VariableBlock : ScopeTrackable, Typeable {
 public class TypealiasDeclaration : Declaration {
     public var name: TypeInst!
     public var inherits: TypeInheritanceClause?
-    public var type: Type?
+    public var aliasedType: Type?
 
     public override init(_ attrs: [Attribute], _ al: AccessLevel?) {
         super.init(attrs, al)
     }
 
     public override var description: String {
-        return "(TypealiasDeclaration \(attrs) \(al) \(name) \(type))"
+        return "(TypealiasDeclaration \(attrs) \(al) \(name) \(aliasedType))"
     }
 }
 

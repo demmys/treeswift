@@ -1,9 +1,5 @@
 public class Pattern : Typeable, CustomStringConvertible {
-    private var _type: Type?
-    public var type: Type? {
-        get { return _type }
-        set (t) { _type = t }
-    }
+    public var type = TypeCandidate()
 
     public init() {}
 
@@ -115,18 +111,16 @@ public class EnumCasePattern : Pattern {
 }
 
 public class TypePattern : Pattern {
-    override public var type: Type? {
-        get { return _type }
-        set {}
-    }
+    public let targetType: Type
 
-    public init(_ type: Type?) {
+    public init(_ targetType: Type) {
+        self.targetType = targetType
         super.init()
-        _type = type
+        type.addCandidate(targetType)
     }
 
     override public var description: String {
-        return "(Pattern type: type \(type))"
+        return "(Pattern type: type \(targetType))"
     }
 }
 
@@ -149,17 +143,15 @@ public class OptionalPattern : ContainerPattern {
 }
 
 public class TypeCastingPattern : ContainerPattern {
-    override public var type: Type? {
-        get { return _type }
-        set {}
-    }
+    public var castType: Type
 
-    public init(_ pat: Pattern, _ type: Type?) {
+    public init(_ pat: Pattern, _ castType: Type) {
+        self.castType = castType
         super.init(pat)
-        _type = type
+        type.addCandidate(castType)
     }
 
     override public var description: String {
-        return "(Pattern type: typeCasting \(pat) \(type) \(type))"
+        return "(Pattern type: typeCasting \(pat) \(castType))"
     }
 }

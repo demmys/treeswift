@@ -361,69 +361,9 @@ extension ClosureParameters : CustomStringConvertible {
 /*
  * TypeAST
  */
-extension IdentifierType {
-    public var description: String {
-        return "(IdentifierType \(ref) \(genArgs) \(nestedTypes))"
-    }
-}
-
-extension ArrayType {
-    public var description: String {
-        return "(ArrayType \(elem))"
-    }
-}
-
-extension DictionaryType {
-    public var description: String {
-        return "(DictionaryType \(key) \(value))"
-    }
-}
-
-extension TupleType {
-    public var description: String {
-        return "(TupleType \(elems))"
-    }
-}
-
 extension TupleTypeElement {
     public var description: String {
         return "(TupleTypeElement inout: \(inOut) variadic: \(variadic) label: \(label) \(attrs) \(type))"
-    }
-}
-
-extension ProtocolCompositionType {
-    public var description: String {
-        return "(ProtocolCompositionType \(types))"
-    }
-}
-
-extension FunctionType {
-    public var description: String {
-        return "(FunctionType \(throwType) \(arg) \(ret))"
-    }
-}
-
-extension OptionalType {
-    public var description: String {
-        return "(OptionalType \(wrapped))"
-    }
-}
-
-extension ImplicitlyUnwrappedOptionalType {
-    public var description: String {
-        return "(ImplicitlyUnwrappedOptionalType \(wrapped))"
-    }
-}
-
-extension MetaType {
-    public var description: String {
-        return "(MetaType \(type))"
-    }
-}
-
-extension MetaProtocol {
-    public var description: String {
-        return "(MetaProtocol \(proto))"
     }
 }
 

@@ -16,7 +16,7 @@ public enum Operation {
 }
 
 public class ReturnValue : Typeable {
-    public var type: Type?
+    public var type = TypeCandidate()
     public let exp: Expression?
 
     public init(_ e: Expression?) {
@@ -61,9 +61,9 @@ public class ForFlow : Flow {
         pats = [PatternMatching(BooleanPattern(), c, nil)]
     }
 
-    public override var description: String { get {
+    public override var description: String {
         return "(ForFlow label: \(label) \(ini) \(pats) \(fin) \(block))"
-    } }
+    }
 }
 
 public enum ForInit {
@@ -78,9 +78,9 @@ public class ForInFlow : Flow {
         self.label = label
     }
 
-    public override var description: String { get {
+    public override var description: String {
         return "(ForInFlow label: \(label) \(pats) \(block))"
-    } }
+    }
 }
 
 public class WhileFlow : Flow {
@@ -90,9 +90,9 @@ public class WhileFlow : Flow {
         self.label = label
     }
 
-    public override var description: String { get {
+    public override var description: String {
         return "(WhileFlow label: \(label) \(pats) \(block))"
-    } }
+    }
 }
 
 public class RepeatWhileFlow : Flow {
@@ -106,9 +106,9 @@ public class RepeatWhileFlow : Flow {
         pats = [PatternMatching(BooleanPattern(), c, nil)]
     }
 
-    public override var description: String { get {
+    public override var description: String {
         return "(RepeatWhileFlow label: \(label) \(pats) \(block))"
-    } }
+    }
 }
 
 public class IfFlow : Flow {
@@ -119,9 +119,9 @@ public class IfFlow : Flow {
         self.label = label
     }
 
-    public override var description: String { get {
+    public override var description: String {
         return "(IfFlow label: \(label) \(pats) \(block) \(els))"
-    } }
+    }
 }
 
 public enum ElseClause {
@@ -130,29 +130,29 @@ public enum ElseClause {
 }
 
 public class GuardFlow : Flow {
-    public override var description: String { get {
+    public override var description: String {
         return "(GuardFlow \(pats) \(block))"
-    } }
+    }
 }
 
 public class DeferFlow : Flow {
-    public override var description: String { get {
+    public override var description: String {
         return "(DeferFlow \(block))"
-    } }
+    }
 }
 
 public class DoFlow : Flow {
     public var catches: [CatchFlow] = []
 
-    public override var description: String { get {
+    public override var description: String {
         return "(DoFlow \(block) \(catches))"
-    } }
+    }
 }
 
 public class CatchFlow : Flow {
-    public override var description: String { get {
+    public override var description: String {
         return "(CatchFlow \(pats) \(block))"
-    } }
+    }
 }
 
 public class FlowSwitch {
@@ -165,7 +165,7 @@ public class FlowSwitch {
 }
 
 public class CaseFlow : Flow {
-    public override var description: String { get {
+    public override var description: String {
         return "(CaseFlow \(pats) \(block))"
-    } }
+    }
 }

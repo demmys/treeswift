@@ -1,5 +1,5 @@
 public class Inst : Typeable, SourceTrackable {
-    public var type: Type?
+    public var type = TypeCandidate()
     public let name: String
     private let info: SourceInfo
     public var isPublic: Bool = false
@@ -136,16 +136,14 @@ public enum RefIdentifier : CustomStringConvertible{
 public class Ref : Typeable, SourceTrackable {
     public let id: RefIdentifier
     public var inst: Inst!
-    public var type: Type? {
-        get { return inst.type }
-        set (type) { inst.type = type }
-    }
+    public var type = TypeCandidate()
     private let info: SourceInfo
     public var sourceInfo: SourceInfo { return info }
 
     public init(_ id: RefIdentifier, _ source: SourceTrackable) {
         self.id = id
         self.info = source.sourceInfo
+        type.addCandidate({ self.inst.type })
     }
 }
 

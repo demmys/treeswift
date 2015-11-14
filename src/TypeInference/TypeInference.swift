@@ -1,7 +1,7 @@
 import AST
 
 public class UnresolvedType : Typeable {
-    public var type: Type?
+    public var type = TypeCandidate()
 }
 
 public class TypeInference : ASTVisitor {

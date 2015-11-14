@@ -1,16 +1,16 @@
-public protocol Typeable {
-    var type: Type? { get set }
-}
+public class Type : Typeable, CustomStringConvertible {
+    public var type: TypeCandidate
+    public var description: String { return "<<error: no description provided>>" }
 
-public protocol Type : Typeable, CustomStringConvertible {}
+    public init () {
+        type = TypeCandidate()
+        type.addCandidate(self)
+    }
+}
 
 public typealias TypeAnnotation = (Type, attrs: [Attribute])
 
 public class IdentifierType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let ref: TypeRef
     public let genArgs: [Type]?
     public let nestedTypes: [(String, [Type]?)]
@@ -19,50 +19,59 @@ public class IdentifierType : Type {
         ref = r
         genArgs = nil
         nestedTypes = []
+        super.init()
     }
     public init(_ r: TypeRef, _ g: [Type]?, _ n: [(String, [Type]?)]) {
         ref = r
         genArgs = g
         nestedTypes = n
+        super.init()
+    }
+
+    public override var description: String {
+        return "(IdentifierType \(ref) \(genArgs) \(nestedTypes))"
     }
 }
 
 public class ArrayType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let elem: Typeable
 
     public init(_ e: Typeable) {
         elem = e
+        super.init()
+    }
+
+    public override var description: String {
+        return "(ArrayType \(elem))"
     }
 }
 
 public class DictionaryType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let key: Typeable
     public let value: Typeable
 
     public init(_ k: Typeable, _ v: Typeable) {
         key = k
         value = v
+        super.init()
+    }
+
+    public override var description: String {
+        return "(DictionaryType \(key) \(value))"
     }
 }
 
 public class TupleType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public var elems: [TupleTypeElement] = []
 
-    public init() {}
+    public override init() {}
     public init(_ es: [TupleTypeElement]) {
         elems = es
+        super.init()
+    }
+
+    public override var description: String {
+        return "(TupleType \(elems))"
     }
 }
 
@@ -84,20 +93,14 @@ public class TupleTypeElement {
 }
 
 public class ProtocolCompositionType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public var types: [IdentifierType] = []
 
-    public init() {}
+    public override var description: String {
+        return "(ProtocolCompositionType \(types))"
+    }
 }
 
 public class FunctionType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let arg: Typeable
     public let throwType: ThrowType
     public let ret: Typeable
@@ -106,53 +109,62 @@ public class FunctionType : Type {
         arg = a
         throwType = t
         ret = r
+        super.init()
+    }
+
+    public override var description: String {
+        return "(FunctionType \(throwType) \(arg) \(ret))"
     }
 }
 
 public class OptionalType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let wrapped: Typeable
 
     public init(_ w: Typeable) {
         wrapped = w
+        super.init()
+    }
+
+    public override var description: String {
+        return "(OptionalType \(wrapped))"
     }
 }
 
 public class ImplicitlyUnwrappedOptionalType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let wrapped: Typeable
 
     public init(_ w: Typeable) {
         wrapped = w
+        super.init()
+    }
+
+    public override var description: String {
+        return "(ImplicitlyUnwrappedOptionalType \(wrapped))"
     }
 }
 
 public class MetaType : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public let reference: Typeable
 
     public init(_ r: Typeable) {
         reference = r
+        super.init()
+    }
+
+    public override var description: String {
+        return "(MetaType \(type))"
     }
 }
 
 public class MetaProtocol : Type {
-    public var type: Type? {
-        get { return self }
-        set {}
-    }
     public var proto: Typeable!
 
     public init(_ p: Typeable) {
         proto = p
+        super.init()
+    }
+
+    public override var description: String {
+        return "(MetaProtocol \(proto))"
     }
 }

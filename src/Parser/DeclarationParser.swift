@@ -553,7 +553,7 @@ class DeclarationParser : GrammarParser {
         x.name = try ScopeManager.createType(s, trackable, accessLevel: al)
         x.inherits = try typeInheritanceClause()
         if ts.test([.AssignmentOperator]) {
-            x.type = try tp.type()
+            x.aliasedType = try tp.type()
         }
         return x
     }
@@ -570,7 +570,7 @@ class DeclarationParser : GrammarParser {
         if !ts.test([.AssignmentOperator]) {
             try ts.error(.ExpectedTypealiasAssignment)
         }
-        x.type = try tp.type()
+        x.aliasedType = try tp.type()
         return x
     }
 

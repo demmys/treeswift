@@ -1,5 +1,5 @@
 public class Expression : Typeable {
-    public var type: Type?
+    public var type = TypeCandidate()
     public var tryType: TryType!
     public var body: ExpressionBody!
 
@@ -11,7 +11,7 @@ public enum TryType : String {
 }
 
 public class ExpressionBody : Typeable, CustomStringConvertible {
-    public var type: Type?
+    public var type = TypeCandidate()
     public var unit: ExpressionUnit!
     public var left: ExpressionUnit! {
         get { return unit }
@@ -68,7 +68,7 @@ public enum CastType : String {
 
 // prefix-expression
 public class ExpressionUnit : Typeable {
-    public var type: Type?
+    public var type = TypeCandidate()
     public var pre: ExpressionPrefix!
     public var core: ExpressionCore!
     public var posts: [ExpressionPostfix] = []
@@ -99,7 +99,7 @@ public enum PostfixMember {
 
 // primary-expression
 public class ExpressionCore : Typeable {
-    public var type: Type?
+    public var type = TypeCandidate()
     public let value: ExpressionCoreValue
 
     public init(_ v: ExpressionCoreValue) {

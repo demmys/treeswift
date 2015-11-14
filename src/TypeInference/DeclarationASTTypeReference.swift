@@ -12,7 +12,7 @@ extension TypeInference {
     public func visit(node: PatternInitializerDeclaration) throws {
         for (pattern, annotation, expression) in node.inits {
             if let (type, attrs: _) = annotation {
-                pattern.type = type
+                pattern.type.addCandidate(type)
             }
             if let e = expression {
                 addConstraint(pattern, e)
@@ -24,7 +24,7 @@ extension TypeInference {
 
     public func visit(node: VariableBlockDeclaration) throws {
         if let (type, attrs: _) = node.annotation {
-            node.name.type = type
+            node.name.type.addCandidate(type)
         }
         if let e = node.initializer {
             addConstraint(node.name, e)
@@ -85,8 +85,8 @@ extension TypeInference {
         let type = FunctionType(arg, node.throwType, ret)
 
         switch node.name! {
-        case let .Function(inst): inst.type = type
-        case let .Operator(inst): inst.type = type
+        case let .Function(inst): inst.type.addCandidate(type)
+        case let .Operator(inst): inst.type.addCandidate(type)
         }
         for p in node.body {
             if case let .OperationProcedure(o) = p {

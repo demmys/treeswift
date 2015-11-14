@@ -97,13 +97,13 @@ extension TypeInference {
         case let .ImplicitParameter(r, genArgs: _):
             addConstraint(node, r)
         case .Integer:
-            node.type = try intType()
+            node.type.addCandidate(try intType())
         case .FloatingPoint:
-            node.type = try floatType()
+            node.type.addCandidate(try floatType())
         case .StringExpression:
-            node.type = try stringType()
+            node.type.addCandidate(try stringType())
         case .Boolean:
-            node.type = try boolType()
+            node.type.addCandidate(try boolType())
         case .Nil:
             addConstraint(node, OptionalType(UnresolvedType()))
         case let .Array(es):
