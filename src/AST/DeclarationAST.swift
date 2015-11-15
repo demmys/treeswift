@@ -23,7 +23,7 @@ public class TopLevelDeclaration : ScopeTrackable {
     public var scope: Scope { return fileScope }
 }
 
-public class Declaration : CustomStringConvertible {
+public class Declaration {
     public var attrs: [Attribute] = []
     public var al: AccessLevel?
     public var mods: [Modifier] = []
@@ -43,10 +43,6 @@ public class Declaration : CustomStringConvertible {
     }
     private init(_ al: AccessLevel?) {
         self.al = al
-    }
-
-    public var description: String {
-        return "<<error: no description provided>>"
     }
 }
 
@@ -70,10 +66,6 @@ public class ImportDeclaration : Declaration, SourceTrackable {
     public var sourceInfo: SourceInfo {
         return info
     }
-
-    public override var description: String {
-        return "(ImportDeclaration kind: \(attrs) \(kind) \(name))"
-    }
 }
 
 public enum ImportKind : String {
@@ -92,10 +84,6 @@ public class PatternInitializerDeclaration : Declaration {
         super.init(attrs, al, mods)
         self.inits = inits
     }
-
-    public override var description: String {
-        return "(PatternInitializerDeclaration \(attrs) \(al) \(mods) \(inits))"
-    }
 }
 
 public class VariableBlockDeclaration : Declaration {
@@ -109,10 +97,6 @@ public class VariableBlockDeclaration : Declaration {
     ) {
         super.init(attrs, al, mods)
         self.name = name
-    }
-
-    public override var description: String {
-        return "(VariableBlockDeclaration \(attrs) \(al) \(mods) \(name) \(annotation) \(initializer) \(blocks))"
     }
 }
 
@@ -146,10 +130,6 @@ public class TypealiasDeclaration : Declaration {
     public override init(_ attrs: [Attribute], _ al: AccessLevel?) {
         super.init(attrs, al)
     }
-
-    public override var description: String {
-        return "(TypealiasDeclaration \(attrs) \(al) \(name) \(aliasedType))"
-    }
 }
 
 public class FunctionDeclaration : Declaration, ScopeTrackable {
@@ -166,9 +146,6 @@ public class FunctionDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(FunctionDeclaration \(attrs) \(mods) \(al) \(throwType) \(name) \(genParam) \(params) \(returns) \(body))"
-    }
 }
 
 public enum FunctionReference {
@@ -217,9 +194,6 @@ public class EnumDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(al) \(name) \(genParam) \(inherits) \(members))"
-    }
 }
 
 public enum EnumMember {
@@ -294,9 +268,6 @@ public class StructDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(StructDeclaration \(attrs) \(al) \(name) \(genParam) \(inherits) \(body))"
-    }
 }
 
 public class ClassDeclaration : Declaration, ScopeTrackable {
@@ -311,9 +282,6 @@ public class ClassDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(ClassDeclaration \(attrs) \(al) \(name) \(genParam) \(inherits) \(body)"
-    }
 }
 
 public class ProtocolDeclaration : Declaration, ScopeTrackable {
@@ -327,9 +295,6 @@ public class ProtocolDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(ProtocolDeclaration \(attrs) \(al) \(name) \(inherits) \(body))"
-    }
 }
 
 public class InitializerDeclaration : Declaration, ScopeTrackable {
@@ -344,9 +309,6 @@ public class InitializerDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(InitializerDeclaration \(attrs) \(al) \(mods) \(failable) \(genParam) \(params) \(body))"
-    }
 }
 
 public enum FailableType : String {
@@ -363,9 +325,6 @@ public class DeinitializerDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(DeinitializerDeclaration \(attrs) \(body))"
-    }
 }
 
 public class ExtensionDeclaration : Declaration, ScopeTrackable {
@@ -379,9 +338,6 @@ public class ExtensionDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(ExtensionDeclaration \(al) \(id) \(inherits) \(body))"
-    }
 }
 
 public class SubscriptDeclaration : Declaration, ScopeTrackable {
@@ -395,9 +351,6 @@ public class SubscriptDeclaration : Declaration, ScopeTrackable {
     }
 
     public var scope: Scope { return associatedScope }
-    public override var description: String {
-        return "(SubscriptDeclaration \(attrs) \(al) \(mods) \(params) \(returns) \(body))"
-    }
 }
 
 public class OperatorDeclaration : Declaration {
@@ -408,10 +361,6 @@ public class OperatorDeclaration : Declaration {
         self.kind = kind
         self.name = name
         super.init()
-    }
-
-    public override var description: String {
-        return "(OperatorDeclaration \(kind) \(name))"
     }
 }
 public enum OperatorDeclarationKind {

@@ -1,6 +1,5 @@
-public class Type : Typeable, CustomStringConvertible {
+public class Type : Typeable {
     public var type: TypeManager
-    public var description: String { return "<<error: no description provided>>" }
 
     public init () {
         type = TypeManager()
@@ -29,10 +28,6 @@ public class IdentifierType : Type {
         super.init()
     }
 
-    public override var description: String {
-        return "(IdentifierType \(ref) \(genArgs))"
-    }
-
     public override func stringify() -> String {
         return ref.id.description
     }
@@ -44,10 +39,6 @@ public class ArrayType : Type {
     public init(_ e: Typeable) {
         elem = e
         super.init()
-    }
-
-    public override var description: String {
-        return "(ArrayType \(elem))"
     }
 
     public override func stringify() -> String {
@@ -65,10 +56,6 @@ public class DictionaryType : Type {
         super.init()
     }
 
-    public override var description: String {
-        return "(DictionaryType \(key) \(value))"
-    }
-
     public override func stringify() -> String {
         return "[\(key.type.stringify()):\(value.type.stringify())]"
     }
@@ -81,10 +68,6 @@ public class TupleType : Type {
     public init(_ es: [TupleTypeElement]) {
         elems = es
         super.init()
-    }
-
-    public override var description: String {
-        return "(TupleType \(elems))"
     }
 
     public override func stringify() -> String {
@@ -120,10 +103,6 @@ public class TupleTypeElement {
 public class ProtocolCompositionType : Type {
     public var types: [IdentifierType] = []
 
-    public override var description: String {
-        return "(ProtocolCompositionType \(types))"
-    }
-
     public override func stringify() -> String {
         var presentation = "protocol<"
         for (i, type) in types.enumerate() {
@@ -149,10 +128,6 @@ public class FunctionType : Type {
         super.init()
     }
 
-    public override var description: String {
-        return "(FunctionType \(throwType) \(arg) \(ret))"
-    }
-
     public override func stringify() -> String {
         return "\(arg.type.stringify()) -> \(ret.type.stringify())"
     }
@@ -164,10 +139,6 @@ public class OptionalType : Type {
     public init(_ w: Typeable) {
         wrapped = w
         super.init()
-    }
-
-    public override var description: String {
-        return "(OptionalType \(wrapped))"
     }
 
     public override func stringify() -> String {
@@ -183,10 +154,6 @@ public class ImplicitlyUnwrappedOptionalType : Type {
         super.init()
     }
 
-    public override var description: String {
-        return "(ImplicitlyUnwrappedOptionalType \(wrapped))"
-    }
-
     public override func stringify() -> String {
         return "\(wrapped.type.stringify())!"
     }
@@ -200,10 +167,6 @@ public class MetaType : Type {
         super.init()
     }
 
-    public override var description: String {
-        return "(MetaType \(type))"
-    }
-
     public override func stringify() -> String {
         return "\(reference.type.stringify()).TYPE"
     }
@@ -215,10 +178,6 @@ public class MetaProtocol : Type {
     public init(_ p: Typeable) {
         proto = p
         super.init()
-    }
-
-    public override var description: String {
-        return "(MetaProtocol \(proto))"
     }
 
     public override func stringify() -> String {

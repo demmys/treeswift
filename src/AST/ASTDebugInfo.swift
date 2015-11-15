@@ -41,6 +41,66 @@ extension Operation : CustomStringConvertible {
     }
 }
 
+extension ForFlow : CustomStringConvertible {
+    public var description: String {
+        return "(ForFlow label: \(label) \(ini) \(pats) \(fin) \(block))"
+    }
+}
+
+extension ForInFlow : CustomStringConvertible {
+    public var description: String {
+        return "(ForInFlow label: \(label) \(pats) \(block))"
+    }
+}
+
+extension WhileFlow : CustomStringConvertible {
+    public var description: String {
+        return "(WhileFlow label: \(label) \(pats) \(block))"
+    }
+}
+
+extension RepeatWhileFlow : CustomStringConvertible {
+    public var description: String {
+        return "(RepeatWhileFlow label: \(label) \(pats) \(block))"
+    }
+}
+
+extension IfFlow : CustomStringConvertible {
+    public var description: String {
+        return "(IfFlow label: \(label) \(pats) \(block) \(els))"
+    }
+}
+
+extension GuardFlow : CustomStringConvertible {
+    public var description: String {
+        return "(GuardFlow \(pats) \(block))"
+    }
+}
+
+extension DeferFlow : CustomStringConvertible {
+    public var description: String {
+        return "(DeferFlow \(block))"
+    }
+}
+
+extension DoFlow : CustomStringConvertible {
+    public var description: String {
+        return "(DoFlow \(block) \(catches))"
+    }
+}
+
+extension CatchFlow : CustomStringConvertible {
+    public var description: String {
+        return "(CatchFlow \(pats) \(block))"
+    }
+}
+
+extension CaseFlow : CustomStringConvertible {
+    public var description: String {
+        return "(CaseFlow \(pats) \(block))"
+    }
+}
+
 extension PatternMatching : CustomStringConvertible {
     public var description: String {
         return "(PatternMatching \(pat) \(exp) \(rest))"
@@ -91,6 +151,90 @@ extension Module : CustomStringConvertible {
 extension TopLevelDeclaration : CustomStringConvertible {
     public var description: String {
         return "(TopLevelDeclaration main: \(isMain) \(procedures))"
+    }
+}
+
+extension ImportDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(ImportDeclaration kind: \(attrs) \(kind) \(name))"
+    }
+}
+
+extension PatternInitializerDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(PatternInitializerDeclaration \(attrs) \(al) \(mods) \(inits))"
+    }
+}
+
+extension VariableBlockDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(VariableBlockDeclaration \(attrs) \(al) \(mods) \(name) \(annotation) \(initializer) \(blocks))"
+    }
+}
+
+extension TypealiasDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(TypealiasDeclaration \(attrs) \(al) \(name) \(aliasedType))"
+    }
+}
+
+extension FunctionDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(FunctionDeclaration \(attrs) \(mods) \(al) \(throwType) \(name) \(genParam) \(params) \(returns) \(body))"
+    }
+}
+
+extension EnumDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(EnumDeclaration raw-value-style: \(isRawValueStyle) indirect: \(isIndirect) \(attrs) \(al) \(name) \(genParam) \(inherits) \(members))"
+    }
+}
+
+extension StructDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(StructDeclaration \(attrs) \(al) \(name) \(genParam) \(inherits) \(body))"
+    }
+}
+
+extension ClassDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(ClassDeclaration \(attrs) \(al) \(name) \(genParam) \(inherits) \(body)"
+    }
+}
+
+extension ProtocolDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(ProtocolDeclaration \(attrs) \(al) \(name) \(inherits) \(body))"
+    }
+}
+
+extension InitializerDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(InitializerDeclaration \(attrs) \(al) \(mods) \(failable) \(genParam) \(params) \(body))"
+    }
+}
+
+extension DeinitializerDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(DeinitializerDeclaration \(attrs) \(body))"
+    }
+}
+
+extension ExtensionDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(ExtensionDeclaration \(al) \(id) \(inherits) \(body))"
+    }
+}
+
+extension SubscriptDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(SubscriptDeclaration \(attrs) \(al) \(mods) \(params) \(returns) \(body))"
+    }
+}
+
+extension OperatorDeclaration : CustomStringConvertible {
+    public var description: String {
+        return "(OperatorDeclaration \(kind) \(name))"
     }
 }
 
@@ -371,8 +515,155 @@ extension ClosureParameters : CustomStringConvertible {
 }
 
 /*
+ * PatternAST
+ */
+extension IdentityPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: identity \(type))"
+    }
+}
+
+extension BooleanPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: boolean \(type))"
+    }
+}
+
+extension ConstantIdentifierPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: constant-identifier \(inst) \(type))"
+    }
+}
+
+extension VariableIdentifierPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: variable-identifier \(inst) \(type))"
+    }
+}
+
+extension ReferenceIdentifierPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: reference-identifier \(ref) \(type))"
+    }
+}
+
+extension WildcardPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern wildcard-pattern \(type))"
+    }
+}
+
+extension TuplePattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: tuple \(tuple) \(type))"
+    }
+}
+
+extension VariableBindingPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: variable-binding \(pat) \(type))"
+    }
+}
+
+extension ConstantBindingPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: constant-binding \(pat) \(type))"
+    }
+}
+
+extension EnumCasePattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: enum-case \(ref) \(tuple) \(type))"
+    }
+}
+
+extension TypePattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: type \(targetType))"
+    }
+}
+
+extension ExpressionPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: expression \(exp) \(type))"
+    }
+}
+
+extension OptionalPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: optional \(pat) \(type))"
+    }
+}
+
+extension TypeCastingPattern : CustomStringConvertible {
+    public var description: String {
+        return "(Pattern type: typeCasting \(pat) \(castType))"
+    }
+}
+
+/*
  * TypeAST
  */
+extension IdentifierType : CustomStringConvertible {
+    public var description: String {
+        return "(IdentifierType \(ref) \(genArgs))"
+    }
+}
+
+extension ArrayType : CustomStringConvertible {
+    public var description: String {
+        return "(ArrayType \(elem))"
+    }
+}
+
+extension DictionaryType : CustomStringConvertible {
+    public var description: String {
+        return "(DictionaryType \(key) \(value))"
+    }
+}
+
+extension TupleType : CustomStringConvertible {
+    public var description: String {
+        return "(TupleType \(elems))"
+    }
+}
+
+extension ProtocolCompositionType : CustomStringConvertible {
+    public var description: String {
+        return "(ProtocolCompositionType \(types))"
+    }
+}
+
+extension FunctionType : CustomStringConvertible {
+    public var description: String {
+        return "(FunctionType \(throwType) \(arg) \(ret))"
+    }
+}
+
+extension OptionalType : CustomStringConvertible {
+    public var description: String {
+        return "(OptionalType \(wrapped))"
+    }
+}
+
+extension ImplicitlyUnwrappedOptionalType : CustomStringConvertible {
+    public var description: String {
+        return "(ImplicitlyUnwrappedOptionalType \(wrapped))"
+    }
+}
+
+extension MetaType : CustomStringConvertible {
+    public var description: String {
+        return "(MetaType \(type))"
+    }
+}
+
+extension MetaProtocol : CustomStringConvertible {
+    public var description: String {
+        return "(MetaProtocol \(proto))"
+    }
+}
+
 extension TupleTypeElement {
     public var description: String {
         return "(TupleTypeElement inout: \(inOut) variadic: \(variadic) label: \(label) \(attrs) \(type))"

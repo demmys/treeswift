@@ -24,7 +24,7 @@ public class ReturnValue : Typeable {
     }
 }
 
-public class Flow : ScopeTrackable, CustomStringConvertible {
+public class Flow : ScopeTrackable {
     public var pats: [PatternMatching]!
     public var block: [Procedure]!
     public var associatedScope: Scope!
@@ -32,7 +32,6 @@ public class Flow : ScopeTrackable, CustomStringConvertible {
     public init() {}
 
     public var scope: Scope { return associatedScope }
-    public var description: String { return "<<error: no description provided>>" }
 }
 
 public class PatternMatching {
@@ -60,10 +59,6 @@ public class ForFlow : Flow {
     public func setCond(c: Expression) {
         pats = [PatternMatching(BooleanPattern(), c, nil)]
     }
-
-    public override var description: String {
-        return "(ForFlow label: \(label) \(ini) \(pats) \(fin) \(block))"
-    }
 }
 
 public enum ForInit {
@@ -77,10 +72,6 @@ public class ForInFlow : Flow {
     public init(_ label: String?) {
         self.label = label
     }
-
-    public override var description: String {
-        return "(ForInFlow label: \(label) \(pats) \(block))"
-    }
 }
 
 public class WhileFlow : Flow {
@@ -88,10 +79,6 @@ public class WhileFlow : Flow {
 
     public init(_ label: String?) {
         self.label = label
-    }
-
-    public override var description: String {
-        return "(WhileFlow label: \(label) \(pats) \(block))"
     }
 }
 
@@ -105,10 +92,6 @@ public class RepeatWhileFlow : Flow {
     public func setCond(c: Expression) {
         pats = [PatternMatching(BooleanPattern(), c, nil)]
     }
-
-    public override var description: String {
-        return "(RepeatWhileFlow label: \(label) \(pats) \(block))"
-    }
 }
 
 public class IfFlow : Flow {
@@ -118,10 +101,6 @@ public class IfFlow : Flow {
     public init(_ label: String?) {
         self.label = label
     }
-
-    public override var description: String {
-        return "(IfFlow label: \(label) \(pats) \(block) \(els))"
-    }
 }
 
 public enum ElseClause {
@@ -129,31 +108,15 @@ public enum ElseClause {
     case ElseIf(IfFlow)
 }
 
-public class GuardFlow : Flow {
-    public override var description: String {
-        return "(GuardFlow \(pats) \(block))"
-    }
-}
+public class GuardFlow : Flow {}
 
-public class DeferFlow : Flow {
-    public override var description: String {
-        return "(DeferFlow \(block))"
-    }
-}
+public class DeferFlow : Flow {}
 
 public class DoFlow : Flow {
     public var catches: [CatchFlow] = []
-
-    public override var description: String {
-        return "(DoFlow \(block) \(catches))"
-    }
 }
 
-public class CatchFlow : Flow {
-    public override var description: String {
-        return "(CatchFlow \(pats) \(block))"
-    }
-}
+public class CatchFlow : Flow {}
 
 public class FlowSwitch {
     public var label: String?
@@ -164,8 +127,4 @@ public class FlowSwitch {
     }
 }
 
-public class CaseFlow : Flow {
-    public override var description: String {
-        return "(CaseFlow \(pats) \(block))"
-    }
-}
+public class CaseFlow : Flow {}
