@@ -41,6 +41,12 @@ extension Operation : CustomStringConvertible {
     }
 }
 
+extension ReturnValue : CustomStringConvertible {
+    public var description: String {
+        return "(ReturnValue \(exp))"
+    }
+}
+
 extension ForFlow : CustomStringConvertible {
     public var description: String {
         return "(ForFlow label: \(label) \(ini) \(pats) \(fin) \(block))"
@@ -368,7 +374,7 @@ extension Associativity : CustomStringConvertible {
  */
 extension Expression : CustomStringConvertible {
     public var description: String {
-        return "(Expression \(tryType) \(body))"
+        return "(Expression: \(type.type?.stringify() ?? "nil") \(tryType) \(body))"
     }
 }
 
@@ -386,13 +392,13 @@ extension CastType : CustomStringConvertible {
 
 extension PrefixedExpression: CustomStringConvertible {
     public var description: String {
-        return "(PrefixedExpression \(pre) \(core))"
+        return "(PrefixedExpression: \(type.type?.stringify() ?? "nil") \(pre) \(core))"
     }
 }
 
 extension PostfixedExpression: CustomStringConvertible {
     public var description: String {
-        return "(PostfixedExpression \(core))"
+        return "(PostfixedExpression: \(type.type?.stringify() ?? "nil") \(core))"
     }
 }
 
@@ -448,7 +454,7 @@ extension PostfixMember : CustomStringConvertible {
 
 extension ExpressionCore : CustomStringConvertible {
     public var description: String {
-        return "(ExpressionCore \(value))"
+        return "(ExpressionCore: \(type.type?.stringify() ?? "nil") \(value))"
     }
 }
 
@@ -519,61 +525,61 @@ extension ClosureParameters : CustomStringConvertible {
  */
 extension IdentityPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: identity \(type))"
+        return "(Pattern type: identity)"
     }
 }
 
 extension BooleanPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: boolean \(type))"
+        return "(Pattern type: boolean)"
     }
 }
 
 extension ConstantIdentifierPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: constant-identifier \(inst) \(type))"
+        return "(Pattern type: constant-identifier \(inst))"
     }
 }
 
 extension VariableIdentifierPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: variable-identifier \(inst) \(type))"
+        return "(Pattern type: variable-identifier \(inst))"
     }
 }
 
 extension ReferenceIdentifierPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: reference-identifier \(ref) \(type))"
+        return "(Pattern type: reference-identifier \(ref))"
     }
 }
 
 extension WildcardPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern wildcard-pattern \(type))"
+        return "(Pattern wildcard-pattern)"
     }
 }
 
 extension TuplePattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: tuple \(tuple) \(type))"
+        return "(Pattern type: tuple \(tuple))"
     }
 }
 
 extension VariableBindingPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: variable-binding \(pat) \(type))"
+        return "(Pattern type: variable-binding \(pat))"
     }
 }
 
 extension ConstantBindingPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: constant-binding \(pat) \(type))"
+        return "(Pattern type: constant-binding \(pat))"
     }
 }
 
 extension EnumCasePattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: enum-case \(ref) \(tuple) \(type))"
+        return "(Pattern type: enum-case \(ref) \(tuple))"
     }
 }
 
@@ -585,13 +591,13 @@ extension TypePattern : CustomStringConvertible {
 
 extension ExpressionPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: expression \(exp) \(type))"
+        return "(Pattern type: expression \(exp)"
     }
 }
 
 extension OptionalPattern : CustomStringConvertible {
     public var description: String {
-        return "(Pattern type: optional \(pat) \(type))"
+        return "(Pattern type: optional \(pat))"
     }
 }
 

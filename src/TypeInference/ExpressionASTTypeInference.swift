@@ -62,6 +62,7 @@ extension TypeInference {
         }
         // Do not analyze type of PostfixedExpression here.
         // Because member reference has not resolved yet.
+        addConstraint(node, node.core)
         try node.core.accept(self)
     }
 
