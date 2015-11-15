@@ -1,6 +1,7 @@
 import Util
 import AST
 import Parser
+import TypeInference
 import Generator
 
 class Indent {
@@ -117,6 +118,15 @@ do {
             ErrorReporter.instance.report()
             ScopeManager.printScopes() // DEBUG
             try ScopeManager.resolveRefs()
+            let inferer = TypeInference()
+            for (_, mod) in ScopeManager.modules {
+                try inferer.visit(mod)
+            }
+            for (_, tld) in result {
+                try inferer.visit(tld)
+            }
+            inferer.printConstraints() // DEBUG
+            try inferer.infer()
             printModules() // DEBUG
             printParseResult(result) // DEBUG
         } catch ErrorReport.Fatal {

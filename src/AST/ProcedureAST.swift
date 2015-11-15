@@ -16,7 +16,7 @@ public enum Operation {
 }
 
 public class ReturnValue : Typeable {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public let exp: Expression?
 
     public init(_ e: Expression?) {

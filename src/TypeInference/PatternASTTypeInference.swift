@@ -4,7 +4,7 @@ extension TypeInference {
     public func visit(node: IdentityPattern) throws {}
 
     public func visit(node: BooleanPattern) throws {
-        node.type.addCandidate(try boolType())
+        node.type.fixType(try boolType())
     }
 
     public func visit(node: ConstantIdentifierPattern) throws {

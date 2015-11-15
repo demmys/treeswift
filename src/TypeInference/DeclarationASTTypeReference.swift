@@ -18,7 +18,7 @@ extension TypeInference {
     public func visit(node: PatternInitializerDeclaration) throws {
         for (pattern, annotation, expression) in node.inits {
             if let (type, attrs: _) = annotation {
-                pattern.type.addCandidate(type)
+                pattern.type.fixType(type)
             }
             if let e = expression {
                 addConstraint(pattern, e)
@@ -30,13 +30,16 @@ extension TypeInference {
 
     public func visit(node: VariableBlockDeclaration) throws {
         if let (type, attrs: _) = node.annotation {
-            node.name.type.addCandidate(type)
+            node.name.type.fixType(type)
         }
         if let e = node.initializer {
             addConstraint(node.name, e)
             try e.accept(self)
         }
-        switch node.blocks! {
+        guard let blocks = node.blocks else {
+            assert(false, "<system error> VariableBlockDeclaration.blocks is nil")
+        }
+        switch blocks {
         case let .GetterSetter(getter: gb, setter: sb):
             addConstraint(node.name, gb)
             try gb.accept(self)
@@ -75,27 +78,28 @@ extension TypeInference {
     public func visit(node: TypealiasDeclaration) throws {}
 
     public func visit(node: FunctionDeclaration) throws {
-        if node.params.count > 0 {
-            assert(false, "Curried function is not implemented.")
-        }
-        if node.params.count == 0 {
-            assert(false, "<system error> no parameter found.")
-        }
-        let arg = typeOfParams(node.params[0])
         let ret: Type
         if let (_, type) = node.returns {
             ret = type
         } else {
             ret = TupleType()
         }
-        let type = FunctionType(arg, node.throwType, ret)
-
-        switch node.name! {
-        case let .Function(inst):
-            inst.type.addCandidate(type)
-        case let .Operator(_, inst):
-            inst.type.addCandidate(type)
+        var functionType = ret
+        for (index, argTuple) in node.params.enumerate().reverse() {
+            let arg = typeOfParams(argTuple)
+            let throwType = index == node.params.count + 1 ? node.throwType : .Nothing
+            functionType = FunctionType(arg, throwType, functionType)
         }
+        guard let name = node.name else {
+            assert(false, "<system error> FunctionDeclaration.name is nil")
+        }
+        switch name {
+        case let .Function(inst):
+            inst.type.fixType(functionType)
+        case let .Operator(_, inst):
+            inst.type.fixType(functionType)
+        }
+
         for p in node.body {
             if case let .OperationProcedure(o) = p {
                 if case let .ReturnOperation(v) = o {
@@ -106,7 +110,9 @@ extension TypeInference {
         }
     }
 
-    private func typeOfParams(params: [Parameter], requireLabelInDefault: Bool = false) -> TupleType {
+    private func typeOfParams(
+        params: [Parameter], requireLabelInDefault: Bool = false
+    ) -> TupleType {
         let xs = TupleType()
         for p in params {
             let x = TupleTypeElement()
@@ -116,12 +122,18 @@ extension TypeInference {
             default: break
             }
             // label
-            switch p.externalName! {
+            guard let externalName = p.externalName else {
+                assert(false, "<system error> Parameter.externalName is nil")
+            }
+            switch externalName {
             case let .Specified(s, _):
                 x.label = s
             case .NotSpecified:
                 if requireLabelInDefault {
-                    switch p.internalName! {
+                    guard let internalName = p.internalName else {
+                        assert(false, "<system error> Parameter.internalName is nil")
+                    }
+                    switch internalName {
                     case let .SpecifiedConstantInst(inst):
                         x.label = inst.name
                     case let .SpecifiedVariableInst(inst):
@@ -191,7 +203,7 @@ extension TypeInference {
     }
 
     public func visit(node: InitializerDeclaration) throws {
-        assert(false, "Initializer declaration is not implemented.")
+        // assert(false, "Initializer declaration is not implemented.")
     }
 
     public func visit(node: DeinitializerDeclaration) throws {

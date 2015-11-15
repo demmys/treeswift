@@ -293,6 +293,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedMetatypeType
     // TypeInference
     case UnwrappingNotAOptionalType
+    case TypeNotMatch
 
     public var description: String {
         switch self {
@@ -664,6 +665,8 @@ public enum ErrorMessage : CustomStringConvertible {
         // TypeInference
         case .UnwrappingNotAOptionalType:
             return "Unwrapping not a optional type."
+        case .TypeNotMatch:
+            return "Type not match"
         }
     }
 }

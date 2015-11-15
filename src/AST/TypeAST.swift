@@ -1,10 +1,14 @@
 public class Type : Typeable, CustomStringConvertible {
-    public var type: TypeCandidate
+    public var type: TypeManager
     public var description: String { return "<<error: no description provided>>" }
 
     public init () {
-        type = TypeCandidate()
-        type.addCandidate(self)
+        type = TypeManager()
+        type.fixType(self)
+    }
+
+    public func stringify() -> String {
+        return "<<error type>>"
     }
 }
 
@@ -28,6 +32,10 @@ public class IdentifierType : Type {
     public override var description: String {
         return "(IdentifierType \(ref) \(genArgs))"
     }
+
+    public override func stringify() -> String {
+        return ref.id.description
+    }
 }
 
 public class ArrayType : Type {
@@ -40,6 +48,10 @@ public class ArrayType : Type {
 
     public override var description: String {
         return "(ArrayType \(elem))"
+    }
+
+    public override func stringify() -> String {
+        return "[\(elem.type.stringify())]"
     }
 }
 
@@ -56,6 +68,10 @@ public class DictionaryType : Type {
     public override var description: String {
         return "(DictionaryType \(key) \(value))"
     }
+
+    public override func stringify() -> String {
+        return "[\(key.type.stringify()):\(value.type.stringify())]"
+    }
 }
 
 public class TupleType : Type {
@@ -69,6 +85,18 @@ public class TupleType : Type {
 
     public override var description: String {
         return "(TupleType \(elems))"
+    }
+
+    public override func stringify() -> String {
+        var presentation = "("
+        for (i, elem) in elems.enumerate() {
+            presentation += elem.type.type.stringify()
+            if i == elems.count - 1 {
+                break
+            }
+            presentation += ", "
+        }
+        return presentation + ")"
     }
 }
 
@@ -95,6 +123,18 @@ public class ProtocolCompositionType : Type {
     public override var description: String {
         return "(ProtocolCompositionType \(types))"
     }
+
+    public override func stringify() -> String {
+        var presentation = "protocol<"
+        for (i, type) in types.enumerate() {
+            presentation += type.stringify()
+            if i == types.count - 1 {
+                break
+            }
+            presentation += ", "
+        }
+        return presentation + ">"
+    }
 }
 
 public class FunctionType : Type {
@@ -112,6 +152,10 @@ public class FunctionType : Type {
     public override var description: String {
         return "(FunctionType \(throwType) \(arg) \(ret))"
     }
+
+    public override func stringify() -> String {
+        return "\(arg.type.stringify()) -> \(ret.type.stringify())"
+    }
 }
 
 public class OptionalType : Type {
@@ -124,6 +168,10 @@ public class OptionalType : Type {
 
     public override var description: String {
         return "(OptionalType \(wrapped))"
+    }
+
+    public override func stringify() -> String {
+        return "\(wrapped.type.stringify())?"
     }
 }
 
@@ -138,6 +186,10 @@ public class ImplicitlyUnwrappedOptionalType : Type {
     public override var description: String {
         return "(ImplicitlyUnwrappedOptionalType \(wrapped))"
     }
+
+    public override func stringify() -> String {
+        return "\(wrapped.type.stringify())!"
+    }
 }
 
 public class MetaType : Type {
@@ -151,6 +203,10 @@ public class MetaType : Type {
     public override var description: String {
         return "(MetaType \(type))"
     }
+
+    public override func stringify() -> String {
+        return "\(reference.type.stringify()).TYPE"
+    }
 }
 
 public class MetaProtocol : Type {
@@ -163,5 +219,9 @@ public class MetaProtocol : Type {
 
     public override var description: String {
         return "(MetaProtocol \(proto))"
+    }
+
+    public override func stringify() -> String {
+        return "\(proto.type.stringify()).PROTOCOL"
     }
 }

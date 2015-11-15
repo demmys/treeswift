@@ -591,7 +591,7 @@ public class ScopeManager {
         importingScopeStack.append(currentScope)
         currentScope = ModuleScope()
         let declarations = try importMethod()
-        printScopes() // DEBUG
+        // printScopes() // DEBUG
         guard case .Module = currentScope.type else {
             throw ErrorReporter.instance.fatal(.UnresolvedScopeRemains, source)
         }
@@ -748,10 +748,12 @@ public class ScopeManager {
     }
 
     public static func createTypeRef(
-        name: String, _ source: SourceTrackable, nests: [NestedTypeSpecifier] = []
+        name: String, _ source: SourceTrackable, nests: [NestedTypeSpecifier] = [],
+        resolve: Bool = false
     ) throws -> TypeRef {
         return try currentScope.createRef(
-            source, { TypeRef(name, source, nests) }, resolve: moduleParsing
+            source, { TypeRef(name, source, nests) },
+            resolve: resolve || moduleParsing
         )
     }
 

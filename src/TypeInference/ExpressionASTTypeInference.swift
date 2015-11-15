@@ -6,6 +6,11 @@ extension TypeInference {
         try node.body.accept(self)
     }
 
+    public func visit(node: ExpressionBody) throws {
+        addConstraint(node, node.unit)
+        try node.unit.accept(self)
+    }
+
     public func visit(node: BinaryExpressionBody) throws {
         let arg = TupleType([TupleTypeElement(node.left), TupleTypeElement(node.right)])
         let functionType = FunctionType(arg, .Nothing, node)
@@ -24,7 +29,10 @@ extension TypeInference {
     }
 
     public func visit(node: TypeCastingExpressionBody) throws {
-        switch node.castType! {
+        guard let castType = node.castType else {
+            assert(false, "<system error> TypeCastingExpressionBody.castType is nil")
+        }
+        switch castType {
         case .Is:
             addConstraint(node, try boolType())
         case .As:
@@ -54,6 +62,7 @@ extension TypeInference {
         }
         // Do not analyze type of PostfixedExpression here.
         // Because member reference has not resolved yet.
+        try node.core.accept(self)
     }
 
     public func visit(node: PostfixedExpression) throws {
@@ -72,6 +81,9 @@ extension TypeInference {
             let functionType = FunctionType(arg, .Nothing, node)
             addConstraint(wrapped, functionType)
             try wrapped.accept(self)
+            for (_, e) in tuple {
+                try e.accept(self)
+            }
         case .Member:
             assert(false, "Member dispatch is not implemented")
         case let .Subscript(wrapped, es):
@@ -102,13 +114,13 @@ extension TypeInference {
         case let .ImplicitParameter(r, genArgs: _):
             addConstraint(node, r)
         case .Integer:
-            node.type.addCandidate(try intType())
+            node.type.fixType(try intType())
         case .FloatingPoint:
-            node.type.addCandidate(try floatType())
+            node.type.fixType(try floatType())
         case .StringExpression:
-            node.type.addCandidate(try stringType())
+            node.type.fixType(try stringType())
         case .Boolean:
-            node.type.addCandidate(try boolType())
+            node.type.fixType(try boolType())
         case .Nil:
             addConstraint(node, OptionalType(UnresolvedType()))
         case let .Array(es):

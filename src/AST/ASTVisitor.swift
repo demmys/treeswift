@@ -32,6 +32,7 @@ public protocol ASTVisitor {
     func visit(node: OperatorDeclaration) throws
     // ExpressionAST
     func visit(node: Expression) throws
+    func visit(node: ExpressionBody) throws
     func visit(node: BinaryExpressionBody) throws
     func visit(node: ConditionalExpressionBody) throws
     func visit(node: TypeCastingExpressionBody) throws
@@ -143,7 +144,7 @@ extension ExpressionBody : ASTNode {
         case let e as BinaryExpressionBody: try visitor.visit(e)
         case let e as ConditionalExpressionBody: try visitor.visit(e)
         case let e as TypeCastingExpressionBody: try visitor.visit(e)
-        default: assert(false, "<system error> Unexpected type of declaration.")
+        default: try visitor.visit(self)
         }
     }
 }

@@ -1,5 +1,5 @@
 public class Expression : Typeable {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public var tryType: TryType!
     public var body: ExpressionBody!
 
@@ -11,7 +11,7 @@ public enum TryType : String {
 }
 
 public class ExpressionBody : Typeable, CustomStringConvertible {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public var unit: PrefixedExpression!
     public var left: PrefixedExpression! {
         get { return unit }
@@ -67,7 +67,7 @@ public enum CastType : String {
 }
 
 public class PrefixedExpression : Typeable {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public var pre: ExpressionPrefix
     public var core: PostfixedExpression
 
@@ -78,7 +78,7 @@ public class PrefixedExpression : Typeable {
 }
 
 public class PostfixedExpression : Typeable {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public var core: PostfixedExpressionCore
 
     public init(_ core: PostfixedExpressionCore) {
@@ -110,7 +110,7 @@ public enum PostfixMember {
 
 // primary-expression
 public class ExpressionCore : Typeable {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public let value: ExpressionCoreValue
 
     public init(_ v: ExpressionCoreValue) {

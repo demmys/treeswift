@@ -124,7 +124,7 @@ public enum VariableBlocks {
 }
 
 public class VariableBlock : ScopeTrackable, Typeable {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
     public var attrs: [Attribute] = []
     public var param: ConstantInst?
     public var body: [Procedure]!

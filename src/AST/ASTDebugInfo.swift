@@ -438,3 +438,105 @@ extension AccessLevel : CustomStringConvertible {
         return "(AccessLevel \(self.rawValue.lowercaseString))"
     }
 }
+
+/*
+ * Inst
+ */
+extension TypeInst : CustomStringConvertible {
+    public var description: String {
+        return "(TypeInst \(name))"
+    }
+}
+
+extension ConstantInst : CustomStringConvertible {
+    public var description: String {
+        return "(ConstantInst \(name))"
+    }
+}
+
+extension VariableInst : CustomStringConvertible {
+    public var description: String {
+        return "(VariableInst \(name))"
+    }
+}
+
+extension FunctionInst : CustomStringConvertible {
+    public var description: String {
+        return "(FunctionInst \(name))"
+    }
+}
+
+extension OperatorInst : CustomStringConvertible {
+    public var description: String {
+        return "(OperatorInst \(name) \(implementation))"
+    }
+}
+
+extension EnumInst : CustomStringConvertible {
+    public var description: String {
+        return "(EnumInst \(name) \(memberTypes) \(memberValues))"
+    }
+}
+
+extension EnumCaseInst : CustomStringConvertible {
+    public var description: String {
+        return "(EnumCaseInst \(name))"
+    }
+}
+
+extension StructInst : CustomStringConvertible {
+    public var description: String {
+        return "(StructInst \(name) \(memberTypes) \(memberValues))"
+    }
+}
+
+extension ClassInst : CustomStringConvertible {
+    public var description: String {
+        return "(ClassInst \(name) \(memberTypes) \(memberValues))"
+    }
+}
+
+extension ProtocolInst : CustomStringConvertible {
+    public var description: String {
+        return "(ProtocolInst \(name) \(memberTypes) \(memberValues))"
+    }
+}
+
+extension RefIdentifier : CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case let .Name(n): return n
+        case let .Index(i): return "$\(i)"
+        }
+    }
+}
+
+extension TypeRef : CustomStringConvertible {
+    public var description: String {
+        return "(TypeRef \(id) \(nests) \(inst?.name))"
+    }
+}
+
+extension ValueRef : CustomStringConvertible {
+    public var description: String {
+        return "(ValueRef \(id) \(inst?.name))"
+    }
+}
+
+extension OperatorRef : CustomStringConvertible {
+    public var description: String {
+        return "(OperatorRef \(id) \(inst) \(impl?.name))"
+    }
+}
+
+extension EnumCaseRef : CustomStringConvertible {
+    public var description: String {
+        return "(EnumCaseRef \(id) \(inst?.name))"
+    }
+}
+
+extension ImplicitParameterRef : CustomStringConvertible {
+    public var description: String {
+        return "(ImplicitParameterRef \(id) \(inst?.name))"
+    }
+}

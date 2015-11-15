@@ -1,5 +1,5 @@
 public class Pattern : Typeable, CustomStringConvertible {
-    public var type = TypeCandidate()
+    public var type = TypeManager()
 
     public init() {}
 
@@ -116,7 +116,7 @@ public class TypePattern : Pattern {
     public init(_ targetType: Type) {
         self.targetType = targetType
         super.init()
-        type.addCandidate(targetType)
+        type.fixType(targetType)
     }
 
     override public var description: String {
@@ -148,7 +148,7 @@ public class TypeCastingPattern : ContainerPattern {
     public init(_ pat: Pattern, _ castType: Type) {
         self.castType = castType
         super.init(pat)
-        type.addCandidate(castType)
+        type.fixType(castType)
     }
 
     override public var description: String {
