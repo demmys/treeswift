@@ -50,7 +50,7 @@ class ExpressionParser : GrammarParser {
     private func expressionBody(
         valueBinding: ValueBindingStatus = .None
     ) throws -> ExpressionBody {
-        let preExp = try expressionUnit(valueBinding)
+        let preExp = try prefixedExpression(valueBinding)
         let trackable = ts.look()
         switch ts.match([binaryOperator, .BinaryQuestion, .Is, .As]) {
         case let .BinaryOperator(s):
@@ -71,7 +71,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func binaryExpressionBody(
-        preExp: ExpressionUnit, _ s: String, _ trackable: SourceTrackable,
+        preExp: PrefixedExpression, _ s: String, _ trackable: SourceTrackable,
         valueBinding: ValueBindingStatus
     ) throws -> BinaryExpressionBody {
         let x = BinaryExpressionBody()
@@ -82,7 +82,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func conditionalExpressionBody(
-        preExp: ExpressionUnit
+        preExp: PrefixedExpression
     ) throws -> ConditionalExpressionBody {
         let x = ConditionalExpressionBody()
         x.cond = preExp
@@ -95,7 +95,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func isTypeCastingExpressionBody(
-        preExp: ExpressionUnit
+        preExp: PrefixedExpression
     ) throws -> TypeCastingExpressionBody {
         let x = TypeCastingExpressionBody()
         x.unit = preExp
@@ -105,7 +105,7 @@ class ExpressionParser : GrammarParser {
     }
 
     private func asTypeCastingExpressionBody(
-        preExp: ExpressionUnit
+        preExp: PrefixedExpression
     ) throws -> TypeCastingExpressionBody {
         let x = TypeCastingExpressionBody()
         x.unit = preExp
@@ -121,16 +121,12 @@ class ExpressionParser : GrammarParser {
         return x
     }
 
-    private func expressionUnit(
+    private func prefixedExpression(
         valueBinding: ValueBindingStatus
-    ) throws -> ExpressionUnit {
-        let x = ExpressionUnit()
-        x.pre = try expressionPrefix()
-        x.core = ExpressionCore(try expressionCoreValue(valueBinding))
-        while let ep = try expressionPostfix() {
-            x.posts.append(ep)
-        }
-        return x
+    ) throws -> PrefixedExpression {
+        return PrefixedExpression(
+            try expressionPrefix(), try postfixedExpression(valueBinding)
+        )
     }
 
     private func expressionPrefix() throws -> ExpressionPrefix {
@@ -145,32 +141,46 @@ class ExpressionParser : GrammarParser {
         }
     }
 
-    private func expressionPostfix() throws -> ExpressionPostfix? {
+    private func postfixedExpression(
+        valueBinding: ValueBindingStatus
+    ) throws -> PostfixedExpression {
+        var x = PostfixedExpression(
+            .Core(ExpressionCore(try expressionCoreValue(valueBinding)))
+        )
+        while let core = try postfixedExpressionCore(x) {
+            x = PostfixedExpression(core)
+        }
+        return x
+    }
+
+    private func postfixedExpressionCore(
+        wrapped: PostfixedExpression
+    ) throws -> PostfixedExpressionCore? {
         let trackable = ts.look()
         switch ts.match([
             postfixOperator, .LeftParenthesis, .Dot, .LeftBracket,
             .PostfixExclamation, .PostfixQuestion
         ]) {
         case let .PostfixOperator(s):
-            return .Operator(try ScopeManager.createOperatorRef(s, trackable))
+            return .Operator(wrapped, try ScopeManager.createOperatorRef(s, trackable))
         case .LeftParenthesis:
             // because of ambiguity, TreeSwift do not support a trailing closure
-            return .FunctionCall(try tupleExpression())
+            return .FunctionCall(wrapped, try tupleExpression())
         case .Dot:
-            return .Member(try postfixMemberExpression())
+            return .Member(wrapped, try postfixMemberExpression())
         case .LeftBracket:
             let es = try expressionList()
             if !ts.test([.RightBracket]) {
                 try ts.error(.ExpectedRightBracketAfterSubscript)
             }
-            return .Subscript(es)
+            return .Subscript(wrapped, es)
         case .PostfixExclamation:
-            return .ForcedValue
+            return .ForcedValue(wrapped)
         case .PostfixQuestion:
             guard ts.test([.Dot]) else {
                 throw ts.fatal(.DotOperatorAfterOptionalChaining)
             }
-            return .OptionalChaining(try postfixMemberExpression())
+            return .OptionalChaining(wrapped, try postfixMemberExpression())
         default:
             return nil
         }

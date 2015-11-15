@@ -35,7 +35,8 @@ public protocol ASTVisitor {
     func visit(node: BinaryExpressionBody) throws
     func visit(node: ConditionalExpressionBody) throws
     func visit(node: TypeCastingExpressionBody) throws
-    func visit(node: ExpressionUnit) throws
+    func visit(node: PrefixedExpression) throws
+    func visit(node: PostfixedExpression) throws
     func visit(node: ExpressionCore) throws
     // PatternAST
     func visit(node: IdentityPattern) throws
@@ -147,7 +148,11 @@ extension ExpressionBody : ASTNode {
     }
 }
 
-extension ExpressionUnit : ASTNode {
+extension PrefixedExpression : ASTNode {
+    public func accept(visitor: ASTVisitor) throws { try visitor.visit(self) }
+}
+
+extension PostfixedExpression : ASTNode {
     public func accept(visitor: ASTVisitor) throws { try visitor.visit(self) }
 }
 

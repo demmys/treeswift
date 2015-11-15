@@ -240,9 +240,15 @@ extension CastType : CustomStringConvertible {
     }
 }
 
-extension ExpressionUnit : CustomStringConvertible {
+extension PrefixedExpression: CustomStringConvertible {
     public var description: String {
-        return "(ExpressionUnit \(pre) \(core) \(posts))"
+        return "(PrefixedExpression \(pre) \(core))"
+    }
+}
+
+extension PostfixedExpression: CustomStringConvertible {
+    public var description: String {
+        return "(PostfixedExpression \(core))"
     }
 }
 
@@ -258,19 +264,25 @@ extension ExpressionPrefix : CustomStringConvertible {
     }
 }
 
-extension ExpressionPostfix : CustomStringConvertible {
+extension PostfixedExpressionCore : CustomStringConvertible {
     public var description: String {
-        let pre = "(ExpressionPostfix type:"
+        let pre = "(PostfixedExpressionCore type:"
         let post = ")"
         switch self {
-        case let .Member(m): return "\(pre) member \(m) \(post)"
-        case .ForcedValue: return "\(pre) foced-value\(post)"
-        case let .OptionalChaining(m): return "\(pre) optional-chaining \(m) \(post)"
-        case let .Operator(r): return "\(pre) operator \(r)\(post)"
-        case let .Subscript(es):
-            return "\(pre) subscript \(es)\(post)"
-        case let .FunctionCall(t):
-            return "\(pre) functioncall \(t)\(post)"
+        case let .Core(c):
+            return "\(pre) core \(c)\(post)"
+        case let .Member(w, m):
+            return "\(pre) member \(w) \(m)\(post)"
+        case let .ForcedValue(w):
+            return "\(pre) foced-value \(w)\(post)"
+        case let .OptionalChaining(w, m):
+            return "\(pre) optional-chaining \(w) \(m)\(post)"
+        case let .Operator(w, r):
+            return "\(pre) operator \(w) \(r)\(post)"
+        case let .Subscript(w, es):
+            return "\(pre) subscript \(w) \(es)\(post)"
+        case let .FunctionCall(w, t):
+            return "\(pre) functioncall \(w) \(t)\(post)"
         }
     }
 }

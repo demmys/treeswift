@@ -46,44 +46,49 @@ extension TypeInference {
         return xs
     }
 
-    public func visit(node: ExpressionUnit) throws {
-        var postfixedType: Typeable = node.core
-        for post in node.posts {
-            switch post {
-            case let .Operator(o):
-                let arg = TupleType([TupleTypeElement(postfixedType)])
-                let ret = UnresolvedType()
-                let functionType = FunctionType(arg, .Nothing, ret)
-                addConstraint(o, functionType)
-                postfixedType = ret
-            case let .FunctionCall(tuple):
-                let arg = typeOfTuple(tuple)
-                let ret = UnresolvedType()
-                // TODO throwable type
-                let functionType = FunctionType(arg, .Nothing, ret)
-                addConstraint(postfixedType, functionType)
-                postfixedType = ret
-            case .Member, .OptionalChaining:
-                    assert(false, "Member expression is not implemented")
-            case .Subscript:
-                    assert(false, "Subscription is not implemented")
-            case .ForcedValue:
-                switch postfixedType {
-                case let t as OptionalType:
-                    postfixedType = t.wrapped
-                case let t as ImplicitlyUnwrappedOptionalType:
-                    postfixedType = t.wrapped
-                default:
-                    try ErrorReporter.instance.error(.UnwrappingNotAOptionalType, nil)
-                }
-            }
-        }
-        if case let .Operator(o) = node.pre! {
-            let arg = TupleType([TupleTypeElement(postfixedType)])
+    public func visit(node: PrefixedExpression) throws {
+        if case let .Operator(o) = node.pre {
+            let arg = TupleType([TupleTypeElement(node.core)])
             let functionType = FunctionType(arg, .Nothing, node)
             addConstraint(o, functionType)
         }
-        try node.core.accept(self)
+        // Do not analyze type of PostfixedExpression here.
+        // Because member reference has not resolved yet.
+    }
+
+    public func visit(node: PostfixedExpression) throws {
+        switch node.core {
+        case let .Core(core):
+            addConstraint(node, core)
+            try core.accept(self)
+        case let .Operator(wrapped, ref):
+            let arg = TupleType([TupleTypeElement(wrapped)])
+            let functionType = FunctionType(arg, .Nothing, node)
+            addConstraint(functionType, ref)
+            try wrapped.accept(self)
+        case let .FunctionCall(wrapped, tuple):
+            let arg = typeOfTuple(tuple)
+            // TODO throwable type
+            let functionType = FunctionType(arg, .Nothing, node)
+            addConstraint(wrapped, functionType)
+            try wrapped.accept(self)
+        case .Member:
+            assert(false, "Member dispatch is not implemented")
+        case let .Subscript(wrapped, es):
+            let arg = TupleType()
+            for e in es {
+                arg.elems.append(TupleTypeElement(e))
+            }
+            let functionType = FunctionType(arg, .Nothing, node)
+            // TODO not wrapped, subscript of wrapped
+            addConstraint(wrapped, functionType)
+        case let .ForcedValue(wrapped):
+            // TODO treat OptionalType and ImplicitlyUnwrappedOptionaltype as same type
+            addConstraint(OptionalType(node), wrapped)
+            try wrapped.accept(self)
+        case .OptionalChaining:
+            assert(false, "Member dispatch is not implemented")
+        }
     }
 
     public func visit(node: ExpressionCore) throws {

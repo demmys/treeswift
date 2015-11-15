@@ -12,12 +12,12 @@ public enum TryType : String {
 
 public class ExpressionBody : Typeable, CustomStringConvertible {
     public var type = TypeCandidate()
-    public var unit: ExpressionUnit!
-    public var left: ExpressionUnit! {
+    public var unit: PrefixedExpression!
+    public var left: PrefixedExpression! {
         get { return unit }
         set(l) { unit = l }
     }
-    public var cond: ExpressionUnit! {
+    public var cond: PrefixedExpression! {
         get { return unit }
         set(c) { unit = c }
     }
@@ -66,14 +66,24 @@ public enum CastType : String {
     case Is, As, ConditionalAs, ForcedAs
 }
 
-// prefix-expression
-public class ExpressionUnit : Typeable {
+public class PrefixedExpression : Typeable {
     public var type = TypeCandidate()
-    public var pre: ExpressionPrefix!
-    public var core: ExpressionCore!
-    public var posts: [ExpressionPostfix] = []
+    public var pre: ExpressionPrefix
+    public var core: PostfixedExpression
 
-    public init() {}
+    public init(_ pre: ExpressionPrefix, _ core: PostfixedExpression) {
+        self.pre = pre
+        self.core = core
+    }
+}
+
+public class PostfixedExpression : Typeable {
+    public var type = TypeCandidate()
+    public var core: PostfixedExpressionCore
+
+    public init(_ core: PostfixedExpressionCore) {
+        self.core = core
+    }
 }
 
 public enum ExpressionPrefix {
@@ -82,13 +92,14 @@ public enum ExpressionPrefix {
     case InOut
 }
 
-public enum ExpressionPostfix {
-    case Operator(OperatorRef)
-    case FunctionCall(Tuple)
-    case Member(PostfixMember)
-    case Subscript([Expression])
-    case ForcedValue
-    case OptionalChaining(PostfixMember)
+public enum PostfixedExpressionCore {
+    case Core(ExpressionCore)
+    case Operator(PostfixedExpression, OperatorRef)
+    case FunctionCall(PostfixedExpression, Tuple)
+    case Member(PostfixedExpression, PostfixMember)
+    case Subscript(PostfixedExpression, [Expression])
+    case ForcedValue(PostfixedExpression)
+    case OptionalChaining(PostfixedExpression, PostfixMember)
 }
 
 public enum PostfixMember {
