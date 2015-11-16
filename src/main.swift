@@ -7,32 +7,51 @@ import Generator
 class Indent {
     var indent = ""
     var depth = 0 {
-        willSet(d) {
-            indent = ""
-            for var i = 0; i < d; ++i {
-                indent += "  "
+        didSet(before) {
+            if !freeze {
+                // change indent
+                indent = ""
+                for var i = 0; i < depth; ++i {
+                    indent += "  "
+                }
+                // memory indented depth
+                if depth > before {
+                    lastIndentedDepth = depth
+                }
             }
         }
+    }
+    var lastIndentedDepth = 0
+    var nestedLine: Bool {
+        return lastIndentedDepth != depth
+    }
+    var freeze = false
+    var newLinePrefix: String {
+        if !freeze {
+            return "\n\(indent)"
+        }
+        return ""
     }
 }
 
 func prettyPrint(target: CustomStringConvertible) {
     let indent = Indent()
-    var lastIndentedDepth = 0
     for (i, c) in target.description.characters.enumerate() {
         switch c {
+        case "`":
+            indent.freeze = !indent.freeze
         case "(", "[":
             if i == 0 {
                 print(c, terminator: "")
             } else {
-                lastIndentedDepth = ++indent.depth
-                print("\n\(indent.indent)\(c)", terminator: "")
+                ++indent.depth
+                print("\(indent.newLinePrefix)\(c)", terminator: "")
             }
         case ")", "]":
-            if lastIndentedDepth == indent.depth {
-                print(c, terminator: "")
+            if indent.nestedLine {
+                print("\(indent.newLinePrefix)\(c)", terminator: "")
             } else {
-                print("\n\(indent.indent)\(c)", terminator: "")
+                print(c, terminator: "")
             }
             --indent.depth
         default:

@@ -374,7 +374,7 @@ extension Associativity : CustomStringConvertible {
  */
 extension Expression : CustomStringConvertible {
     public var description: String {
-        return "(Expression: \(type.type?.stringify() ?? "nil") \(tryType) \(body))"
+        return "(Expression: `\(type.stringify())` \(tryType) \(body))"
     }
 }
 
@@ -392,13 +392,13 @@ extension CastType : CustomStringConvertible {
 
 extension PrefixedExpression: CustomStringConvertible {
     public var description: String {
-        return "(PrefixedExpression: \(type.type?.stringify() ?? "nil") \(pre) \(core))"
+        return "(PrefixedExpression: \(type.stringify() ?? "nil") \(pre) \(core))"
     }
 }
 
 extension PostfixedExpression: CustomStringConvertible {
     public var description: String {
-        return "(PostfixedExpression: \(type.type?.stringify() ?? "nil") \(core))"
+        return "(PostfixedExpression: `\(type.stringify())` \(core))"
     }
 }
 
@@ -454,7 +454,7 @@ extension PostfixMember : CustomStringConvertible {
 
 extension ExpressionCore : CustomStringConvertible {
     public var description: String {
-        return "(ExpressionCore: \(type.type?.stringify() ?? "nil") \(value))"
+        return "(ExpressionCore: `\(type.stringify())` \(value))"
     }
 }
 
@@ -747,19 +747,19 @@ extension TypeInst : CustomStringConvertible {
 
 extension ConstantInst : CustomStringConvertible {
     public var description: String {
-        return "(ConstantInst \(name))"
+        return "(ConstantInst \(name) `\(type.stringify())`)"
     }
 }
 
 extension VariableInst : CustomStringConvertible {
     public var description: String {
-        return "(VariableInst \(name))"
+        return "(VariableInst \(name) `\(type.stringify())`)"
     }
 }
 
 extension FunctionInst : CustomStringConvertible {
     public var description: String {
-        return "(FunctionInst \(name))"
+        return "(FunctionInst \(name) `\(type.stringify())`)"
     }
 }
 
@@ -810,30 +810,30 @@ extension RefIdentifier : CustomStringConvertible {
 
 extension TypeRef : CustomStringConvertible {
     public var description: String {
-        return "(TypeRef \(id) \(nests) \(inst?.name))"
+        return "(TypeRef \(id) \(nests) \(inst))"
     }
 }
 
 extension ValueRef : CustomStringConvertible {
     public var description: String {
-        return "(ValueRef \(id) \(inst?.name))"
+        return "(ValueRef \(id) \(inst))"
     }
 }
 
 extension OperatorRef : CustomStringConvertible {
     public var description: String {
-        return "(OperatorRef \(id) \(inst) \(impl?.name))"
+        return "(OperatorRef \(id) \(inst))"
     }
 }
 
 extension EnumCaseRef : CustomStringConvertible {
     public var description: String {
-        return "(EnumCaseRef \(id) \(inst?.name))"
+        return "(EnumCaseRef \(id) \(inst))"
     }
 }
 
 extension ImplicitParameterRef : CustomStringConvertible {
     public var description: String {
-        return "(ImplicitParameterRef \(id) \(inst?.name))"
+        return "(ImplicitParameterRef \(id) \(inst))"
     }
 }
