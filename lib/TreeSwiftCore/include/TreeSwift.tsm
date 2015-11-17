@@ -53,20 +53,11 @@ infix operator > {
     precedence 130
 }
 
-public struct String {
-    public init(_builtinStringLiteral start: Builtin.RawPointer, byteSize: Builtin.Int32, isASCII: Builtin.Int1)
-}
-
-public protocol CustomStringConvertible {
-    public var description: String { get }
-}
-
 public struct Bool {
     public init(_builtinBooleanLiteral value: Builtin.Int1)
 }
 
 public struct Int {
-    public var value: Builtin.Int64 { get set }
     public init (_builtinIntegerLiteral value: Builtin.Int64)
 }
 
