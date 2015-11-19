@@ -54,6 +54,22 @@ public protocol ASTVisitor {
     func visit(node: EnumCasePattern) throws
     func visit(node: TypePattern) throws
     func visit(node: ExpressionPattern) throws
+    // Inst
+    func visit(node: TypeInst) throws
+    func visit(node: ConstantInst) throws
+    func visit(node: VariableInst) throws
+    func visit(node: FunctionInst) throws
+    func visit(node: OperatorInst) throws
+    func visit(node: EnumInst) throws
+    func visit(node: EnumCaseInst) throws
+    func visit(node: StructInst) throws
+    func visit(node: ClassInst) throws
+    func visit(node: ProtocolInst) throws
+    func visit(node: TypeRef) throws
+    func visit(node: ValueRef) throws
+    func visit(node: OperatorRef) throws
+    func visit(node: EnumCaseRef) throws
+    func visit(node: ImplicitParameterRef) throws
 }
 
 public protocol ASTNode {
@@ -180,6 +196,38 @@ extension Pattern : ASTNode {
         case let p as TypePattern: try visitor.visit(p)
         case let p as ExpressionPattern: try visitor.visit(p)
         default: assert(false, "<system error> Unexpected type of declaration.")
+        }
+    }
+}
+
+// Inst
+extension Inst : ASTNode {
+    public func accept(visitor: ASTVisitor) throws {
+        switch self {
+        case let i as TypeInst: try visitor.visit(i)
+        case let i as ConstantInst: try visitor.visit(i)
+        case let i as VariableInst: try visitor.visit(i)
+        case let i as FunctionInst: try visitor.visit(i)
+        case let i as OperatorInst: try visitor.visit(i)
+        case let i as EnumInst: try visitor.visit(i)
+        case let i as EnumCaseInst: try visitor.visit(i)
+        case let i as StructInst: try visitor.visit(i)
+        case let i as ClassInst: try visitor.visit(i)
+        case let i as ProtocolInst: try visitor.visit(i)
+        default: assert(false, "<system error> Unexpected type of instance.")
+        }
+    }
+}
+
+extension Ref : ASTNode {
+    public func accept(visitor: ASTVisitor) throws {
+        switch self {
+        case let r as TypeRef: try visitor.visit(r)
+        case let r as ValueRef: try visitor.visit(r)
+        case let r as OperatorRef: try visitor.visit(r)
+        case let r as EnumCaseRef: try visitor.visit(r)
+        case let r as ImplicitParameterRef: try visitor.visit(r)
+        default: assert(false, "<system error> Unexpected type of reference.")
         }
     }
 }

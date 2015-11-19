@@ -103,7 +103,9 @@ class DeclarationParser : GrammarParser {
             }
             return try protocolDeclaration(attrs, al)
         case .Init:
-            return try initializerDeclaration(attrs, al, mods, forModule: true)
+            return try initializerDeclaration(
+                attrs, al, mods, source: trackable, forModule: true
+            )
         case .Extension:
             if attrs.count > 0 {
                 try ts.error(.AttributeBeforeExtension)
@@ -220,7 +222,7 @@ class DeclarationParser : GrammarParser {
             ScopeManager.enterImplicitScope()
             return try protocolDeclaration(attrs, al)
         case .Init:
-            return try initializerDeclaration(attrs, al, mods)
+            return try initializerDeclaration(attrs, al, mods, source: trackable)
         case .Deinit:
             if al != nil || mods.count > 0 {
                 try ts.error(.ModifierBeforeDeinit)
@@ -1005,6 +1007,7 @@ class DeclarationParser : GrammarParser {
     private func protocolMemberDeclaration() throws -> Declaration {
         let attrs = try ap.attributes()
         let (al, mods) = try disjointModifiers(try ap.declarationModifiers())
+        let trackable = ts.look()
         switch ts.match([.Var, .Typealias, .Func, .Init, .Subscript]) {
         case .Var:
             return try moduleVariableDeclaration(attrs, al, mods)
@@ -1016,7 +1019,9 @@ class DeclarationParser : GrammarParser {
         case .Func:
             return try functionDeclaration(attrs, al, mods, forModule: true)
         case .Init:
-            return try initializerDeclaration(attrs, al, mods, forModule: true)
+            return try initializerDeclaration(
+                attrs, al, mods, source: trackable, forModule: true
+            )
         case .Subscript:
             return try moduleSubscriptDeclaration(attrs, al, mods)
         default:
@@ -1057,7 +1062,8 @@ class DeclarationParser : GrammarParser {
     }
 
     private func initializerDeclaration(
-        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier], forModule: Bool = false
+        attrs: [Attribute], _ al: AccessLevel?, _ mods: [Modifier],
+        source: SourceTrackable, forModule: Bool = false
     ) throws -> InitializerDeclaration {
         let x = InitializerDeclaration(attrs, al, mods)
         switch ts.match([.PostfixQuestion, .PostfixExclamation]) {
@@ -1068,6 +1074,7 @@ class DeclarationParser : GrammarParser {
         default:
             x.failable = .Nothing
         }
+        x.inst = try ScopeManager.createFunction("init", source, accessLevel: al)
         ScopeManager.enterScope(.Initializer)
         x.genParam = try gp.genericParameterClause()
         x.params = try parameterClause(forModule)

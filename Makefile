@@ -16,7 +16,7 @@ LDFLAGS = -lc++ -L$(LLVM_PATH)/lib $(shell $(LLVM_CONFIG) --libs --system-libs)
 
 SRCS = $(shell find $(SRC_DIR) -name '*.swift' | sed -e 's/.*main.swift//g')
 OBJS = $(subst $(SRC_DIR),$(OBJ_DIR),$(SRCS:.swift=.o))
-MODS = Util AST Parser TypeInference Generator
+MODS = Util LLVM AST Parser TypeInference Generator
 MODS_INC = $(addprefix $(INC_DIR)/,$(addsuffix .swiftmodule,$(MODS)))
 MODULE_NAME = $(word 2,$(subst /, ,$@))
 

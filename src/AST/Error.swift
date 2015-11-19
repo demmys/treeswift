@@ -294,6 +294,9 @@ public enum ErrorMessage : CustomStringConvertible {
     // TypeInference
     case UnwrappingNotAOptionalType
     case TypeNotMatch
+    case NotAStructureType
+    // Generator
+    case TypeNotCompatibleWithBooleanLiteral(String)
 
     public var description: String {
         switch self {
@@ -667,6 +670,11 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Unwrapping not a optional type."
         case .TypeNotMatch:
             return "Type not match"
+        case .NotAStructureType:
+            return "<system error> Parent of initializer is not a structure type"
+        // Generator
+        case let .TypeNotCompatibleWithBooleanLiteral(name):
+            return "Type \(name) is not compatible with boolean literal."
         }
     }
 }

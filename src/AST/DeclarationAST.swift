@@ -298,6 +298,7 @@ public class ProtocolDeclaration : Declaration, ScopeTrackable {
 }
 
 public class InitializerDeclaration : Declaration, ScopeTrackable {
+    public var inst: FunctionInst!
     public var failable: FailableType!
     public var genParam: GenericParameterClause?
     public var params: [Parameter]!

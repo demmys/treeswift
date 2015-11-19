@@ -1,3 +1,5 @@
+import LLVM
+
 public protocol Nestable {
     func appendNestedTypes(name: String, _ inst: Inst)
     func appendNestedValues(name: String, _ inst: Inst)
@@ -33,13 +35,21 @@ public class Inst : Typeable, Nestable, SourceTrackable {
     }
 }
 
-public class TypeInst : Inst {}
+public class TypeInst : Inst {
+    public var llvmType: LLVMTypeRef?
+}
 
-public class ConstantInst : Inst {}
+public class ConstantInst : Inst {
+    public var llvmValue: LLVMValueRef?
+}
 
-public class VariableInst : Inst {}
+public class VariableInst : Inst {
+    public var llvmValue: LLVMValueRef?
+}
 
-public class FunctionInst : Inst {}
+public class FunctionInst : Inst {
+    public var llvmValue: LLVMValueRef?
+}
 
 public class OperatorInst : Inst {
     public var implementation: FunctionInst! {

@@ -203,7 +203,32 @@ extension TypeInference {
     }
 
     public func visit(node: InitializerDeclaration) throws {
-        // assert(false, "Initializer declaration is not implemented.")
+        let arg = typeOfParams(node.params)
+        let ret: Typeable
+        switch node.associatedScope.parent!.type {
+        case let .Enum(i):
+            ret = i
+        case let .Struct(i):
+            ret = i
+        case let .Class(i):
+            ret = i
+        case let .Protocol(i):
+            ret = i
+        case let .Extension(r):
+            ret = r
+        default:
+            throw ErrorReporter.instance.fatal(.NotAStructureType, nil)
+        }
+        node.inst.type.fixType(FunctionType(arg, .Nothing, ret))
+
+        for p in node.body {
+            if case let .OperationProcedure(o) = p {
+                if case let .ReturnOperation(v) = o {
+                    addConstraint(v, ret)
+                }
+            }
+            try p.accept(self)
+        }
     }
 
     public func visit(node: DeinitializerDeclaration) throws {
