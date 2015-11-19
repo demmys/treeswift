@@ -122,7 +122,7 @@ optionParser.setOption(
     "module-name", { (arg) in CompilerOption.ModuleName(arg!) }, requireArgument: true
 )
 optionParser.setOption(
-    "dump-parse", { (arg) in CompilerOption.DumpParse }, requireArgument: false
+    "dump-ast", { (arg) in CompilerOption.DumpAST }, requireArgument: false
 )
 
 do {
@@ -151,7 +151,7 @@ do {
             try inferer.infer()
             // printModules() // DEBUG
             for option in parseOptions {
-                if case .DumpParse = option {
+                if case .DumpAST = option {
                     printParseResult(result) // DEBUG
                     break
                 }
