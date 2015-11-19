@@ -121,21 +121,24 @@ optionParser.setOption(
 optionParser.setOption(
     "module-name", { (arg) in CompilerOption.ModuleName(arg!) }, requireArgument: true
 )
+optionParser.setOption(
+    "dump-parse", { (arg) in CompilerOption.DumpParse }, requireArgument: false
+)
 
 do {
     let (result: parseOptions, remains: arguments) = try optionParser.parse()
-    print("main:parseOptions:\n\t\(parseOptions)") // DEBUG
-    print("main:arguments:\n\t\(arguments)") // DEBUG
+    // print("main:parseOptions:\n\t\(parseOptions)") // DEBUG
+    // print("main:arguments:\n\t\(arguments)") // DEBUG
     if arguments.count < 2 {
         printError("No input file.")
     } else {
         do {
             let modules = modulePaths(parseOptions)
-            print("main:modules:\n\t\(modules)") // DEBUG
+            // print("main:modules:\n\t\(modules)") // DEBUG
             let parser = Parser(moduleName: moduleName(parseOptions), modules: modules)
             let result = try parser.parse(Array(arguments.dropFirst(1)))
             ErrorReporter.instance.report()
-            ScopeManager.printScopes() // DEBUG
+            // ScopeManager.printScopes() // DEBUG
             try ScopeManager.resolveRefs()
             let inferer = TypeInference()
             for (_, mod) in ScopeManager.modules {
@@ -144,10 +147,15 @@ do {
             for (_, tld) in result {
                 try inferer.visit(tld)
             }
-            inferer.printConstraints() // DEBUG
+            // inferer.printConstraints() // DEBUG
             try inferer.infer()
-            printModules() // DEBUG
-            printParseResult(result) // DEBUG
+            // printModules() // DEBUG
+            for option in parseOptions {
+                if case .DumpParse = option {
+                    printParseResult(result) // DEBUG
+                    break
+                }
+            }
         } catch ErrorReport.Fatal {
             printError("Compile process aborted because of the fatal error.")
             ErrorReporter.instance.report()
