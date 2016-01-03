@@ -51,7 +51,9 @@ public enum RefKind {
         case is StructInst.Type: return [.Type, .Value]
         case is ClassInst.Type: return [.Type, .Value]
         case is ProtocolInst.Type: return [.Type]
-        default: assert(false, "<system error> invalid inst type.")
+        default:
+            assert(false, "<system error> invalid inst type.")
+            exit(1)
         }
     }
 
@@ -62,7 +64,9 @@ public enum RefKind {
         case is OperatorRef.Type: return .Operator
         case is EnumCaseRef.Type: return .EnumCase
         case is ImplicitParameterRef.Type: return .ImplicitParameter
-        default: assert(false, "<system error> invalid ref type.")
+        default:
+            assert(false, "<system error> invalid ref type.")
+            exit(1)
         }
     }
 }
@@ -80,6 +84,7 @@ public class Scope {
         }
         guard let p = parent else {
             assert(false, "ImplicitScope with no parent.")
+            exit(1)
         }
         return p.explicitType
     }
@@ -135,6 +140,7 @@ public class Scope {
             }
             guard let p = (explicitScope ?? self).parent else {
                 assert(false, "ModuleScope not prepared.")
+                exit(1)
             }
             return try p.createInst(name, source, accessLevel, constructor)
         default:
@@ -604,6 +610,7 @@ public class ScopeManager {
     public static func setFileName(fileName: String) {
         guard case let fileScope as FileScope = currentScope else {
             assert(false, "<system error> Cannot set file name to the current scope")
+            exit(1)
         }
         fileScope.fileName = fileName
     }
@@ -617,6 +624,7 @@ public class ScopeManager {
         case .File:
             guard case .Module = currentScope.type else {
                 assert(false, "<system error> file scope should be under a module scope")
+                exit(1)
             }
             currentScope = FileScope(currentScope)
         case .For, .ForIn, .While, .RepeatWhile, .If,
@@ -793,6 +801,7 @@ public class ScopeManager {
     public static func resolveRefs() throws {
         guard case .Module = currentScope.type else {
             assert(false, "<system error> Parsing is not ended yet.")
+            exit(1)
         }
         try currentScope.resolveRefs()
     }

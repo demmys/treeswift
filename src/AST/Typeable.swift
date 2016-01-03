@@ -16,6 +16,7 @@ public class TypeManager {
     public func fixType(type: Type) {
         guard self._type == nil else {
             assert(false, "<system error> type already fixed as '\(_type.dynamicType)'")
+            exit(1)
         }
         self._type = type
     }

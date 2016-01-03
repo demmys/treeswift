@@ -75,8 +75,9 @@ func printModules() {
     }
 }
 
+let commandName = Process.arguments[0]
 func printError(message: Any) {
-    print("\(Process.arguments[0]): ", terminator: "", toStream: &STDERR)
+    print("\(commandName): ", terminator: "", toStream: &STDERR)
     print(message, toStream: &STDERR)
 }
 

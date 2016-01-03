@@ -31,6 +31,7 @@ extension TypeInference {
     public func visit(node: TypeCastingExpressionBody) throws {
         guard let castType = node.castType else {
             assert(false, "<system error> TypeCastingExpressionBody.castType is nil")
+            exit(1)
         }
         switch castType {
         case .Is:

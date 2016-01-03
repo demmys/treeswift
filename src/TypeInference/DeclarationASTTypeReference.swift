@@ -38,6 +38,7 @@ extension TypeInference {
         }
         guard let blocks = node.blocks else {
             assert(false, "<system error> VariableBlockDeclaration.blocks is nil")
+            exit(1)
         }
         switch blocks {
         case let .GetterSetter(getter: gb, setter: sb):
@@ -92,6 +93,7 @@ extension TypeInference {
         }
         guard let name = node.name else {
             assert(false, "<system error> FunctionDeclaration.name is nil")
+            exit(1)
         }
         switch name {
         case let .Function(inst):
@@ -124,6 +126,7 @@ extension TypeInference {
             // label
             guard let externalName = p.externalName else {
                 assert(false, "<system error> Parameter.externalName is nil")
+                exit(1)
             }
             switch externalName {
             case let .Specified(s, _):
@@ -132,6 +135,7 @@ extension TypeInference {
                 if requireLabelInDefault {
                     guard let internalName = p.internalName else {
                         assert(false, "<system error> Parameter.internalName is nil")
+                        exit(1)
                     }
                     switch internalName {
                     case let .SpecifiedConstantInst(inst):

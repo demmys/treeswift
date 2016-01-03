@@ -43,7 +43,7 @@ $(INC_DIR)/%.swiftmodule: $(SRC_DIR)/%/*.swift
 
 $(OBJ_DIR)/main.o: $(MODS_INC) $(SRC_DIR)/main.swift
 	@[ -d $(OBJ_DIR) ] || mkdir -p $(OBJ_DIR)
-	cd $(OBJ_DIR); $(COMPILER) $(CFLAGS) -module-name TreeSwift -c ../$(SRC_DIR)/main.swift
+	cd $(OBJ_DIR); $(COMPILER) $(CFLAGS) -module-name TreeSwift -emit-object ../$(SRC_DIR)/main.swift
 
 $(OBJS): $(MODS_INC)
 	@[ -d $(OBJ_DIR)/$(MODULE_NAME) ] || mkdir -p $(OBJ_DIR)/$(MODULE_NAME)
