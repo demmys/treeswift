@@ -38,7 +38,7 @@ class PatternParser : GrammarParser {
 
     private func primaryPattern(valueBinding: ValueBindingStatus) throws -> Pattern {
         switch ts.match([
-            .Underscore, .LeftParenthesis, .Var, .Let, .Is, .Dot, identifier
+            .Underscore, .LeftParenthesis, .Var, .Let, .Is, .Dot
         ]) {
         case .Underscore:
             return WildcardPattern()
@@ -61,13 +61,15 @@ class PatternParser : GrammarParser {
             guard case let .Identifier(s) = ts.match([identifier]) else {
                 throw ts.fatal(.ExpectedEnumCasePatternIdentifier)
             }
-            return EnumCasePattern(
-                try ScopeManager.createEnumCaseRef(s, trackable),
-                try conditionalTuplePattern(valueBinding)
-            )
+            let r = try ScopeManager.createEnumCaseRef(s, trackable)
+            if ts.test([.LeftParenthesis]) {
+                return EnumCasePattern(r, try conditionalTuplePattern(valueBinding))
+            }
+            return EnumCasePattern(r)
         case let .Identifier(s):
             let trackable = ts.look()
             if let m = testEnumCasePattern(s) {
+                ts.next()
                 return EnumCasePattern(
                     try ScopeManager.createEnumCaseRef(m, trackable, className: s),
                     try conditionalTuplePattern(valueBinding)

@@ -664,7 +664,11 @@ public class ScopeManager {
             throw ErrorReporter.instance.fatal(.LeavingModuleScope, source)
         }
         if case let .Extension(r) = currentScope.type {
-            r.extendInst()
+            if r.inst != nil {
+                r.extendInst()
+            } else {
+                r.setAsDelayedExtension()
+            }
         }
         let child = currentScope
         currentScope = parent

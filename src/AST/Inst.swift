@@ -166,6 +166,10 @@ public class TypeRef : Ref, Nestable {
         }
     }
 
+    func setAsDelayedExtension() {
+        onResolved.append(extendInst)
+    }
+
     public func appendNestedTypes(name: String, _ inst: Inst) {
         self.memberTypes[name] = inst
     }

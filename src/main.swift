@@ -143,13 +143,13 @@ do {
             let result = try parser.parse(Array(arguments.dropFirst(1)))
             ErrorReporter.instance.report()
             // ScopeManager.printScopes() // DEBUG
-            try ScopeManager.resolveRefs()
             for option in parseOptions {
                 if case .DumpParse = option {
                     printParseResult(result) // DEBUG
                     exit(0)
                 }
             }
+            try ScopeManager.resolveRefs()
             let inferer = TypeInference()
             for (_, mod) in ScopeManager.modules {
                 try inferer.visit(mod)

@@ -58,9 +58,9 @@ public class ConstantBindingPattern : ContainerPattern {}
 
 public class EnumCasePattern : Pattern {
     public let ref: EnumCaseRef
-    public let tuple: PatternTuple
+    public let tuple: PatternTuple?
 
-    public init(_ ref: EnumCaseRef, _ tuple: PatternTuple) {
+    public init(_ ref: EnumCaseRef, _ tuple: PatternTuple? = nil) {
         self.ref = ref
         self.tuple = tuple
     }

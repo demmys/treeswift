@@ -104,7 +104,6 @@ class TypeParser : GrammarParser {
                 x.type = try type()
             }
         case let .Identifier(s):
-            ts.next()
             try tupleTypeElementBody(x, s)
         default:
             x.type = try type()
@@ -120,13 +119,14 @@ class TypeParser : GrammarParser {
     }
 
     private func tupleTypeElementBody(x: TupleTypeElement, _ s: String) throws {
+        let nonLabeledType = try type()
         if let (type, attrs) = try typeAnnotation() {
             x.label = s
             x.attrs = attrs
             x.type = type
             return
         }
-        x.type = try type()
+        x.type = nonLabeledType
     }
 
     func protocolCompositionType() throws -> ProtocolCompositionType {
