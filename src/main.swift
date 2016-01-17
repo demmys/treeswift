@@ -123,6 +123,9 @@ optionParser.setOption(
     "module-name", { (arg) in CompilerOption.ModuleName(arg!) }, requireArgument: true
 )
 optionParser.setOption(
+    "dump-parse", { (arg) in CompilerOption.DumpParse }, requireArgument: false
+)
+optionParser.setOption(
     "dump-ast", { (arg) in CompilerOption.DumpAST }, requireArgument: false
 )
 
@@ -141,6 +144,12 @@ do {
             ErrorReporter.instance.report()
             // ScopeManager.printScopes() // DEBUG
             try ScopeManager.resolveRefs()
+            for option in parseOptions {
+                if case .DumpParse = option {
+                    printParseResult(result) // DEBUG
+                    exit(0)
+                }
+            }
             let inferer = TypeInference()
             for (_, mod) in ScopeManager.modules {
                 try inferer.visit(mod)
