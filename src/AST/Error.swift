@@ -285,6 +285,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedRightBraceAfterProceduresBlock
     // TypeParser
     case ExpectedType
+    case ExpectedRightBracketAfterDictionaryType
     case ExpectedSymbolForAggregator
     case ExpectedRightParenthesisAfterTupleType
     case ExpectedLessThanForProtocolCompositionType
@@ -650,6 +651,8 @@ public enum ErrorMessage : CustomStringConvertible {
         // TypeParser
         case .ExpectedType:
             return "Expected type"
+        case .ExpectedRightBracketAfterDictionaryType:
+            return "Expected ']' for dictionary type"
         case .ExpectedSymbolForAggregator:
             return "Expected ']' for array type or ':' for dictionary type"
         case .ExpectedRightParenthesisAfterTupleType:

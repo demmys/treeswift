@@ -21,9 +21,13 @@ public class Parser {
         }
     }
 
-    public func parse(fileNames: [String]) throws -> [String:TopLevelDeclaration] {
+    public func parse(
+        fileNames: [String], useStdLib: Bool = true
+    ) throws -> [String:TopLevelDeclaration] {
         var result: [String:TopLevelDeclaration] = [:]
-        try ScopeManager.importModule("TreeSwift", nil)
+        if useStdLib {
+            try ScopeManager.importModule("TreeSwift", nil)
+        }
         for fileName in fileNames {
             do {
                 let parser = prepareDeclarationParser(try createStream(fileName))

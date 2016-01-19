@@ -414,7 +414,7 @@ class ExpressionParser : GrammarParser {
             }
         case let .Identifier(s):
             let info = ts.look().sourceInfo
-            switch ts.look().kind {
+            switch ts.look(1).kind {
             case .Comma, .Arrow, .In:
                 ts.next()
                 c.params = try identifierList(s, info)

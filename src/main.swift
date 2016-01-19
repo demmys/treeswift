@@ -133,6 +133,13 @@ do {
     let (result: parseOptions, remains: arguments) = try optionParser.parse()
     // print("main:parseOptions:\n\t\(parseOptions)") // DEBUG
     // print("main:arguments:\n\t\(arguments)") // DEBUG
+    var dumpParseOnly = false
+    for option in parseOptions {
+        if case .DumpParse = option {
+            dumpParseOnly = true
+            break
+        }
+    }
     if arguments.count < 2 {
         printError("No input file.")
     } else {
@@ -140,15 +147,13 @@ do {
             let modules = modulePaths(parseOptions)
             // print("main:modules:\n\t\(modules)") // DEBUG
             let parser = Parser(moduleName: moduleName(parseOptions), modules: modules)
-            let result = try parser.parse(Array(arguments.dropFirst(1)))
+            let result = try parser.parse(Array(arguments.dropFirst(1)), useStdLib: dumpParseOnly)
             ErrorReporter.instance.report()
-            // ScopeManager.printScopes() // DEBUG
-            for option in parseOptions {
-                if case .DumpParse = option {
-                    printParseResult(result) // DEBUG
-                    exit(0)
-                }
+            if dumpParseOnly {
+                printParseResult(result) // DEBUG
+                exit(0)
             }
+            // ScopeManager.printScopes() // DEBUG
             try ScopeManager.resolveRefs()
             let inferer = TypeInference()
             for (_, mod) in ScopeManager.modules {

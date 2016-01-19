@@ -65,7 +65,11 @@ class TypeParser : GrammarParser {
         case .RightBracket:
             return ArrayType(t)
         case .Colon:
-            return DictionaryType(t, try type())
+            let valueType = try type()
+            guard ts.test([.RightBracket]) else {
+                throw ts.fatal(.ExpectedRightBracketAfterDictionaryType)
+            }
+            return DictionaryType(t, valueType)
         default:
             throw ts.fatal(.ExpectedSymbolForAggregator)
         }

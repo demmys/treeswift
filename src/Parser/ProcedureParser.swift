@@ -77,7 +77,7 @@ class ProcedureParser : GrammarParser {
             // assignment-operation or expression-operation
             x = .OperationProcedure(try assignmentOrExpressionOperation())
         }
-        if !ts.test([.Semicolon, .LineFeed, .EndOfFile]) {
+        if !ts.test([.Semicolon, .LineFeed, .EndOfFile]) && ts.look().kind != .RightBrace {
             try ts.error(.ContinuousProcedure)
         }
         return x

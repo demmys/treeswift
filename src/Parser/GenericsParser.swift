@@ -32,8 +32,10 @@ class GenericsParser : GrammarParser {
             let trackable = ts.look()
             if case let .Identifier(s) = ts.match([identifier]) {
                 return .Conformance(r, try tp.identifierType(s, trackable))
-            } else {
+            } else if ts.test([.Protocol]) {
                 return .ProtocolConformance(r, try tp.protocolCompositionType())
+            } else {
+                throw ts.fatal(.ExpectedType)
             }
         }
         return .Identifier(r)
@@ -61,8 +63,10 @@ class GenericsParser : GrammarParser {
             let trackable = ts.look()
             if case let .Identifier(s) = ts.match([identifier]) {
                 return .Conformance(i, try tp.identifierType(s, trackable))
-            } else {
+            } else if ts.test([.Protocol]) {
                 return .ProtocolConformance(i, try tp.protocolCompositionType())
+            } else {
+                throw ts.fatal(.ExpectedType)
             }
         case let .BinaryOperator(o):
             if o == "==" {
