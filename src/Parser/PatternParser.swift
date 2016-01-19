@@ -20,9 +20,17 @@ class PatternParser : GrammarParser {
 
     func declarativePattern(usage: PatternUsage) throws -> Pattern {
         let info = ts.look().sourceInfo
-        switch ts.match([identifier, .Underscore, .LeftParenthesis]) {
+        switch ts.match([.Underscore, .LeftParenthesis]) {
         case let .Identifier(s):
-            return try identifierPattern(s, info, usage: usage)
+            switch ts.look(1).kind {
+            case .Colon, .AssignmentOperator, .Comma, .RightParenthesis, .In:
+                ts.next()
+                return try identifierPattern(s, info, usage: usage)
+            default:
+                return ExpressionPattern(try ep.expression(.None))
+            }
+        case .Self:
+            return ExpressionPattern(try ep.expression(.None))
         case .Underscore:
             return WildcardPattern()
         case .LeftParenthesis:

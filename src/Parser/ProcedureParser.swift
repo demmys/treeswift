@@ -192,6 +192,9 @@ class ProcedureParser : GrammarParser {
         ScopeManager.enterScope(.RepeatWhile)
         let x = RepeatWhileFlow(label)
         x.block = try proceduresBlock()
+        if !ts.test([.While]) {
+            try ts.error(.ExpectedWhileForRepeatWhile)
+        }
         x.setCond(try ep.expression())
         x.associatedScope = try ScopeManager.leaveScope(ts.look())
         return x

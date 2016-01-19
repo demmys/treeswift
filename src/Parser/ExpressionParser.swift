@@ -387,8 +387,10 @@ class ExpressionParser : GrammarParser {
     private func closureExpression() throws -> ExpressionCoreValue {
         ScopeManager.enterScope(.Closure)
         let c = Closure()
+        var signatured = false
         switch ts.match([.LeftBracket]) {
         case .LeftBracket:
+            signatured = true
             try captureClause(c)
             let info = ts.look().sourceInfo
             switch ts.match([identifier]) {
@@ -407,6 +409,7 @@ class ExpressionParser : GrammarParser {
             }
             switch ts.look(i + 1).kind {
             case .Arrow, .In:
+                signatured = true
                 c.params = .ExplicitTyped(try dp.parameterClause(false))
                 c.returns = try dp.functionResult()
             default:
@@ -416,6 +419,7 @@ class ExpressionParser : GrammarParser {
             let info = ts.look().sourceInfo
             switch ts.look(1).kind {
             case .Comma, .Arrow, .In:
+                signatured = true
                 ts.next()
                 c.params = try identifierList(s, info)
                 c.returns = try dp.functionResult()
@@ -425,7 +429,7 @@ class ExpressionParser : GrammarParser {
         default:
             break
         }
-        if !ts.test([.In]) {
+        if signatured && !ts.test([.In]) {
             try ts.error(.ExpectedInForClosureSignature)
         }
         return try closureExpressionTail(c)

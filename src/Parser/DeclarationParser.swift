@@ -404,7 +404,12 @@ class DeclarationParser : GrammarParser {
                 x.blocks = try willSetDidSetBlock()
                 return x
             }
-            x.blocks = try getterSetterBlock()
+            switch ts.look().kind {
+            case .WillSet, .DidSet:
+                x.blocks = try willSetDidSetBlock()
+            default:
+                x.blocks = try getterSetterBlock()
+            }
             return x
         }
         guard let e = ini.2 else {
@@ -459,7 +464,9 @@ class DeclarationParser : GrammarParser {
             fallthrough
         default:
             let g = VariableBlock()
+            ScopeManager.enterScope(.VariableBlock)
             g.body = try prp.procedures()
+            try ScopeManager.leaveScope(ts.look())
             x = .GetterSetter(getter: g, setter: nil)
         }
         if !ts.test([.RightBrace]) {

@@ -269,6 +269,7 @@ public enum ErrorMessage : CustomStringConvertible {
     case ExpectedRightParenthesisAfterForSetting
     case ExpectedForVariableInit
     case ExpectedInForForPattern
+    case ExpectedWhileForRepeatWhile
     case ExpectedElseForGuard
     case ExpectedCondition
     case ExpectedEqualForPatternMatch
@@ -620,6 +621,8 @@ public enum ErrorMessage : CustomStringConvertible {
             return "Expected 'var' for the declaration in initialize condition."
         case .ExpectedInForForPattern:
             return "Expected 'in' after pattern of ForInFlow"
+        case .ExpectedWhileForRepeatWhile:
+            return "Expected 'while' before repeat while condition"
         case .ExpectedElseForGuard:
             return "Expected 'else' after condition of GuardFlow"
         case .ExpectedCondition:

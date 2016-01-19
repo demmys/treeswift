@@ -4,6 +4,7 @@
 declarative-pattern -> identifier-pattern
                        | wildcard-pattern
                        | declarative-tuple-pattern
+                       | expression-pattern
 
 conditional-pattern -> primary-pattern pattern-postfixes?
 
